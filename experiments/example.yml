@@ -1,0 +1,29 @@
+base_experiment: # the base config object
+  client:
+    arg1: 10
+    arg2: $VARIES$
+  server:
+    arg3: $VARIES$
+    arg4": "test1"
+  info: $VARIES$
+
+
+experiments: 
+# in the experiments object you have a list for the different experiments with the values for the fields marked as $VARIES$ in the base config object.
+- client:
+    arg2: 1
+  server:
+    arg3: 1
+  info: "c1"
+  
+- client:
+    arg2: 2
+  server:
+    arg3: 2
+  info: "c2"
+
+- client:
+    arg2: 3
+  server:
+    arg3: 3
+  info: "c3"

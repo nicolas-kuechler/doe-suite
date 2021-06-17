@@ -1,0 +1,124 @@
+---
+
+##########################################################################
+#   Load Experiment State and Setup AWS                                  #
+##########################################################################
+- name: Load Experiment State and Setup AWS
+  hosts: localhost
+
+  tasks:
+  - name: Load an Experiment Run (init a new run if it does not exist yet)
+    include_role:
+      name: experiment-state
+    vars:
+      expstate: load
+  
+  - name: Schedule the experiments (job ids are 0 to number of experiments-1)
+    set_fact:
+      exp_job_ids: "{{range(0, experiments_ext | length, 1) | list }}"
+    when: run == 'new' # only schedule if it is a new experiment
+
+  - name: Set all jobs to unfinished and pending
+    set_fact:
+      exp_job_ids_unfinished: "{{ exp_job_ids }}" 
+      exp_job_ids_pending: "{{ exp_job_ids }}" 
+    when: run == 'new' # only schedule if it is a new experiment
+
+  - name: Save the updated state of the experiment run (save job ids)
+    include_role:
+      name: experiment-state
+    vars:
+      expstate: save
+    when: run == 'new' # only persist the state if it is a new experiment
+
+  - name: Setup AWS including VPC and the required EC2 instances
+    include_role:
+      name: experiment-aws
+    vars:
+      # start one server and one client instance
+
+      # TODO [nku] extract the number of servers and client machines
+      server_ec2_instances_num: 1 
+      server_ec2_instances_max_num: 1
+      client_ec2_instances_num: 1
+      client_ec2_instances_max_num: 1
+    when: run == 'new' # only change AWS if it is a new experiment
+
+  - debug:
+      var: groups
+
+
+##########################################################################
+#   Setup Machines (Common, Clients Only, Servers Only)                  #
+##########################################################################
+
+- name: Setup machines with common setup
+  hosts: all
+  tasks:
+  - debug:
+      var: groups
+  - name: 
+    include_role:
+      name: setup-common
+    when: run == 'new' # only setup if it is a new experiment
+
+- name: Setup "server" machines with server-specific setup
+  hosts: "{{ hostvars['localhost'].exp_server.host_group }}"
+  tasks:
+  - debug:
+      var: groups
+  - name: 
+    include_role:
+      name: setup-server
+    when: run == 'new' # only setup if it is a new experiment
+
+- name: Setup "client" machines with client-specific setup
+  hosts: "{{ hostvars['localhost'].exp_client.host_group }}"
+  tasks:
+  - debug:
+      var: groups
+  - name: 
+    include_role:
+      name: setup-client
+    when: run == 'new' # only setup if it is a new experiment
+
+
+##########################################################################
+#   Run Experiment Jobs                                                  #
+##########################################################################
+
+- name: Run and monitor experiment jobs
+  hosts: localhost
+  tasks:
+  - name: Try to sequentially run an experiment and wait until it's finished
+    include_role:
+      name: exp-job
+    when: exp_job_ids_unfinished | length > 0  # there are some unfinished jobs left
+    loop: "{{ range(0, exp_n_tries, 1)|list }}"
+  vars:
+    # TODO extract as parameter config
+    exp_n_tries: 10
+    exp_check_wait_time: 5
+
+  
+##########################################################################
+#   Cleanup AWS (terminate instances, remove vpc)                        #
+##########################################################################
+
+- name: Cleanup and Utility
+  hosts: localhost
+  tasks:
+  - name: Cleanup AWS
+    include_role:
+      name: aws-all-setup
+    vars:
+      server_ec2_instances_num: 0
+      server_ec2_instances_max_num: 0
+      client_ec2_instances_num: 0
+      client_ec2_instances_max_num: 0
+    when: awsclean|default(true) and exp_job_ids_unfinished | length == 0
+
+  - name: Output the run id of this experiment for convenience
+    debug:
+      var: run_id
+    when: run == 'new'

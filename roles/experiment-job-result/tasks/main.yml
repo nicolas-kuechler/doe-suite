@@ -1,0 +1,92 @@
+---
+
+- assert:
+    that:
+    - remote_results_dir is defined
+    - local_results_dir is defined
+
+# TODO fetch all job results (decide from which host group we need to fetch results)
+# -> alternative via a results host group
+
+# TODO [nku] experiment directory structure:
+#         high level idea: 
+#               on the remote we have: {{ exp_id }}/{{ run_id }}/{{ job_id }}/scratch and {{ exp_id }}/{{ run_id }}/{{ job_id }}/results
+#               on the client we have: {{ exp_id }}/{{ run_id }}/{{ job_id }}/{{ host (s1, s2, c1, c2)}}
+#                   -> all files in remote results folder are copied to local to respective host
+
+# FROM HIDDE
+#                  - name: Set results dir
+#                    set_fact:
+#                      current_results_dir: "{{ exp.results_dir }}/{{ exp }}_{{ run_id }}/{{ running_job_id }}"
+#                  
+#                  - name: Create result directory
+#                    delegate_to: localhost
+#                    file:
+#                      path: "{{ current_results_dir }}"
+#                      state: directory
+#                  - name: Create result directory
+#                    delegate_to: localhost
+#                    file:
+#                      path: "{{ current_results_dir }}/logs"
+#                      state: directory
+#                  - name: Create result directory
+#                    delegate_to: localhost
+#                    file:
+#                      path: "{{ current_results_dir }}/benchlog"
+#                      state: directory
+#                  #  when: is_cur_exp_finished
+
+
+
+- debug:
+    msg: "result group (hosts) = {{ groups['results'] }}"
+
+
+# TODO [nku] ensure that all results are synced
+#- name: Synchronization using rsync protocol (pull)
+#  ansible.posix.synchronize:
+#    mode: pull
+#    src: rsync://somehost.com/path/
+#    dest: /some/absolute/path/
+#  loop: "{{ groups['results'] }}"
+  
+
+
+# FROM HIDDE             
+#             #             
+#             # We unfortunately have to do it like this because the synchronize command is not playing nice with hosts: localhost
+#             - name: Fetch Results (if experiment done)
+#               delegate_to: localhost
+#               local_action: command rsync -az "{{ groups[exp_server.host_group][0] }}:{{ logs_dir }}/*" "{{ current_results_dir }}/logs/server"
+#             #  delegate_to: "{{ groups[exp_server.host_group][0] }}"
+#             #  synchronize:
+#             #    mode: pull
+#             #    src: "{{ exp.log_dir }}"
+#             #    dest: "{{ current_results_dir }}"
+#             #    recursive: yes
+#             #  when: is_cur_exp_finished
+#             
+#             - name: Fetch Benchlog Results (if experiment done)
+#               delegate_to: localhost
+#               local_action: command rsync -az "{{ groups[exp_server.host_group][0] }}:/benchlog" "{{ current_results_dir }}/benchlog/server"
+#             #  delegate_to: "{{ groups[exp_server.host_group][0] }}"
+#             #  synchronize:
+#             #    mode: pull
+#             #    src: "/benchlog"
+#             #    dest: "{{ current_results_dir }}"
+#             #    recursive: yes
+#             #  when: is_cur_exp_finished
+#             
+#             - name: Fetch Client Results (if experiment done)
+#               delegate_to: localhost
+#               local_action: command rsync -az "{{ item }}:{{ logs_dir }}/*" "{{ current_results_dir }}/logs/client_{{ client_idx }}"
+#               loop: "{{ groups[exp_client.host_group] }}"
+#               loop_control:
+#                 index_var: client_idx
+#             
+#             - name: Fetch Benchlog Client Results (if experiment done)
+#               delegate_to: localhost
+#               local_action: command rsync -az "{{ item }}:/benchlog/*" "{{ current_results_dir }}/benchlog/client_{{ client_idx }}"
+#               loop: "{{ groups[exp_client.host_group] }}"
+#               loop_control:
+#                 index_var: client_idx

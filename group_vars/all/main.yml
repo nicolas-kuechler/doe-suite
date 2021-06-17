@@ -1,0 +1,39 @@
+runs_dir: runs
+
+
+git_remote_repository: git@github.com:pps-lab/aws-simple-ansible.git # TODO: set remote repository
+
+
+remote:
+  dir: "/home/ubuntu"
+
+local:
+  results_dir: "./results"
+
+
+exp_base:
+  aws_region: eu-central-1
+  name: frankfurt
+  key_name: id_rsa_zeph # TODO: add key pair name
+  vpc_name: XXX_vpc_server # TODO: replace XXX with the id of the project
+  vpc_cidr_block: 10.100.0.0/16
+  vpc_subnet_name: XXX_subnet_az1 # TODO: replace XXX with the id of the project
+  vpc_subnet_cidr: 10.100.0.0/24
+  sg_name: XXX_sg # TODO: replace XXX with the id of the project
+  sg_desc: XXX security group # TODO: replace XXX with the id of the project
+
+exp_client:
+  instance_type: t2.large # TODO: choose client instance type
+  ec2_image: ami-0093cac2bf998a669
+  ec2_volume_snapshot: snap-0de0ff3947a9b6577
+  ec2_volume_size: 16 # TODO: choose client volume size
+  instance_tag: XXX_client   # TODO: replace XXX with the id of the project
+  host_group: tag_Name_XXX_client # TODO: replace XXX with the id of the project
+
+exp_server:
+  instance_type: t2.large # TODO: choose server instance type
+  ec2_image: ami-0093cac2bf998a669
+  ec2_volume_snapshot: snap-0de0ff3947a9b6577
+  ec2_volume_size: 16 # TODO: choose server volume size
+  instance_tag: XXX_server # TODO: replace XXX with the id of the project
+  host_group: tag_Name_XXX_server # TODO: replace XXX with the id of the project 

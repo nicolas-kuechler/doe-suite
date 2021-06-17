@@ -1,0 +1,50 @@
+---
+
+- name: Update repositories cache and install required packages
+  become: True
+  apt:
+    pkg:
+    - python3-pip
+    # TODO: add other required packages
+    update_cache: yes
+
+- name: Install pipenv
+  become: true
+  pip:
+    name: pipenv
+    executable: pip3
+
+
+
+# Use ssh-agent to get code from Git Remote Repository:
+# 
+# 1. Configure ~/.ssh/config:  (add to file and replace the key for example with aws_ppl.pem)
+#    ```
+#    Host ec2*
+#    IdentifyFile ~/.ssh/{{ exp_base.key_name }} 
+#    ForwardAgent yes
+#    ```
+#
+# 2. Add the GitHub private key to ssh-agent:
+#
+#   ssh-agent ~/.ssh/private_key_rsa
+#
+# 3. (On a MAC, need add to keychain)
+- name: Update Code from Git remote repository
+  git:
+    repo: "{{ git_remote_repository }}"
+    dest: "{{ remote.dir }}/code"
+
+
+- name: install dependencies via pipenv
+  command: pipenv install
+  args:
+    chdir: "{{ remote.dir }}/code"
+
+
+# TODO: (optional) create a folder
+#- name: Setup a folder
+#  file:
+#    path: "{{ ... }}"
+#    state: directory
+#    mode: 0755

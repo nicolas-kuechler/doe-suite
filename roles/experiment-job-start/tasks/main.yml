@@ -1,0 +1,91 @@
+---
+
+- assert:
+    that:
+    - exp_working_dir is defined
+    - exp_code_dir is defined
+    - exp_config is defined
+    - run_id is defined
+    - running_job_id is defined
+
+
+# TODO start an experiment as a service
+
+
+##########################################################################
+#   Setup Service Unit Files                                             #
+##########################################################################
+
+- name: Create Unit File for Server
+  become: yes
+  delegate_to: "{{ host }}"
+  template:
+    src=server.service.j2
+    dest=/lib/systemd/system/flserver.service
+    mode=644
+  notify:
+  - reload systemctl
+  loop: "{{ groups[exp_server.host_group] }}"
+  # TODO [nku] change to provide all server'ips and all client ip's
+  vars:
+    server_host: "{{ hostvars[groups[exp_server.host_group][0]].private_ip_address }}"
+  loop_control:
+    loop_var: host
+    #index_var: server_idx
+
+
+- name: Create Unit File for Clients
+  become: yes
+  delegate_to: "{{ host }}"
+  template:
+    src=client.service.j2
+    dest=/lib/systemd/system/flclient.service
+    mode=644
+  notify:
+  - reload systemctl
+  vars:
+    start_id: "{{ client_idx|int * num_clients_per_host|int }}"
+    # TODO [nku] change to provide all server'ips and all client ip's
+    server_host: "{{ hostvars[groups[exp_server.host_group][0]].private_dns_name }}"
+  loop: "{{ groups[exp_client.host_group] }}"
+  loop_control:
+    loop_var: host
+    index_var: client_idx
+
+
+- name: Reload client and server services
+  become: yes
+  delegate_to: "{{ host }}"
+  command:
+    cmd: systemctl daemon-reload
+  loop: "{{ groups[exp_client.host_group] | union(groups[exp_server.host_group]) }}"
+  loop_control:
+    loop_var: host
+
+
+
+##########################################################################
+#   Starting the Experiment   (start server and client service)          #
+##########################################################################
+
+- name: Start Server
+  become: yes
+  delegate_to: "{{ host }}"
+  service: name=flserver.service state=restarted enabled=yes
+  loop: "{{ groups[exp_server.host_group] }}"
+  loop_control:
+    loop_var: host
+
+- name: Sleep for x seconds for server to launch
+  wait_for:
+    timeout: 5
+  delegate_to: localhost
+  when: groups[exp_server.host_group]|length > 0 and groups[exp_client.host_group]|length > 0
+
+- name: Start Client(s)
+  become: yes
+  delegate_to: "{{ host }}"
+  service: name=flclient.service state=restarted enabled=yes
+  loop: "{{ groups[exp_client.host_group] }}"
+  loop_control:
+    loop_var: host

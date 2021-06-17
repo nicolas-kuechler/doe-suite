@@ -1,0 +1,31 @@
+# TODO implement a status check
+
+# -> alternative via a status check host group (if all hosts in this group have the XXX service as stopped => experiment over)
+
+#                        
+#                        - name: Check if Experiment is Still Running 
+#                          delegate_to: "{{ groups[exp_server.host_group][0] }}"
+#                          service_facts:
+#                          register: services_state
+#                          when: lsf_job_ids_unfinished | length > 0
+#                        
+#                        - name:
+#                          set_fact: 
+#                            is_cur_exp_finished: false
+#                        
+#                        
+#                        - name: Check if current running experiment finished
+#                          set_fact:
+#                            is_cur_exp_finished:  "{{ services_state.ansible_facts.services['flserver.service'].state == 'stopped' }}"
+#                          when: lsf_job_ids_unfinished | length > 0
+#                        
+#                        #- debug:
+#                        #    msg="is_cur_exp_finished={{ is_cur_exp_finished }}      my service={{ services_state.ansible_facts.services['flserver.service'] }}"
+#                        #
+#                        
+
+
+- name: Fail when the experiment is not completed yet
+  fail:
+    msg: The experiment is still running
+  when: not is_cur_exp_finished
