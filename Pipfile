@@ -9,6 +9,7 @@ verify_ssl = true
 ansible = "*"
 boto3 = "*"
 boto = "*"
+numpy = "*"
 
 [requires]
 python_version = "3.8"
