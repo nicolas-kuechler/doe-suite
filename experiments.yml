@@ -1,4 +1,5 @@
 ---
+# TODO [nku]  tags: [print_action]  to tasks such that output is informative
 
 ##########################################################################
 #   Load Experiment State and Setup AWS                                  #
@@ -15,7 +16,7 @@
   
   - name: Schedule the experiments (job ids are 0 to number of experiments-1)
     set_fact:
-      exp_job_ids: "{{range(0, experiments_ext | length, 1) | list }}"
+      exp_job_ids: "{{range(0, experiments_ext | length, 1) | product(range(0, n_repetitions, 1)) | map('join', '_') | list }}"
     when: run == 'new' # only schedule if it is a new experiment
 
   - name: Set all jobs to unfinished and pending
@@ -24,12 +25,14 @@
       exp_job_ids_pending: "{{ exp_job_ids }}" 
     when: run == 'new' # only schedule if it is a new experiment
 
+
   - name: Save the updated state of the experiment run (save job ids)
     include_role:
       name: experiment-state
     vars:
       expstate: save
     when: run == 'new' # only persist the state if it is a new experiment
+
 
   - name: Setup AWS including VPC and the required EC2 instances
     include_role:
@@ -46,7 +49,6 @@
 
   - debug:
       var: groups
-
 
 ##########################################################################
 #   Setup Machines (Common, Clients Only, Servers Only)                  #
@@ -97,7 +99,7 @@
     loop: "{{ range(0, exp_n_tries, 1)|list }}"
   vars:
     # TODO extract as parameter config
-    exp_n_tries: 10
+    exp_n_tries: 100
     exp_check_wait_time: 5
 
   

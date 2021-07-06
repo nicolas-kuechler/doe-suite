@@ -5,6 +5,7 @@ git_remote_repository: git@github.com:pps-lab/aws-simple-ansible.git # TODO: set
 
 prj_id: XXXY
 
+n_repetitions: 3 # TODO [nku] move to experiment config
 
 n_clients_fetch_results: 1 # will fetch the results folder of remote "client machines" [0, X)
 n_servers_fetch_results: 1 # will fetch the results folder of remote "server machines" [0, X)

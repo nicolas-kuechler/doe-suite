@@ -65,7 +65,7 @@
   delegate_to: localhost
   template:
     src: state.yml.j2
-    dest: "{{ runs_dir }}/{{ exp_id }}_{{ run_id }}/state.yml"
+    dest: "{{ runs_dir }}/{{ exp_id }}_{{ run_id }}/state.yml" # TODO: SET STATE IN OTHER LOCATION
     mode:  0755
   when: expstate == 'save' or is_init
 

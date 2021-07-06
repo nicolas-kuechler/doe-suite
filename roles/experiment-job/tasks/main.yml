@@ -32,23 +32,29 @@
 
 - name: 
   set_fact:
-    new_running_job_id: "{{ exp_job_ids_pending | list | map('int')| min }}"
+    new_running_job_id: "{{ exp_job_ids_pending | list | first }}"
   when: exp_job_ids_running | length == 0
 
 - debug:
-    msg="new_running_job_id={{ new_running_job_id }}"
+    msg="!!! new_running_job_id={{ new_running_job_id }}"
 
 - name:
   set_fact:
-    exp_job_ids_pending: "{{ exp_job_ids_pending | reject('equalto', new_running_job_id | int) | list }}"
-    exp_job_ids_running: "{{ new_running_job_id | map('int') | list }}"
+    exp_job_ids_pending: "{{ exp_job_ids_pending | reject('equalto', new_running_job_id) | list }}"
+    exp_job_ids_running: "['{{ new_running_job_id }}']"
   when: new_running_job_id is not none 
 
 - name: Set the experiment config
   set_fact:
-    exp_config: "{{ experiments_ext[exp_job_ids_running | list | first | int] }}"
-    running_job_id: "{{ exp_job_ids_running[0] }}"
+    exp_config: "{{ experiments_ext[exp_job_ids_running | list | first | string | split('_')| first | int] }}"
+    running_job_id: "{{ exp_job_ids_running[0]|string }}"
 
+# TODO DELETE
+- debug:
+    msg: "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+
+- debug:
+    var: exp_config
 
 - name: Set the experiment working directory
   set_fact:
