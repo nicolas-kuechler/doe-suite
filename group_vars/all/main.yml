@@ -3,6 +3,17 @@ runs_dir: runs
 
 git_remote_repository: git@github.com:pps-lab/aws-simple-ansible.git # TODO: set remote repository
 
+prj_id: XXXY
+
+
+n_clients_fetch_results: 1 # will fetch the results folder of remote "client machines" [0, X)
+n_servers_fetch_results: 1 # will fetch the results folder of remote "server machines" [0, X)
+
+# check that an experiment is still running by looking at the status of a systemd service
+#   the following flags determine how many clients and servers are checked to see if there is still a running service of the project
+n_clients_check_status: 1 # will check the systemd service of remote "client machines" [0, X)
+n_servers_check_status: 1 # will check the systemd service of remote "server machines" [0, X) 
+
 
 remote:
   dir: "/home/ubuntu"
@@ -15,25 +26,25 @@ exp_base:
   aws_region: eu-central-1
   name: frankfurt
   key_name: id_rsa_zeph # TODO: add key pair name
-  vpc_name: XXX_vpc_server # TODO: replace XXX with the id of the project
+  vpc_name: "{{ prj_id }}_vpc_server"
   vpc_cidr_block: 10.100.0.0/16
-  vpc_subnet_name: XXX_subnet_az1 # TODO: replace XXX with the id of the project
+  vpc_subnet_name: "{{ prj_id }}_subnet_az1"
   vpc_subnet_cidr: 10.100.0.0/24
-  sg_name: XXX_sg # TODO: replace XXX with the id of the project
-  sg_desc: XXX security group # TODO: replace XXX with the id of the project
+  sg_name: "{{ prj_id }}_sg"
+  sg_desc: "{{ prj_id }} security group"
 
 exp_client:
   instance_type: t2.large # TODO: choose client instance type
   ec2_image: ami-0093cac2bf998a669
   ec2_volume_snapshot: snap-0de0ff3947a9b6577
   ec2_volume_size: 16 # TODO: choose client volume size
-  instance_tag: XXX_client   # TODO: replace XXX with the id of the project
-  host_group: tag_Name_XXX_client # TODO: replace XXX with the id of the project
+  instance_tag: "{{ prj_id }}_client"
+  host_group: "tag_Name_{{ prj_id }}_client"
 
 exp_server:
   instance_type: t2.large # TODO: choose server instance type
   ec2_image: ami-0093cac2bf998a669
   ec2_volume_snapshot: snap-0de0ff3947a9b6577
   ec2_volume_size: 16 # TODO: choose server volume size
-  instance_tag: XXX_server # TODO: replace XXX with the id of the project
-  host_group: tag_Name_XXX_server # TODO: replace XXX with the id of the project 
+  instance_tag: "{{ prj_id }}_server"
+  host_group: "tag_Name_{{ prj_id }}_server"

@@ -1,0 +1,7 @@
+results/
+runs/
+
+
+### Ansible ###
+*.retry
+.boto

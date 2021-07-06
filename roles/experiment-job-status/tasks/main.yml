@@ -1,31 +1,41 @@
-# TODO implement a status check
+---
 
-# -> alternative via a status check host group (if all hosts in this group have the XXX service as stopped => experiment over)
+- assert:
+    that:
+    - n_client_status_check is defined
+    - n_server_status_check is defined
+    - n_client_status_check <= groups[exp_client.host_group] | length
+    - n_server_status_check <= groups[exp_server.host_group] | length
 
-#                        
-#                        - name: Check if Experiment is Still Running 
-#                          delegate_to: "{{ groups[exp_server.host_group][0] }}"
-#                          service_facts:
-#                          register: services_state
-#                          when: lsf_job_ids_unfinished | length > 0
-#                        
-#                        - name:
-#                          set_fact: 
-#                            is_cur_exp_finished: false
-#                        
-#                        
-#                        - name: Check if current running experiment finished
-#                          set_fact:
-#                            is_cur_exp_finished:  "{{ services_state.ansible_facts.services['flserver.service'].state == 'stopped' }}"
-#                          when: lsf_job_ids_unfinished | length > 0
-#                        
-#                        #- debug:
-#                        #    msg="is_cur_exp_finished={{ is_cur_exp_finished }}      my service={{ services_state.ansible_facts.services['flserver.service'] }}"
-#                        #
-#                        
+- name: Check if Experiment is Still Running (on clients)
+  delegate_to: "{{ groups[exp_client.host_group][idx] }}"
+  service_facts:
+  register: services_state_clients
+  when: exp_job_ids_unfinished | length > 0 and n_client_status_check > 0
+  loop: "{{ range(0, n_client_status_check, 1)|list }}"
+  loop_control:
+    loop_var: idx
 
 
-- name: Fail when the experiment is not completed yet
-  fail:
-    msg: The experiment is still running
-  when: not is_cur_exp_finished
+- name: Check if Experiment is Still Running (on servers)
+  delegate_to: "{{ groups[exp_server.host_group][idx] }}"
+  service_facts:
+  register: services_state_servers
+  when: exp_job_ids_unfinished | length > 0 and n_server_status_check > 0
+  loop: "{{ range(0, n_server_status_check, 1)|list }}"
+  loop_control:
+    loop_var: idx
+
+
+- name: Check if current running experiment finished
+  set_fact:
+    clients_stopped:  "{{ 'running' not in services_state_clients| default([]) | json_query(c_query) | list }}"
+    servers_stopped:  "{{ 'running' not in services_state_servers| default([]) | json_query(s_query) | list }}"
+    #clients_stopped_debug:  "{{  services_state_clients| default([]) | json_query(c_query) | list }}"
+    #servers_stopped_debug:  "{{  services_state_servers| default([]) | json_query(s_query) | list }}"
+  vars:
+    c_query: 'results[*].ansible_facts.services."{{ prj_id }}client.service".state'
+    s_query: 'results[*].ansible_facts.services."{{ prj_id }}server.service".state'
+
+- set_fact:
+    is_cur_exp_finished: "{{ clients_stopped and servers_stopped }}"

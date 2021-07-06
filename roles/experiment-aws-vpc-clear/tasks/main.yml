@@ -34,7 +34,7 @@
   until: result is not failed
 
 # Delete Subnet
-- name: Delete Server Subnet AZ1
+- name: Delete Subnet AZ1
   ec2_vpc_subnet:
     state: absent
     vpc_id: "{{ vpc_id }}"
@@ -50,6 +50,17 @@
     state: absent
   when: vpc_id != 'undefined'
 
+# Delete Route Table
+- name: Delete Server Route Table
+  community.aws.ec2_vpc_route_table:
+    vpc_id: "{{ vpc_id }}"
+    region: "{{ exp_base.aws_region }}"
+    tags:
+      Name: "Public"
+    routes: []
+    state: absent
+  when: vpc_id != 'undefined'
+
 # Delete VPC
 - name: Delete the Server VPC
   ec2_vpc_net:   
@@ -59,5 +70,8 @@
     state: absent  
     purge_cidrs: yes
   register: vpc_delete
+  retries: 4
+  delay: 5
+  until: vpc_delete is not failed
 
 - debug: msg="VPC Delete {{ vpc_delete }}"

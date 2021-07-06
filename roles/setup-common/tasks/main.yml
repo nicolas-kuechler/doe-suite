@@ -5,6 +5,7 @@
   apt:
     pkg:
     - python3-pip
+    - python3.8
     # TODO: add other required packages
     update_cache: yes
 
@@ -27,24 +28,34 @@
 #
 # 2. Add the GitHub private key to ssh-agent:
 #
-#   ssh-agent ~/.ssh/private_key_rsa
+#   ssh-aadd ~/.ssh/private_key_rsa
 #
 # 3. (On a MAC, need add to keychain)
 - name: Update Code from Git remote repository
   git:
     repo: "{{ git_remote_repository }}"
     dest: "{{ remote.dir }}/code"
+    accept_hostkey: yes
+
+
+- name: Setup a venv folder
+  file:
+    path: "{{ remote.dir }}/code/.venv"
+    state: directory
+    mode: 0755
 
 
 - name: install dependencies via pipenv
   command: pipenv install
   args:
     chdir: "{{ remote.dir }}/code"
+  environment:
+    LC_ALL: "C.UTF-8"
+    LANG: "C.UTF-8"
 
 
-# TODO: (optional) create a folder
-#- name: Setup a folder
-#  file:
-#    path: "{{ ... }}"
-#    state: directory
-#    mode: 0755
+- name: Setup a folder
+  file:
+    path: "{{ remote.dir }}/experiments"
+    state: directory
+    mode: 0755

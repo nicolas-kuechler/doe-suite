@@ -32,7 +32,7 @@
 
 - name: Expand the experiments config with the hyperparameter keys that are being tuned
   set_fact:
-    experiments_hyper: "{{ experiments_hyper | default([]) | union([exp_item | combine({ 'hyperparameters': { 'args': exp_item } })]) }}"
+    experiments_hyper: "{{ experiments_hyper | default([]) | union([exp_item | combine({ '$VARIES$': { 'args': exp_item } })]) }}"
   loop: "{{ experiments }}"
   when: is_init
   loop_control:

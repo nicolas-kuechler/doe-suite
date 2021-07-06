@@ -92,7 +92,7 @@
   tasks:
   - name: Try to sequentially run an experiment and wait until it's finished
     include_role:
-      name: exp-job
+      name: experiment-job
     when: exp_job_ids_unfinished | length > 0  # there are some unfinished jobs left
     loop: "{{ range(0, exp_n_tries, 1)|list }}"
   vars:
@@ -108,15 +108,18 @@
 - name: Cleanup and Utility
   hosts: localhost
   tasks:
+  - debug:
+      var: awsclean
+
   - name: Cleanup AWS
     include_role:
-      name: aws-all-setup
+      name: experiment-aws
     vars:
       server_ec2_instances_num: 0
       server_ec2_instances_max_num: 0
       client_ec2_instances_num: 0
       client_ec2_instances_max_num: 0
-    when: awsclean|default(true) and exp_job_ids_unfinished | length == 0
+    when: awsclean | default(true) | bool  and exp_job_ids_unfinished | length == 0
 
   - name: Output the run id of this experiment for convenience
     debug:

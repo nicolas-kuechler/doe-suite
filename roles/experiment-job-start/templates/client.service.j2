@@ -6,10 +6,11 @@ Description=Client Service
 [Service]
 Type=simple
 WorkingDirectory={{ exp_working_dir }}
-ExecStart={{ exp_code_dir }}/demo/client.py -a1 {{ exp_config.client.arg1 }} -a2 {{ exp_config.client.arg2 }}
+ExecStart=/bin/sh -c '{{ exp_code_dir }}/.venv/bin/python {{ exp_code_dir }}/demo/client.py -a1 {{ exp_config.client.arg1 }} -a2 {{ exp_config.client.arg2 }}'
 
-StandardOutput=file:{{ exp_working_dir }}/results/server_stdout.log
-StandardError=file:{{ exp_working_dir }}/results/server_stderr.log
+
+StandardOutput=file:{{ exp_working_dir }}/results/client_stdout.log
+StandardError=file:{{ exp_working_dir }}/results/client_stderr.log
 
 [Install]
 WantedBy=multi-user.target

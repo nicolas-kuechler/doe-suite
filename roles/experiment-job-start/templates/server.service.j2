@@ -6,7 +6,8 @@ Description=Server Service
 [Service]
 Type=simple
 WorkingDirectory={{ exp_working_dir }}
-ExecStart={{ exp_code_dir }}/demo/server.py -a3 {{ exp_config.server.arg3 }} -a4 {{ exp_config.server.arg4 }}
+ExecStart=/bin/sh -c '{{ exp_code_dir }}/.venv/bin/python {{ exp_code_dir }}/demo/server.py -a3 {{ exp_config.server.arg3 }} -a4 {{ exp_config.server.arg4 }}'
+
 
 StandardOutput=file:{{ exp_working_dir }}/results/server_stdout.log
 StandardError=file:{{ exp_working_dir }}/results/server_stderr.log

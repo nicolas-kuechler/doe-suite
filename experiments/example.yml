@@ -4,7 +4,7 @@ base_experiment: # the base config object
     arg2: $VARIES$
   server:
     arg3: $VARIES$
-    arg4": "test1"
+    arg4: "test1"
   info: $VARIES$
 
 
