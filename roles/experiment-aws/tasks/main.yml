@@ -11,9 +11,24 @@
     - client_ec2_instances_max_num | int >=  client_ec2_instances_num|int
     - exp_client is defined
 
+- debug:
+    msg: "-> creating VPC..."
+  tags: [print_action]
+  when: server_ec2_instances_max_num|int > 0 or client_ec2_instances_max_num|int > 0
+
 - name: Create VPC in AWS
   include_role:
     name: experiment-aws-vpc-create
+
+- debug:
+    msg: "-> creating EC2 instances..."
+  tags: [print_action]
+  when: server_ec2_instances_max_num|int > 0 or client_ec2_instances_max_num|int > 0
+
+- debug:
+    msg: "-> terminating EC2 instances..."
+  tags: [print_action]
+  when: server_ec2_instances_max_num|int == 0 and client_ec2_instances_max_num|int == 0
 
 - name: Create Server EC2 Instances
   include_role:
@@ -30,6 +45,11 @@
     ec2config: "{{ exp_client | combine( exp_base ) }}"
     ec2_instances_num: "{{ client_ec2_instances_num }}"
     ec2_instances_max_num: "{{ client_ec2_instances_max_num }}"
+
+- debug:
+    msg: "-> deleting VPC.."
+  tags: [print_action]
+  when: server_ec2_instances_max_num|int == 0 and client_ec2_instances_max_num|int == 0
 
 - name: Delete VPC in AWS
   include_role:

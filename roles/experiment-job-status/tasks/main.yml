@@ -2,17 +2,17 @@
 
 - assert:
     that:
-    - n_client_status_check is defined
-    - n_server_status_check is defined
-    - n_client_status_check <= groups[exp_client.host_group] | length
-    - n_server_status_check <= groups[exp_server.host_group] | length
+    - exp_client.n_hosts_status_check is defined
+    - exp_server.n_hosts_status_check is defined
+    - exp_client.n_hosts_status_check <= groups[exp_client.host_group] | length
+    - exp_server.n_hosts_status_check <= groups[exp_server.host_group] | length
 
 - name: Check if Experiment is Still Running (on clients)
   delegate_to: "{{ groups[exp_client.host_group][idx] }}"
   service_facts:
   register: services_state_clients
-  when: exp_job_ids_unfinished | length > 0 and n_client_status_check > 0
-  loop: "{{ range(0, n_client_status_check, 1)|list }}"
+  when: exp_job_ids_unfinished | length > 0 and exp_client.n_hosts_status_check > 0
+  loop: "{{ range(0, exp_client.n_hosts_status_check, 1)|list }}"
   loop_control:
     loop_var: idx
 
@@ -21,8 +21,8 @@
   delegate_to: "{{ groups[exp_server.host_group][idx] }}"
   service_facts:
   register: services_state_servers
-  when: exp_job_ids_unfinished | length > 0 and n_server_status_check > 0
-  loop: "{{ range(0, n_server_status_check, 1)|list }}"
+  when: exp_job_ids_unfinished | length > 0 and exp_server.n_hosts_status_check > 0
+  loop: "{{ range(0, exp_server.n_hosts_status_check, 1)|list }}"
   loop_control:
     loop_var: idx
 

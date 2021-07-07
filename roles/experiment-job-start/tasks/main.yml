@@ -4,19 +4,24 @@
     that:
     - exp_working_dir is defined
     - exp_code_dir is defined
-    - exp_config is defined
-    - run_id is defined
+    - exp_run_config is defined
+    - exp_id is defined
     - running_job_id is defined
 
 
 
 - debug:
-    var: exp_config
+    var: exp_run_config
 
 
 ##########################################################################
 #   Setup Service Unit Files                                             #
 ##########################################################################
+
+- name: Provide connection information 
+  set_fact:
+    servers_ip: "{{ groups[exp_server.host_group] | map('extract', hostvars) | map(attribute='private_ip_address') }}"
+    clients_ip: "{{ groups[exp_client.host_group] | map('extract', hostvars) | map(attribute='private_ip_address') }}"
 
 - name: Create Unit File for Server
   become: yes
@@ -28,9 +33,6 @@
   notify:
   - reload systemctl
   loop: "{{ groups[exp_server.host_group] }}"
-  # TODO [nku] change to provide all server'ips and all client ip's
-  vars:
-    server_host: "{{ hostvars[groups[exp_server.host_group][0]].private_ip_address }}"
   loop_control:
     loop_var: host
 
@@ -46,8 +48,6 @@
   - reload systemctl
   vars:
     start_id: "{{ client_idx|int * num_clients_per_host|int }}"
-    # TODO [nku] change to provide all server'ips and all client ip's
-    server_host: "{{ hostvars[groups[exp_server.host_group][0]].private_dns_name }}"
   loop: "{{ groups[exp_client.host_group] }}"
   loop_control:
     loop_var: host

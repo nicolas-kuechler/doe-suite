@@ -1,12 +1,16 @@
 ---
 
+- debug:
+    msg: "-> common (client and server)"
+  tags: [print_action]
+
 - name: Update repositories cache and install required packages
   become: True
   apt:
     pkg:
     - python3-pip
     - python3.8
-    # TODO: add other required packages
+    # TODO: add other required packages (for both client and server)
     update_cache: yes
 
 - name: Install pipenv

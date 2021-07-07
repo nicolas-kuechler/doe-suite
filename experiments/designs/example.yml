@@ -1,14 +1,16 @@
+n_repetitions: 3 # how often to repeat each run (i.e. each level config)
+
 base_experiment: # the base config object
   client:
     arg1: 10
-    arg2: $VARIES$
+    arg2: $FACTOR$
   server:
-    arg3: $VARIES$
+    arg3: $FACTOR$
     arg4: "test1"
-  info: $VARIES$
+  info: $FACTOR$
 
 
-experiments: 
+factor_levels: 
 # in the experiments object you have a list for the different experiments with the values for the fields marked as $VARIES$ in the base config object.
 - client:
     arg2: 1

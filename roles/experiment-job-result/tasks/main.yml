@@ -12,6 +12,7 @@
     mode: 0755
   loop: "{{ groups[exp_server.host_group] }}" 
   loop_control:
+    loop_var: host
     index_var: idx
 
 - name: Create local folder (for results)
@@ -21,6 +22,7 @@
     mode: 0755
   loop: "{{ groups[exp_client.host_group] }}" 
   loop_control:
+    loop_var: host
     index_var: idx
 
 - name: Fetch Results (if experiment done)

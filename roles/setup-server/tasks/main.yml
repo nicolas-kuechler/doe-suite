@@ -1,17 +1,12 @@
 ---
 
+- debug:
+    msg: "-> server only"
+  tags: [print_action]
+
 - name: Update repositories cache and install required packages
   become: True
   apt:
     pkg:
-    # TODO: add other required packages
+    # TODO: add other required packages (only for server)
     update_cache: yes
-
-
-
-# TODO: (optional) create a folder
-#- name: Setup a folder
-#  file:
-#    path: "{{ ... }}"
-#    state: directory
-#    mode: 0755

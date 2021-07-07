@@ -1,12 +1,12 @@
 ---
 
+exp_name: {{ exp_name }}
 exp_id: {{ exp_id }}
-run_id: {{ run_id }}
 
 exp_job_ids: {{ exp_job_ids | default([]) }}
 exp_job_ids_unfinished: {{ exp_job_ids_unfinished | default([]) }} # pending + running
 exp_job_ids_pending: {{ exp_job_ids_pending | default([]) }} 
 exp_job_ids_running: {{ exp_job_ids_running | default([]) }} 
 
-experiments_ext: 
-{{ experiments_ext | to_nice_yaml }}
+exp_runs_ext: 
+{{ exp_runs_ext | to_nice_yaml }}
