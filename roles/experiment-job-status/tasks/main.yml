@@ -4,8 +4,8 @@
     that:
     - exp_client.n_hosts_status_check is defined
     - exp_server.n_hosts_status_check is defined
-    - exp_client.n_hosts_status_check <= groups[exp_client.host_group] | length
-    - exp_server.n_hosts_status_check <= groups[exp_server.host_group] | length
+    - exp_client.n_hosts_status_check <= groups[exp_client.host_group] | default([]) | length
+    - exp_server.n_hosts_status_check <= groups[exp_server.host_group] | default([]) | length
 
 - name: Check if Experiment is Still Running (on clients)
   delegate_to: "{{ groups[exp_client.host_group][idx] }}"

@@ -20,8 +20,8 @@
 
 - name: Provide connection information 
   set_fact:
-    servers_ip: "{{ groups[exp_server.host_group] | map('extract', hostvars) | map(attribute='private_ip_address') }}"
-    clients_ip: "{{ groups[exp_client.host_group] | map('extract', hostvars) | map(attribute='private_ip_address') }}"
+    servers_ip: "{{ groups[exp_server.host_group]|default({}) | map('extract', hostvars) | map(attribute='private_ip_address') }}"
+    clients_ip: "{{ groups[exp_client.host_group]|default({}) | map('extract', hostvars) | map(attribute='private_ip_address') }}"
 
 - name: Create Unit File for Server
   become: yes
@@ -32,7 +32,7 @@
     mode: 644
   notify:
   - reload systemctl
-  loop: "{{ groups[exp_server.host_group] }}"
+  loop: "{{ groups[exp_server.host_group] | default([]) }}"
   loop_control:
     loop_var: host
 
@@ -48,7 +48,7 @@
   - reload systemctl
   vars:
     start_id: "{{ client_idx|int * num_clients_per_host|int }}"
-  loop: "{{ groups[exp_client.host_group] }}"
+  loop: "{{ groups[exp_client.host_group] | default([]) }}"
   loop_control:
     loop_var: host
     index_var: client_idx
@@ -59,7 +59,7 @@
   delegate_to: "{{ host }}"
   command:
     cmd: systemctl daemon-reload
-  loop: "{{ groups[exp_client.host_group] | union(groups[exp_server.host_group]) }}"
+  loop: "{{ groups[exp_client.host_group] | default([]) | union(groups[exp_server.host_group] |default([])) }}"
   loop_control:
     loop_var: host
 
@@ -77,7 +77,7 @@
     name: "{{ prj_id }}server.service"
     state: restarted
     enabled: yes
-  loop: "{{ groups[exp_server.host_group] }}"
+  loop: "{{ groups[exp_server.host_group]  | default([]) }}"
   loop_control:
     loop_var: host
 
@@ -85,7 +85,7 @@
   wait_for:
     timeout: 5
   delegate_to: localhost
-  when: groups[exp_server.host_group]|length > 0 and groups[exp_client.host_group]|length > 0
+  when: groups[exp_server.host_group] | default([]) | length > 0 and groups[exp_client.host_group] | default([]) |length > 0
 
 - name: Start Client(s)
   become: yes
@@ -94,6 +94,6 @@
     name: "{{ prj_id }}client.service"
     state: restarted
     enabled: yes
-  loop: "{{ groups[exp_client.host_group] }}"
+  loop: "{{ groups[exp_client.host_group] | default([]) }}"
   loop_control:
     loop_var: host

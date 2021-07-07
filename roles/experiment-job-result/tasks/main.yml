@@ -10,7 +10,7 @@
     path: "{{ local_results_dir }}/server{{ idx }}"
     state: directory
     mode: 0755
-  loop: "{{ groups[exp_server.host_group] }}" 
+  loop: "{{ groups[exp_server.host_group] | default([]) }}" 
   loop_control:
     loop_var: host
     index_var: idx
@@ -20,7 +20,7 @@
     path: "{{ local_results_dir }}/client{{ idx }}"
     state: directory
     mode: 0755
-  loop: "{{ groups[exp_client.host_group] }}" 
+  loop: "{{ groups[exp_client.host_group] | default([]) }}" 
   loop_control:
     loop_var: host
     index_var: idx
@@ -28,7 +28,7 @@
 - name: Fetch Results (if experiment done)
   delegate_to: localhost
   local_action: command rsync -az "{{ host }}:{{ remote_results_dir }}/*" "{{ local_results_dir }}/server{{ idx }}"
-  loop: "{{ groups[exp_server.host_group] }}" 
+  loop: "{{ groups[exp_server.host_group] | default([]) }}" 
   loop_control:
     loop_var: host
     index_var: idx
@@ -37,7 +37,7 @@
 - name: Fetch Results (if experiment done)
   delegate_to: localhost
   local_action: command rsync -az "{{ host }}:{{ remote_results_dir }}/*" "{{ local_results_dir }}/client{{ idx }}"
-  loop: "{{ groups[exp_client.host_group] }}" 
+  loop: "{{ groups[exp_client.host_group] | default([]) }}" 
   loop_control:
     loop_var: host
     index_var: idx

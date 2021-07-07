@@ -68,7 +68,7 @@
     group: ubuntu
     owner: ubuntu
   delegate_to: "{{ host }}"
-  loop: "{{ groups[exp_client.host_group] | union(groups[exp_server.host_group]) }}"
+  loop: "{{ groups[exp_client.host_group]| default([]) | union(groups[exp_server.host_group]| default([]) ) }}"
   loop_control:
     loop_var: host
 
@@ -80,7 +80,7 @@
     group: ubuntu
     owner: ubuntu
   delegate_to: "{{ host }}"
-  loop: "{{ groups[exp_client.host_group] | union(groups[exp_server.host_group]) }}"
+  loop: "{{ groups[exp_client.host_group]| default([]) | union(groups[exp_server.host_group]| default([])) }}"
   loop_control:
     loop_var: host
 

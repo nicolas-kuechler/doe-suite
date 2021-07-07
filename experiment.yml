@@ -33,7 +33,7 @@
     when: id == 'new' # only persist the state if it is a new experiment
 
   - debug:
-      msg: "Running Experiment: {{ exp_name }} (id={{ exp_id }})   #runs={{ exp_runs_ext | length }} #reps={{ n_repetitions }}  => #jobs={{ exp_job_ids | length | int - exp_job_ids_unfinished | length | int }}/{{ exp_job_ids | length }}"
+      msg: "Running Experiment: {{ exp_name }} (id={{ exp_id }})   #runs={{ exp_runs_ext | length }} #reps={{ n_repetitions }}  => #jobs={{ exp_job_ids | length }}"
     tags: [print_action]
 
   - debug:
@@ -141,3 +141,8 @@
     debug:
       var: exp_id
     when: id == 'new'
+
+  - debug:
+      msg: "Finished Experiment: {{ exp_name }} (id={{ exp_id }})   #runs={{ exp_runs_ext | length }} #reps={{ n_repetitions }}  => #jobs={{ exp_job_ids | length }}"
+    tags: [print_action]
+    when: exp_job_ids_unfinished | length == 0

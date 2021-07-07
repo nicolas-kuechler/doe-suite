@@ -3,6 +3,6 @@
   become: yes
   delegate_to: "{{ host }}"
   command: systemctl daemon-reload
-  loop: "{{ groups[exp_server.host_group] + groups[exp_client.host_group]}}"
+  loop: "{{ groups[exp_server.host_group]| default([]) + groups[exp_client.host_group] | default([]) }}"
   loop_control:
     loop_var: host
