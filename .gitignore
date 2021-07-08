@@ -5,3 +5,5 @@ experiments/state/
 ### Ansible ###
 *.retry
 .boto
+
+Pipfile.lock

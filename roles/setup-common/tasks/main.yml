@@ -40,6 +40,7 @@
     repo: "{{ git_remote_repository }}"
     dest: "{{ remote.dir }}/code"
     accept_hostkey: yes
+    force: yes
 
 
 - name: Setup a venv folder
