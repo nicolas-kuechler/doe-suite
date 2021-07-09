@@ -41,8 +41,8 @@ exp_client:
   #   (e.g., if an experiment run ends when the first client stops, then the value should be 1 and the value for the server 0 (see below))
   n_hosts_status_check: 1 # will check the systemd service of remote "client machines" [0, X)
 
-  ec2_image: ami-0093cac2bf998a669
-  ec2_volume_snapshot: snap-0de0ff3947a9b6577
+  ec2_image: ami-05f7491af5eef733a
+  ec2_volume_snapshot: snap-0ccde4e83b88fdd69
   instance_tag: "{{ prj_id }}_client"
   host_group: "tag_Name_{{ prj_id }}_client"
 
@@ -58,7 +58,7 @@ exp_server:
   #   the following flag determines how many servers are checked to see if there is still a running service of the project
   n_hosts_status_check: 1 # will check the systemd service of remote "server machines" [0, X)
 
-  ec2_image: ami-0093cac2bf998a669
-  ec2_volume_snapshot: snap-0de0ff3947a9b6577
+  ec2_image: ami-05f7491af5eef733a
+  ec2_volume_snapshot: snap-0ccde4e83b88fdd69
   instance_tag: "{{ prj_id }}_server"
   host_group: "tag_Name_{{ prj_id }}_server"

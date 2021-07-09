@@ -126,7 +126,7 @@ pipenv install
   * Configure ~/.ssh/config:  (add to file and replace the key for AWS for example with aws_ppl.pem)
       ```
       Host ec2*
-      IdentifyFile ~/.ssh/{{ exp_base.key_name }} 
+      IdentityFile ~/.ssh/{{ exp_base.key_name }} 
       ForwardAgent yes
       ```
   * Add the GitHub private key to ssh-agent:
