@@ -1,4 +1,4 @@
-import os, sys, time
+import os, sys, time, csv
 
 print(f"cwd = {os.getcwd()}")
 
@@ -7,9 +7,18 @@ import numpy as np
 print("Server Starting...")
 time.sleep(30) # wait 30 seconds
 
+
+header = []
+row = []
+for i, a in enumerate(sys.argv[1:]):
+    header.append(f"a{i}")
+    row.append(a)
+
 print("Server Writing Output...")
-with open("results/server_out.txt", "w+") as f:
-    f.write("Server Output - args:")
-    f.write(str(sys.argv[1:]))
+with open("results/server_out.csv", "w+") as f:
+    writer = csv.writer(f)
+
+    writer.writerow(header)
+    writer.writerow(row)
 
 print("Server Done!")
