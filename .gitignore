@@ -1,6 +1,7 @@
 results/
 experiments/state/
 
+.ipynb_checkpoints
 
 ### Ansible ###
 *.retry

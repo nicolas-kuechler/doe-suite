@@ -32,7 +32,7 @@ exp_base:
 exp_client:
   ec2_instances_num: 1 # TODO: set the number of client instances
   ec2_instances_max_num: 1 # TODO: set the number of client instances (should be the same -> difference is not terminated)
-  instance_type: t2.large # TODO: choose client instance type
+  instance_type: t2.medium # TODO: choose client instance type
   ec2_volume_size: 16 # TODO: choose client volume size
 
   # TODO: set how many client hosts to check to determine whether a job is finished
@@ -50,7 +50,7 @@ exp_client:
 exp_server:
   ec2_instances_num: 1 # TODO: set the number of server instances 
   ec2_instances_max_num: 1 # TODO: set the number of server instances (should be the same -> difference is not terminated)
-  instance_type: t2.large # TODO: choose server instance type
+  instance_type: t2.medium # TODO: choose server instance type
   ec2_volume_size: 16 # TODO: choose server volume size
 
   # TODO: set how many server hosts to check to determine whether a job is finished
