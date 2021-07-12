@@ -7,7 +7,7 @@
 
 - name: Create local folder (for results)
   file:
-    path: "{{ local_results_dir }}/server{{ idx }}"
+    path: "{{ local_results_dir }}/server_{{ idx }}"
     state: directory
     mode: 0755
   loop: "{{ groups[exp_server.host_group] | default([]) }}" 
@@ -17,7 +17,7 @@
 
 - name: Create local folder (for results)
   file:
-    path: "{{ local_results_dir }}/client{{ idx }}"
+    path: "{{ local_results_dir }}/client_{{ idx }}"
     state: directory
     mode: 0755
   loop: "{{ groups[exp_client.host_group] | default([]) }}" 
@@ -27,7 +27,7 @@
 
 - name: Fetch Results (if experiment done)
   delegate_to: localhost
-  local_action: command rsync -az "{{ host }}:{{ remote_results_dir }}/*" "{{ local_results_dir }}/server{{ idx }}"
+  local_action: command rsync -az "{{ host }}:{{ remote_results_dir }}/*" "{{ local_results_dir }}/server_{{ idx }}"
   loop: "{{ groups[exp_server.host_group] | default([]) }}" 
   loop_control:
     loop_var: host
@@ -36,7 +36,7 @@
 
 - name: Fetch Results (if experiment done)
   delegate_to: localhost
-  local_action: command rsync -az "{{ host }}:{{ remote_results_dir }}/*" "{{ local_results_dir }}/client{{ idx }}"
+  local_action: command rsync -az "{{ host }}:{{ remote_results_dir }}/*" "{{ local_results_dir }}/client_{{ idx }}"
   loop: "{{ groups[exp_client.host_group] | default([]) }}" 
   loop_control:
     loop_var: host

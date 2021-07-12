@@ -1,4 +1,4 @@
-import os, sys, time, json
+import os, sys, time, json, random
 
 print(f"cwd = {os.getcwd()}")
 
@@ -11,6 +11,8 @@ d = {}
 
 for i, a in enumerate(sys.argv[1:]):
     d[f"a{i}"] = a
+
+d["tp"] = random.randint(1, 21)
 
 print("Client Writing Output...")
 with open("results/client_out.json", 'w+') as f:

@@ -1,4 +1,4 @@
-import os, sys, time, csv
+import os, sys, time, csv, random
 
 print(f"cwd = {os.getcwd()}")
 
@@ -13,6 +13,9 @@ row = []
 for i, a in enumerate(sys.argv[1:]):
     header.append(f"a{i}")
     row.append(a)
+
+header.append("tp")
+row.append(random.randint(1, 21))
 
 print("Server Writing Output...")
 with open("results/server_out.csv", "w+") as f:
