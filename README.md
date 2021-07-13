@@ -229,6 +229,62 @@ TODO [nku] this should be a script rather than a function to call
 ```
 
 Experiment in "table" form:
+
+
+
+<table>
+<tr>
+<th> Concise "table" form </th>
+<th>  </th>
+<th> Experimental Design </th>
+</tr>
+<tr>
+<td style=vertical-align:middle>
+
+```YAML
+seed: 1234                  # a constant in the experiment 
+payload_size_mb:            # a factor with two levels
+  $FACTOR$: [1, 128]
+opt:                        # a factor with two levels
+  $FACTOR$: [true, false]   
+
+# experiments/table/simple.yml 
+```
+
+</td>
+<td style=vertical-align:middle>
+
+
+</td>
+<td style=vertical-align:middle>
+
+```YAML
+n_repetitions: 3
+
+base_experiment:
+  seed: 1234
+  payload_size_mb: $FACTOR$
+  opt: $FACTOR$
+
+factor_levels:
+- payload_size_mb: 1
+  opt: true
+- payload_size_mb: 1
+  opt: false
+- payload_size_mb: 128
+  opt: true
+- payload_size_mb: 128
+  opt: false
+
+# experiments/designs/simple.yml
+```
+
+</td>
+</tr>
+</table>
+
+
+
 ```YAML
 seed: 1234                  # a constant in the experiment 
 payload_size_mb:            # a factor with two levels
