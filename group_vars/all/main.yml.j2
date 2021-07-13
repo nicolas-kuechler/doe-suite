@@ -1,5 +1,5 @@
-prj_id: XXXY # TODO: set a project id (will be used to identify resources on AWS that belong to this project)
-git_remote_repository: git@github.com:pps-lab/aws-simple-ansible.git # TODO: set remote repository (code will be cloned on each client and server host )
+prj_id: <<prj_id>> # TODO: set a project id (will be used to identify resources on AWS that belong to this project)
+git_remote_repository: <<git_remote_repository>> # TODO: set remote repository (code will be cloned on each client and server host )
 
 
 # TODO: set how often to check and how long to wait in between
@@ -7,8 +7,8 @@ git_remote_repository: git@github.com:pps-lab/aws-simple-ansible.git # TODO: set
 #   these two flags control how often in total, the playbook repeats this before stopping (a job can still continue to run)
 #   'exp_n_tries' is the total number of tries, and 'exp_check_wait_time' is the time in seconds to wait in between checking whether a job finsihed
 #    (playbook runs for roughly 'exp_n_tries' * 'exp_check_wait_time' seconds unless the experiment finishes earlier)
-exp_n_tries: 100
-exp_check_wait_time: 5
+exp_n_tries: <<exp_n_tries>>
+exp_check_wait_time: <<exp_check_wait_time>>
 
 remote:
   dir: "/home/ubuntu"
@@ -19,7 +19,7 @@ local:
 
 
 exp_base:
-  key_name: id_rsa_zeph # TODO: add key pair name
+  key_name: <<key_name>> # TODO: add key pair name
   aws_region: eu-central-1
   name: frankfurt
   vpc_name: "{{ prj_id }}_vpc_server"
@@ -30,16 +30,16 @@ exp_base:
   sg_desc: "{{ prj_id }} security group"
 
 exp_client:
-  ec2_instances_num: 1 # TODO: set the number of client instances
-  ec2_instances_max_num: 1 # TODO: set the number of client instances (should be the same -> difference is not terminated)
-  instance_type: t2.medium # TODO: choose client instance type
-  ec2_volume_size: 16 # TODO: choose client volume size
+  ec2_instances_num: <<n_clients>> # TODO: set the number of client instances
+  ec2_instances_max_num: <<n_clients>> # TODO: set the number of client instances (should be the same -> difference is not terminated)
+  instance_type: <<instance_type_client>> # TODO: choose client instance type
+  ec2_volume_size: <<volume_size_client>> # TODO: choose client volume size
 
   # TODO: set how many client hosts to check to determine whether a job is finished
   # check that an experiment is still running by looking at the status of a systemd service
   #   the following flag determine how many clients are checked to see if there is still a running service of the project
   #   (e.g., if an experiment run ends when the first client stops, then the value should be 1 and the value for the server 0 (see below))
-  n_hosts_status_check: 1 # will check the systemd service of remote "client machines" [0, X)
+  n_hosts_status_check: <<n_clients_status_check>> # will check the systemd service of remote "client machines" [0, X)
 
   ec2_image: ami-05f7491af5eef733a
   ec2_volume_snapshot: snap-0ccde4e83b88fdd69
@@ -48,15 +48,15 @@ exp_client:
 
 
 exp_server:
-  ec2_instances_num: 1 # TODO: set the number of server instances 
-  ec2_instances_max_num: 1 # TODO: set the number of server instances (should be the same -> difference is not terminated)
-  instance_type: t2.medium # TODO: choose server instance type
-  ec2_volume_size: 16 # TODO: choose server volume size
+  ec2_instances_num: <<n_servers>> # TODO: set the number of server instances 
+  ec2_instances_max_num: <<n_servers>> # TODO: set the number of server instances (should be the same -> difference is not terminated)
+  instance_type: <<instance_type_server>> # TODO: choose server instance type
+  ec2_volume_size: <<volume_size_server>> # TODO: choose server volume size
 
   # TODO: set how many server hosts to check to determine whether a job is finished
   # check that an experiment is still running by looking at the status of a systemd service
   #   the following flag determines how many servers are checked to see if there is still a running service of the project
-  n_hosts_status_check: 1 # will check the systemd service of remote "server machines" [0, X)
+  n_hosts_status_check: <<n_servers_status_check>> # will check the systemd service of remote "server machines" [0, X)
 
   ec2_image: ami-05f7491af5eef733a
   ec2_volume_snapshot: snap-0ccde4e83b88fdd69

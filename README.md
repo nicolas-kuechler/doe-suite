@@ -49,7 +49,7 @@ On a high level, the experiment suite creates AWS resources (VPC, EC2 instances)
 Afterwards, the suite sequentially executes jobs of an experimental design (DOE).
 The suite supports a multi-factor and multi-level experiment design with repetition.
 (i.e., it is possible to vary multiple parameters and repeat each run)
-We specify the experimental design with a `YAML`file in `experiments/designs`.
+A `YAML`file in `experiments/designs` describes the full experiment design.
 
 Finally, after completing the experiment (all jobs) the suite can cleanup the created AWS resources.
 
@@ -139,16 +139,20 @@ pipenv install
 * for boto set the aws credentials in `.boto`
 * potentially also check or set credentials in `~/.aws/credentials`
 
-6. Install Ansible Plugin
+6. Install Ansible collections 
 
 ```sh
-ansible-galaxy collection install community.general
-
+ansible-galaxy install -r requirements-collections.yml
 ```
 
-(used for making the log more concise -> activated in ansible.cfg))
+7. Run the repository initialization helper script and configure the experiment suite.
+(prompts user input to perform variable substitution in the template [group_vars/all/main.yml.j2](group_vars/all/main.yml.j2)
 
-7. Try running the example
+```sh
+pipenv run python scripts/repotemplate.py
+```
+
+8. Try running the example experiment design (see [experiments/designs/example.yml](experiments/designs/example.yml))
 
 ```sh
 ansible-playbook experiment.yml -e "exp=example id=new"
