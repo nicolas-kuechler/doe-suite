@@ -1,5 +1,25 @@
-import yaml, itertools, os, collections
+import yaml, itertools, os, collections, argparse
 
+def main():
+
+    parser = argparse.ArgumentParser(description='Transform experiment definition in table form into design form required by the experiment suite')
+
+    parser.add_argument('--exp', help='experiment name (experiment file name without .yml ending)', type=str, required=True)
+
+    parser.add_argument('--rep', help='number of repetitions of each experiment run', type=int, required=True)
+
+    parser.add_argument('--inputdir', help='path to folder of experiment in "table" form', type=str, default="experiments/table")
+
+    parser.add_argument('--outdir', help='path to folder of experiment in "design" form', type=str, default="experiments/designs")
+
+    args = parser.parse_args()
+
+
+    infile = os.path.join(args.inputdir, f"{args.exp}.yml")
+    if not os.path.isfile(infile):
+        raise ValueError(f"input experiment file not found: {infile}")
+
+    build_config_product(exp_name=args.exp, n_repetitions=args.rep, input_dir=args.inputdir, output_dir=args.outdir)
 
 
 def _nested_dict_iter(nested, p=[]):
@@ -110,4 +130,6 @@ def build_config_product(exp_name, n_repetitions, input_dir="experiments/table",
         yaml.dump(experiment, file, sort_keys=False)
         
     return experiment
-        
+
+if __name__ == "__main__":
+    main()

@@ -15,6 +15,7 @@ pandas = "*"
 pyyaml = "*"
 jinja2 = "*"
 pyinputplus = "*"
+argparse = "*"
 
 [requires]
 python_version = "3.8"

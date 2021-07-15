@@ -60,7 +60,7 @@ def prompt_user(defaults, variables):
 
         input_str(d, "git_remote_repository", "> Git remote repository -> cloned on client and server")
 
-        input_num(d, "exp_n_tries", "> Playbook number of tries to check for experiment finished", min=1, max=None)
+        input_num(d, "exp_n_tries", "> Playbook number of tries to check for experiment finished", min=1, max=1000)
 
         input_num(d, "exp_check_wait_time", "> Time to wait between checking in seconds", min=5, max=None)
 

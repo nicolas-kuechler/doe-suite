@@ -31,7 +31,16 @@
         <li><a href="#installation">Installation</a></li>
       </ul>
     </li>
-    <li><a href="#usage">Usage</a></li>
+    <li>
+      <a href="#usage">Usage</a>
+      <ul>
+        <li><a href="#moving-beyond-the-example-experiment">Moving beyond the Example Experiment</a></li>
+        <li><a href="#design-of-experiments">Design of Experiments</a></li>
+        <li><a href="#running-an-experiments">Running an Experiment</a></li>
+        <li><a href="#cleaning-up-aws">Cleaning up AWS</a></li>
+        <li><a href="#experimental-results">Experimental Results</a></li>
+      </ul>
+    </li>
     <li><a href="#license">License</a></li>
     <li><a href="#contact">Contact</a></li>
     <li><a href="#acknowledgements">Acknowledgements</a></li>
@@ -166,7 +175,7 @@ In combination with number of repetitions (see `n_repetitions` in experiment des
 
 TODO: intro 
 
-### Moving beyond Example Experiment
+### Moving beyond the Example Experiment
 
 - TODO: todo's in repo for places where things traditionally need to be adjusted
 - seen the script to fill variable TODOs 
@@ -221,69 +230,11 @@ The script expands the concise "table" form configuration into the experiment de
 
 Simple Example:
 
-TODO [nku] this should be a script rather than a function to call
-```python
-  build_config_product(exp_name="simple", n_repetitions=3)
-
-  # from scripts/expdesign.py
+```sh
+  pipenv run python scripts/expdesign.py --exp simple --rep 3
 ```
 
 Experiment in "table" form:
-
-
-
-<table>
-<tr>
-<th> Concise "table" form </th>
-<th>  </th>
-<th> Experimental Design </th>
-</tr>
-<tr>
-<td style=vertical-align:middle>
-
-```YAML
-seed: 1234                  # a constant in the experiment 
-payload_size_mb:            # a factor with two levels
-  $FACTOR$: [1, 128]
-opt:                        # a factor with two levels
-  $FACTOR$: [true, false]   
-
-# experiments/table/simple.yml 
-```
-
-</td>
-<td style=vertical-align:middle>
-
-
-</td>
-<td style=vertical-align:middle>
-
-```YAML
-n_repetitions: 3
-
-base_experiment:
-  seed: 1234
-  payload_size_mb: $FACTOR$
-  opt: $FACTOR$
-
-factor_levels:
-- payload_size_mb: 1
-  opt: true
-- payload_size_mb: 1
-  opt: false
-- payload_size_mb: 128
-  opt: true
-- payload_size_mb: 128
-  opt: false
-
-# experiments/designs/simple.yml
-```
-
-</td>
-</tr>
-</table>
-
-
 
 ```YAML
 seed: 1234                  # a constant in the experiment 
@@ -319,8 +270,6 @@ factor_levels:
 # experiments/designs/simple.yml
 ```
 
-
-See the [scrips-demo.ipynb](scrips-demo.ipynb) for another example.
 
 ### Running an Experiment 
 
@@ -366,10 +315,47 @@ ansible-playbook clear.yml
 
 
 ### Experimental Results
+
+
+
 - folder structure
-- helper scripts (see notebook)
+- recommended file structure: don't include config
+  csv: header and then a using commas as separator (for each row, end up with a row in the dataframe)
+  json/yaml:
+
+#### Result Files
 
 
+The script [scripts/results.py](scripts/results.py) supports loading experiment results in multiple formats into a panda dataframe. 
+The dataframe contains general info (exp name, exp id, run, host), the run config (the parameters), and the experiment run results from your artefact.
+
+Example: `example`
+```python
+# use results from experiment "example" with id "1626083535" and "1626091111"
+exp = {
+    "example" : ["1626083535", "1626091111"]
+}
+
+# build a panda dataframe
+df = read_df(results_dir, exp)
+
+# or alternatively provide explicit regex lists for how to treat files (these are the defaults)
+df = read_df(results_dir, exp, 
+                    regex_error_file=[re.compile(r".*_stderr\.log$")],    # output a warning if we there is a non-empty file matching the regex 
+                    regex_ignore_file = [re.compile(r".*_stdout\.log$")], # ignore these files
+                    regex_csv_result_file=[re.compile(r".*\.csv$")],      # result file in csv format
+                    regex_json_result_file=[re.compile(r".*\.json$")],    # result file in json format
+                    regex_yaml_result_file=[re.compile(r".*\.yml$"), re.compile(r".*\.yaml$")]) # result file in yaml format
+```
+
+The provided script can handle the following result files if they follow the conventions:
+
+* `csv`: Ideally, the result file should end in `.csv` and contain a header and then one or multiple result rows. Columns in the header and each row should be separated by `,`. See the notebook [scripts-demo.ipynb](scripts-demo.ipynb) for how to change the column type from string to a number column.
+* `json`/`yaml`:  Ideally, the result file should end in `.json`, `.yaml`, or `.yml` respectively and contain a **flat (unnested) object** with a single result or a **list of flat objects** with multiple results. A list of objects corresponds to multiple rows in the dataframe. Nested JSON objects are flattened.
+
+In case your result files follow different conventions, please adapt [scripts/results.py](scripts/results.py) for your needs.
+
+For more details see the example in the notebook [scripts-demo.ipynb](scripts-demo.ipynb) that shows how to work with the dataframe.
 
 <!-- LICENSE -->
 ## License
