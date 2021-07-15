@@ -36,7 +36,7 @@
       <ul>
         <li><a href="#moving-beyond-the-example-experiment">Moving beyond the Example Experiment</a></li>
         <li><a href="#design-of-experiments">Design of Experiments</a></li>
-        <li><a href="#running-an-experiments">Running an Experiment</a></li>
+        <li><a href="#running-an-experiment">Running an Experiment</a></li>
         <li><a href="#cleaning-up-aws">Cleaning up AWS</a></li>
         <li><a href="#experimental-results">Experimental Results</a></li>
       </ul>
@@ -312,22 +312,32 @@ Furthermore, we also provide a playbook to terminate all AWS resources:
 ansible-playbook clear.yml
 ```
 
-
-
 ### Experimental Results
 
+The experiment suite creates a matching folder structure on the localhost and on the remote EC2 instances.
 
+Each experiment job (repetition of an experiment run with a specific config) receives a separate folder, i.e., working directory:
 
-- folder structure
-- recommended file structure: don't include config
-  csv: header and then a using commas as separator (for each row, end up with a row in the dataframe)
-  json/yaml:
+`results/exp_<EXPERIMENT NAME>_ <EXPERIMENT ID>/run_<RUN>/rep_<REPETITION>`
+
+- `RUN` is the index of the run (starts at 0) 
+- `REPETITION`is the index of the repetitions (starts at 0)
+
+In this folder we have a separate folder for each involved EC2 instance where all result files are downloaded.
+
+`<HOST>_<HOST INDEX>`
+
+- `HOST` is either `server` or `client`
+- `HOST INDEX` is the index of the host (starts for both clients and servers at 0)
+
+On the remote machine, the artefact is executed in the experiment job's working directory. There are two folders in this working directory: `results`and `scratch`. Only the files in `results` are download at the end of the experiment job to the local machine.
+
 
 #### Result Files
 
-
 The script [scripts/results.py](scripts/results.py) supports loading experiment results in multiple formats into a panda dataframe. 
 The dataframe contains general info (exp name, exp id, run, host), the run config (the parameters), and the experiment run results from your artefact.
+Note, do not include the config in your results file because the script automatically adds the configuration to the dataframe.
 
 Example: `example`
 ```python
@@ -351,7 +361,7 @@ df = read_df(results_dir, exp,
 The provided script can handle the following result files if they follow the conventions:
 
 * `csv`: Ideally, the result file should end in `.csv` and contain a header and then one or multiple result rows. Columns in the header and each row should be separated by `,`. See the notebook [scripts-demo.ipynb](scripts-demo.ipynb) for how to change the column type from string to a number column.
-* `json`/`yaml`:  Ideally, the result file should end in `.json`, `.yaml`, or `.yml` respectively and contain a **flat (unnested) object** with a single result or a **list of flat objects** with multiple results. A list of objects corresponds to multiple rows in the dataframe. Nested JSON objects are flattened.
+* `json`/`yaml`:  Ideally, the result file should end in `.json`, `.yaml`, or `.yml` respectively and contain a **flat (unnested) object** with a single result or a **list of flat objects** with multiple results. A list of objects corresponds to multiple rows in the dataframe. Nested JSON objects are flattened (e.g., `{"a": {"b": 1}}` turns to `{"a.b": 1}`) for the dataframe.
 
 In case your result files follow different conventions, please adapt [scripts/results.py](scripts/results.py) for your needs.
 
