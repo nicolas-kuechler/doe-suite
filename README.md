@@ -9,23 +9,19 @@
 
   <p align="center">
     An experiment suite for running (client-server) experiments on AWS EC2 instances.
-
-    In a nutshell, the suite automatically runs experiments where multiple factors are varied based on simple `YAML` files:
-    ```YAML
-    # experiment design with two factors with two levels each 
-    # -> results in 4 runs (combinations)
-
-    seed: 1234                  # a constant in the experiment 
-    payload_size_mb:            # a factor with two levels
-      $FACTOR$: [1, 128]
-    opt:                        # a factor with two levels
-      $FACTOR$: [true, false]   
-    ```
   </p>
 </p>
 
-
-
+In a nutshell, the suite automatically runs experiments where multiple factors are varied based on simple `YAML` files:
+```YAML
+# experiment design with two factors with two levels each 
+# -> results in 4 runs (combinations
+seed: 1234                  # a constant in the experiment 
+payload_size_mb:            # a factor with two levels
+  $FACTOR$: [1, 128]
+opt:                        # a factor with two levels
+  $FACTOR$: [true, false]   
+```
 
 <!-- TABLE OF CONTENTS -->
 <details open="open">
