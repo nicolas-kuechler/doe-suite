@@ -8,7 +8,7 @@
   <h3 align="center">AWS Ansible Experiment Suite</h3>
 
   <p align="center">
-    An experiment suite for running (client-server) experiments on AWS EC2 instances.
+    An experiment suite for running client-server or single-instance experiments on AWS EC2 instances.
   </p>
 </p>
 
