@@ -25,6 +25,17 @@ opt:                        # a factor with two levels
 #    Note, the repeated execution of runs is possible. 
 ```
 
+The experiment suite parses the results of the experiment and displays them in a table.
+In this experiment `simple`, the `client_0` records in each repetition of a run the response time (`rt`).
+In the table, we show for each configuration the mean and the standard deviation of the response time over multiple runs.
+
+| exp_name | exp_id     | run   | host     | seed | payload_size_mb | opt   | rt_mean | rt_std |
+|----------|------------|-------|----------|------|-----------------|-------|---------|--------|
+| simple   | 1626440718 | run_0 | client_0 | 1234 | 1               | true  | 5.2     | 0.3    |
+| simple   | 1626440718 | run_1 | client_0 | 1234 | 1               | false | 32.9    | 1.5    |
+| simple   | 1626440718 | run_2 | client_0 | 1234 | 128             | true  | 67.3    | 2.1    |
+| simple   | 1626440718 | run_3 | client_0 | 1234 | 128             | false | 1356.2  | 10.2   |
+
 <!-- TABLE OF CONTENTS -->
 <details open="open">
   <summary>Table of Contents</summary>
