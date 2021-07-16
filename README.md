@@ -56,17 +56,17 @@ The AWS Ansible Experiment Suite automates the process of running experiments on
 On a high level, the experiment suite creates AWS resources (VPC, EC2 instances), installs required packages, and builds the artifact.
 
 Afterwards, the suite sequentially executes jobs of an experimental design (DOE).
-The suite supports a multi-factor and multi-level experiment design with repetition.
-(i.e., it is possible to vary multiple parameters and repeat each run)
-A `YAML`file in `experiments/designs` describes the full experiment design.
+The suite supports a multi-factor and multi-level experiment design with repetition, 
+i.e., it is possible to vary multiple parameters and repeat each run.
+A `YAML`file in [experiments/designs](experiments/designs) describes the full experiment design.
 
 Finally, after completing the experiment (all jobs) the suite can cleanup the created AWS resources.
 
 ### Built With
 
-This section should list any major frameworks that you built your project using. Leave any add-ons/plugins for the acknowledgements section. Here are a few examples.
 * [Ansible](https://www.ansible.com/)
 * [YAML](https://yaml.org/)
+* [Jinja](https://jinja.palletsprojects.com/en/3.0.x/)
 
 
 <!-- GETTING STARTED -->
@@ -105,37 +105,52 @@ This section should list any major frameworks that you built your project using.
       IdentityFile ~/.ssh/{{ exp_base.key_name }} 
       ForwardAgent yes
       ```
-  * Add the GitHub private key to ssh-agent:
-    ssh-agent ~/.ssh/private_key_rsa
-    ssh-add ~/.ssh/private_key_rsa
+  * Add the GitHub private key to ssh-agent. 
+    This allows cloning a GitHub repository on an EC2 instance without copying the private key or entering credentials.
+    The process depends on your environment but should basically be as follows ([(source)](https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh)):
 
-  * (On a MAC, need add to keychain)
+      1. Start ssh-agent in background:
+          ```sh
+          eval "$(ssh-agent -s)"
+          ```
+      2. Add SSH private key to ssh-agent (replace with your key):
+          ```sh
+          ssh-add ~/.ssh/<YOUR PRIVATE KEY>
+          ```
+      3. (On a MAC, need add to keychain)
 
-5. Install AWS CLI (version 2) and configure boto
-* for boto set the aws credentials in `.boto`
-* potentially also check or set credentials in `~/.aws/credentials`
 
-6. Install Ansible collections 
+5. Install AWS CLI (version 2) and configure Boto
+  
+  * Install AWS CLI version 2 [(see instructions)](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html)
 
-```sh
-ansible-galaxy install -r requirements-collections.yml
-```
+  * Configure AWS credentials for Boto [(see instructions)](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html)
+    ```sh
+    aws configure
+    ```
+    By default, credentials should be in `~/.aws/credentials`.
+  
+
+6. Install required Ansible collections 
+
+    ```sh
+    ansible-galaxy install -r requirements-collections.yml
+    ```
 
 7. Run the repository initialization helper script and configure the experiment suite.
-(prompts user input to perform variable substitution in the template [group_vars/all/main.yml.j2](group_vars/all/main.yml.j2)
+    (prompts user input to perform variable substitution in the template [group_vars/all/main.yml.j2](group_vars/all/main.yml.j2)
 
-When unsure set the unique `project id` and the AWS `key name` from the prerequisites and otherwise use the default options.
+    When unsure set the unique `project id` and the AWS `key name` from the prerequisites and otherwise use the default options.
 
-```sh
-pipenv run python scripts/repotemplate.py
-```
+    ```sh
+    pipenv run python scripts/repotemplate.py
+    ```
 
 8. Try running the example experiment design (see [experiments/designs/example.yml](experiments/designs/example.yml))
 
-```sh
-ansible-playbook experiment.yml -e "exp=example id=new"
-```
-
+    ```sh
+    ansible-playbook experiment.yml -e "exp=example id=new"
+    ```
 
 
 <!--
