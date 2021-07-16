@@ -72,6 +72,8 @@ Finally, after completing the experiment (all jobs) the suite can cleanup the cr
 <!-- GETTING STARTED -->
 ## Getting Started
 
+After completing the getting started section, it should be possible to run the [example](experiments/design/example.yml) experiment that creates one client and one server instance, runs the python scripts in [demo](demo) and fetches the results.
+
 ### Prerequisites
 
 * Before starting, ensure that you have `pipenv` installed:
@@ -131,7 +133,7 @@ Finally, after completing the experiment (all jobs) the suite can cleanup the cr
         By default, credentials should be in `~/.aws/credentials`.
   
 
-6. Install required Ansible collections 
+6. Install the required Ansible collections 
 
     ```sh
     ansible-galaxy install -r requirements-collections.yml
@@ -152,46 +154,24 @@ Finally, after completing the experiment (all jobs) the suite can cleanup the cr
     ansible-playbook experiment.yml -e "exp=example id=new"
     ```
 
+<!-- USAGE EXAMPLES -->
+## Usage
 
-<!--
+The following section discusses how to adapt the template for your artifact?, how to design (define) experiments?, how to run experiments?, how to clean up AWS resources?, and how to work with the experimental results?
 
-
-### Setup Environment
-* create VPC
-* create a set of client EC2 instances and create a set of server EC2 instances
-* install packages on EC2 instances
-
-### Experiment Design
-
-
-### Experiment Run
-
-
-### Experiment Job
-
+The experiment suite splits an experiment into individual jobs.
 A job is single run of the benchmark with one specific configuration. 
 The relation between an experiment run and a job is that a run is repeated multiple times (see `n_repetitions` in experiment design).
-
 
 The jobs are derived from the experiment design in `experiment/designs`.
 The design contains a base configuration (`base_experiment`) that marks which options are factors of the experiment (i.e., what is varied in the experiment).
 Moreover, the design contains a list of runs (`factor_levels`) that specifies the level of the factor in the run (i.e., what concrete value to use for a factor in a particular run).
 
 In combination with number of repetitions (see `n_repetitions` in experiment design), the suite derives a list of jobs for the experiment.
+Each job of an experiment receives an id: `<RUN>_<REP>`.
 
-`<RUN>_<REP>`
-
--->
-
-
-
-<!-- USAGE EXAMPLES -->
-## Usage
-
-TODO: intro 
 
 ### Moving beyond the Example Experiment
-
 
 The template repository contains `TODO`'s in places where things typically need to be adjusted for a specific project.
 For example, configuring the AWS EC2 instances (how many? which type?, etc.), installing additional packages, and the command to run the code.
@@ -220,6 +200,8 @@ An experiment design `YAML` file consists of three parts:
 
 3. The `n_repetitions` variable specifies how many times to repeat each experiment run. (i.e., how many times to execute an experiment run with the same configurations).
 
+
+Example experiment design:
 ```YAML
 n_repetitions: 3
 
@@ -297,46 +279,53 @@ We run an experiment by starting the Ansible playbook.
 We provide the name of an experiment design from `experiments/designs` (e.g., example) and we use `id=new` to run a new complete experiment.  
 
 ```sh
-ansible-playbook experiment.yml -e "exp=example id=new"
+pipenv run ansible-playbook experiment.yml -e "exp=example id=new"
 ```
 
 When we start a new experiment, we receive an experiment id (epoch timestamp).
 
-The experiment suite periodically checks whether an experiment run is finished and then starts the next one according to the experiment design. For this we have  
+The experiment suite periodically checks whether an experiment run is finished and then starts the next one according to the experiment design.
 
-To continue checking we can specify the ID of the experiment.
+The variable `exp_n_tries` controls the maximum number of times to check whether the experiment finished.
+In between checking, the playbook waits for `exp_check_wait_time` seconds (see `group_vars/all/main.yml`).
+
+After the number of `exp_n_tries` is exceeded, the playbook stops. An already running job will continue to run on AWS but the next job won't start unless the `experiments.yml`playbook is running.
+
+To continue checking a previously started experiment we can specify the ID of the experiment when starting the playbook:
 
 ```sh
-ansible-playbook experiment.yml -e "exp=example id=<ID>"
+pipenv run ansible-playbook experiment.yml -e "exp=example id=<ID>"
 ```
 
 For convenience, we can also use `id=last` to continue with the most recent experiment with the provided name:
 
 ```sh
-ansible-playbook experiment.yml -e "exp=example id=last"
+pipenv run ansible-playbook experiment.yml -e "exp=example id=last"
 ```
 
 ### Cleaning up AWS
 
 
 By default, after an experiment is complete, all resources created on AWS are terminated.
-To deactivate this default behaviour, provide the flag: `awsclean=false`
+To deactivate this default behaviour, provide the flag: `awsclean=false`.
+
+Creating resources on AWS and setting up the environemnt takes a considerable amount of time and so in particular for debugging and short experiments it can make sense to not terminate the instances. If you use this flag, be sure to check manually that instances are terminated when you are done.
 
 Example:
 ```sh
-ansible-playbook experiment.yml -e "exp=example id=new awsclean=false"
+pipenv run ansible-playbook experiment.yml -e "exp=example id=new awsclean=false"
 ```
 
 Furthermore, we also provide a playbook to terminate all AWS resources:
 ```sh
-ansible-playbook clear.yml
+pipenv run ansible-playbook clear.yml
 ```
 
 ### Experimental Results
 
 The experiment suite creates a matching folder structure on the localhost and on the remote EC2 instances.
 
-Each experiment job (repetition of an experiment run with a specific config) receives a separate folder, i.e., working directory:
+Locally, each experiment job (repetition of an experiment run with a specific config) receives a separate folder, i.e., working directory:
 
 `results/exp_<EXPERIMENT NAME>_ <EXPERIMENT ID>/run_<RUN>/rep_<REPETITION>`
 
@@ -350,13 +339,17 @@ In this folder we have a separate folder for each involved EC2 instance where al
 - `HOST` is either `server` or `client`
 - `HOST INDEX` is the index of the host (starts for both clients and servers at 0)
 
-On the remote machine, the artefact is executed in the experiment job's working directory. There are two folders in this working directory: `results`and `scratch`. Only the files in `results` are download at the end of the experiment job to the local machine.
+
+Example: 
+The folder `results/exp_example_1626423613/run_2/rep_1/server_0` contains all result files from the 1st server, from the 2nd repetition (rep starts with 0) of the 3rd run (run starts at 0) from the experiment named `example` with id `1626423613`
+
+On the remote machine, the artifact (code) is executed in the experiment job's working directory. There are two folders in this working directory: `results`and `scratch`. Only the files in `results` are download at the end of the experiment job to the local machine.
 
 
 #### Result Files
 
 The script [scripts/results.py](scripts/results.py) supports loading experiment results in multiple formats into a panda dataframe. 
-The dataframe contains general info (exp name, exp id, run, host), the run config (the parameters), and the experiment run results from your artefact.
+The dataframe contains general info (exp name, exp id, run, host), the run config (the parameters), and the experiment run results from your artifact.
 Note, do not include the config in your results file because the script automatically adds the configuration to the dataframe.
 
 Example: `example`
@@ -403,6 +396,7 @@ Project Link: [https://github.com/pps-lab/aws-simple-ansible](https://github.com
 
 
 
-<!-- ACKNOWLEDGEMENTS -->
+<!-- ACKNOWLEDGEMENTS 
 ## Acknowledgements
 
+-->
