@@ -15,12 +15,14 @@
 In a nutshell, the suite automatically runs experiments where multiple factors are varied based on simple `YAML` files:
 ```YAML
 # experiment design with two factors with two levels each 
-# -> results in 4 runs (combinations
 seed: 1234                  # a constant in the experiment 
 payload_size_mb:            # a factor with two levels
   $FACTOR$: [1, 128]
 opt:                        # a factor with two levels
-  $FACTOR$: [true, false]   
+  $FACTOR$: [true, false]
+  
+# -> Results in 4 runs (combinations of parameters) that are executed. 
+#    Note, the repeated execution of runs is possible. 
 ```
 
 <!-- TABLE OF CONTENTS -->
