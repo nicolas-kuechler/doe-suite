@@ -9,7 +9,6 @@
     - running_job_id is defined
 
 
-
 - debug:
     var: exp_run_config
 
@@ -46,9 +45,19 @@
     mode: 644
   notify:
   - reload systemctl
-  vars:
-    start_id: "{{ client_idx|int * num_clients_per_host|int }}"
   loop: "{{ groups[exp_client.host_group] | default([]) }}"
+  loop_control:
+    loop_var: host
+    index_var: client_idx
+
+
+- name: Create config file
+  delegate_to: "{{ host }}"
+  template:
+    src: config.json.j2
+    dest: "{{ exp_working_dir }}/config.json"
+    mode: 0755
+  loop: "{{ groups[exp_client.host_group] | default([]) | union(groups[exp_server.host_group] |default([])) }}"
   loop_control:
     loop_var: host
     index_var: client_idx

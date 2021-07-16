@@ -2,6 +2,8 @@
 Description=Server Service
 
 # TODO: define how to start the server service and with which arguments
+#       the run config is available in the variable `exp_run_config` to pass as parameters
+#       or in the working directory there is a file called `config.json` with the run config 
 
 # Note: 
 # - 'servers_ip' and 'clients_ip' are variables with a list of the ip addresses of the server and client hosts.
@@ -9,7 +11,7 @@ Description=Server Service
 [Service]
 Type=simple
 WorkingDirectory={{ exp_working_dir }}
-ExecStart=/bin/sh -c '{{ exp_code_dir }}/.venv/bin/python {{ exp_code_dir }}/demo/server.py -a3 {{ exp_run_config.server.arg3 }} -a4 {{ exp_run_config.server.arg4 }}'
+ExecStart=/bin/sh -c '{{ exp_code_dir }}/.venv/bin/python {{ exp_code_dir }}/demo/server.py -config config.json -a3 {{ exp_run_config.server.arg3 }} -a4 {{ exp_run_config.server.arg4 }}'
 
 
 User=ubuntu
