@@ -177,8 +177,11 @@ TODO: intro
 
 ### Moving beyond the Example Experiment
 
-- TODO: todo's in repo for places where things traditionally need to be adjusted
-- seen the script to fill variable TODOs 
+
+The template repository contains `TODO`'s in places where things typically need to be adjusted for a specific project.
+For example, configuring the AWS EC2 instances (how many? which type?, etc.), installing additional packages, and the command to run the code.
+
+For the basic configurations, we provide a script [scripts/repotemplate.py](scripts/repotemplate.py) that provides reasonable default options for the most important parameters. (already done in the installation section)
 
 ```sh
 pipenv run python scripts/repotemplate.py
@@ -186,7 +189,9 @@ pipenv run python scripts/repotemplate.py
 
 #### Further Examples
 
-- [pps-lab/bthesis-emanuel-exp-suite](https://github.com/pps-lab/bthesis-emanuel-exp-suite) runs experiments on a single instance and also measures memory usage
+These are examples of projects that use the experiment-suite template and what the project implements additionally:
+
+- [pps-lab/bthesis-emanuel-exp-suite](https://github.com/pps-lab/bthesis-emanuel-exp-suite) runs experiments on a single instance and also measures memory usage (in a second service).
 
 
 ### Design of Experiments

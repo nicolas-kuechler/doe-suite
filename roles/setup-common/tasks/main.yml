@@ -57,10 +57,3 @@
   environment:
     LC_ALL: "C.UTF-8"
     LANG: "C.UTF-8"
-
-
-- name: Setup a folder
-  file:
-    path: "{{ remote.dir }}/experiments"
-    state: directory
-    mode: 0755
