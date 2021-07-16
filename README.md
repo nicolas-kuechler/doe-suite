@@ -8,7 +8,7 @@
   <h3 align="center">AWS Ansible Experiment Suite</h3>
 
   <p align="center">
-    An experiment suite for running client-server experiments on AWS EC2 instances.
+    An experiment suite for running (client-server) experiments on AWS EC2 instances.
   </p>
 </p>
 
@@ -43,7 +43,7 @@
     </li>
     <li><a href="#license">License</a></li>
     <li><a href="#contact">Contact</a></li>
-    <li><a href="#acknowledgements">Acknowledgements</a></li>
+  <!--<li><a href="#acknowledgements">Acknowledgements</a></li> -->
   </ol>
 </details>
 
@@ -55,12 +55,14 @@
 The AWS Ansible Experiment Suite automates the process of running experiments on AWS. 
 On a high level, the experiment suite creates AWS resources (VPC, EC2 instances), installs required packages, and builds the artifact.
 
-Afterwards, the suite sequentially executes jobs of an experimental design (DOE).
+Afterward, the suite sequentially executes jobs of an experimental design (DOE).
 The suite supports a multi-factor and multi-level experiment design with repetition, 
 i.e., it is possible to vary multiple parameters and repeat each run.
 A `YAML`file in [experiments/designs](experiments/designs) describes the full experiment design.
 
-Finally, after completing the experiment (all jobs) the suite can cleanup the created AWS resources.
+After completing a job, the suite downloads all result files and provides helper scripts for processing.
+
+Finally, after completing the experiment (all jobs), the suite can clean up the created AWS resources.
 
 ### Built With
 
@@ -72,7 +74,7 @@ Finally, after completing the experiment (all jobs) the suite can cleanup the cr
 <!-- GETTING STARTED -->
 ## Getting Started
 
-After completing the getting started section, it should be possible to run the [example](experiments/design/example.yml) experiment that creates one client and one server instance, runs the python scripts in [demo](demo) and fetches the results.
+After completing the getting started section, it should be possible to run the [example](experiments/design/example.yml) experiment that creates one client and one server instance runs the python scripts in [demo](demo) and fetches the results.
 
 ### Prerequisites
 
@@ -88,8 +90,8 @@ After completing the getting started section, it should be possible to run the [
 
 ### Installation
 
-1. Create repository from this template
-2. Clone newly created repository
+1. Create a repository from this template
+2. Clone the newly created repository
     ```sh
     git clone https://github.com/<YOUR REPOSITORY>.git
     ```
@@ -99,19 +101,20 @@ After completing the getting started section, it should be possible to run the [
     pipenv install
     ```
 
-4. Configure `ssh` and `ssh-agent`
+4. Configure `ssh` and `ssh-agent`.
   
-      * Configure ~/.ssh/config:  (add to file and replace the key for AWS for example with aws_ppl.pem)
+      * Configure ~/.ssh/config:  (add to file and replace the key for AWS, for example, with aws_ppl.pem)
           ```
           Host ec2*
-          IdentityFile ~/.ssh/{{ exp_base.key_name }} 
+          IdentityFile ~/.ssh/{{ exp_base.key_name }}
+          User ubuntu
           ForwardAgent yes
           ```
       * Add the GitHub private key to ssh-agent. 
         This allows cloning a GitHub repository on an EC2 instance without copying the private key or entering credentials.
-        The process depends on your environment but should basically be as follows ([(source)](https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh)):
+        The process depends on your environment but should be as follows [(source)](https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh):
 
-          1. Start ssh-agent in background:
+          1. Start ssh-agent in the background:
               ```sh
               eval "$(ssh-agent -s)"
               ```
@@ -139,10 +142,10 @@ After completing the getting started section, it should be possible to run the [
     ansible-galaxy install -r requirements-collections.yml
     ```
 
-7. Run the repository initialization helper script and configure the experiment suite.
-    (prompts user input to perform variable substitution in the template [group_vars/all/main.yml.j2](group_vars/all/main.yml.j2)
+7. Run the repository initialization helper script and configure the experiment suite 
+    (prompts user input to perform variable substitution in the template [group_vars/all/main.yml.j2](group_vars/all/main.yml.j2)).
 
-    When unsure set the unique `project id` and the AWS `key name` from the prerequisites and otherwise use the default options.
+    When unsure, set the unique `project id` and the AWS `key name` from the prerequisites and otherwise use the default options.
 
     ```sh
     pipenv run python scripts/repotemplate.py
@@ -157,26 +160,26 @@ After completing the getting started section, it should be possible to run the [
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-The following section discusses how to adapt the template for your artifact?, how to design (define) experiments?, how to run experiments?, how to clean up AWS resources?, and how to work with the experimental results?
+The following section discusses: (i) How to adapt the template for your artifact? (ii) How to design (define) experiments? (iii) How to run experiments? (iv) How to clean up AWS resources? (v) How to work with the experimental results?
 
 The experiment suite splits an experiment into individual jobs.
-A job is single run of the benchmark with one specific configuration. 
+A job is a single run of the benchmark with one specific configuration. 
 The relation between an experiment run and a job is that a run is repeated multiple times (see `n_repetitions` in experiment design).
 
-The jobs are derived from the experiment design in `experiment/designs`.
+The jobs are derived from the experiment design in [experiment/designs](experiment/designs).
 The design contains a base configuration (`base_experiment`) that marks which options are factors of the experiment (i.e., what is varied in the experiment).
 Moreover, the design contains a list of runs (`factor_levels`) that specifies the level of the factor in the run (i.e., what concrete value to use for a factor in a particular run).
 
-In combination with number of repetitions (see `n_repetitions` in experiment design), the suite derives a list of jobs for the experiment.
+The suite derives a list of jobs for the experiment in combination with the number of repetitions (see `n_repetitions` in experiment design).
 Each job of an experiment receives an id: `<RUN>_<REP>`.
 
 
 ### Moving beyond the Example Experiment
 
-The template repository contains `TODO`'s in places where things typically need to be adjusted for a specific project.
-For example, configuring the AWS EC2 instances (how many? which type?, etc.), installing additional packages, and the command to run the code.
+The template repository contains `TODO`s in places where things typically need to be adjusted for a specific project.
+For example, configuring the AWS EC2 instances (how many? which type? etc.), installing additional packages, and running the code.
 
-For the basic configurations, we provide a script [scripts/repotemplate.py](scripts/repotemplate.py) that provides reasonable default options for the most important parameters. (already done in the installation section)
+For the basic configurations, we provide a script [scripts/repotemplate.py](scripts/repotemplate.py) that provides reasonable default options for the most important parameters (already done in the installation section).
 
 ```sh
 pipenv run python scripts/repotemplate.py
@@ -196,7 +199,7 @@ The experiment suite runs experiments based on `YAML` files in [experiments/desi
 An experiment design `YAML` file consists of three parts:
 1. The `base_experiment` consists of all the configuration options. All configuration options that vary between runs (i.e., the factors of the experiment) are marked with the placeholder `$FACTOR$`. The remaining configuration options are filled with a constant.
 
-2. The list of `factor_levels` specifies the levels that the factors take in a particular experiment run. For example, in the first run of the experiment, the framework replaces the `$FACTOR$`'s placeholder with the values specified in the first entry in the `factors_levels`list.  
+2. The list of `factor_levels` specifies the levels that the factors take in a particular experiment run. For example, in the first run of the experiment, the framework replaces the `$FACTOR$` placeholder with the first entry values in the `factors_levels`list.  
 
 3. The `n_repetitions` variable specifies how many times to repeat each experiment run. (i.e., how many times to execute an experiment run with the same configurations).
 
@@ -225,10 +228,9 @@ factor_levels:
 
 #### Table File
 
-For convenience when running a full factorial design, i.e., experiment with every possible combination of all factor levels, we provide a script (see [scripts/expdesign.py](scripts/expdesign.py)) to generate the required config files based on a more concise representation. 
+For convenience when running a complete factorial design, i.e., experiment with every possible combination of all factor levels, we provide a script (see [scripts/expdesign.py](scripts/expdesign.py)) to generate the required config files based on a more concise representation. 
 
-Given a concise experiment configuration with a set of factors and each factor with multiple levels in a "table" form.
-The script expands the concise "table" form configuration into the experiment design by performing a cross product of all factor levels.
+When given a concise experiment configuration with a set of factors and each factor with multiple levels in a "table" form, the script expands the concise "table" form configuration into the experiment design by performing a cross-product of all factor levels.
 
 Simple Example:
 
@@ -250,7 +252,7 @@ opt:                        # a factor with two levels
 
 transforms into the cross product of all factor levels:
 
-Experiment in "design" form:
+An experiment in "design" form:
 ```YAML
 n_repetitions: 3
 
@@ -276,7 +278,7 @@ factor_levels:
 ### Running an Experiment 
 
 We run an experiment by starting the Ansible playbook.
-We provide the name of an experiment design from `experiments/designs` (e.g., example) and we use `id=new` to run a new complete experiment.  
+We provide the name of an experiment design from `experiments/designs` (e.g., example), and we use `id=new` to run a new complete experiment.  
 
 ```sh
 pipenv run ansible-playbook experiment.yml -e "exp=example id=new"
@@ -289,9 +291,9 @@ The experiment suite periodically checks whether an experiment run is finished a
 The variable `exp_n_tries` controls the maximum number of times to check whether the experiment finished.
 In between checking, the playbook waits for `exp_check_wait_time` seconds (see `group_vars/all/main.yml`).
 
-After the number of `exp_n_tries` is exceeded, the playbook stops. An already running job will continue to run on AWS but the next job won't start unless the `experiments.yml`playbook is running.
+After the number of `exp_n_tries` is exceeded, the playbook stops. An already running job will continue to run on AWS, but the next job won't start unless the `experiments.yml` playbook runs.
 
-To continue checking a previously started experiment we can specify the ID of the experiment when starting the playbook:
+To continue checking a previously started experiment, we can specify the ID of the experiment when starting the playbook:
 
 ```sh
 pipenv run ansible-playbook experiment.yml -e "exp=example id=<ID>"
@@ -307,9 +309,9 @@ pipenv run ansible-playbook experiment.yml -e "exp=example id=last"
 
 
 By default, after an experiment is complete, all resources created on AWS are terminated.
-To deactivate this default behaviour, provide the flag: `awsclean=false`.
+To deactivate this default behavior, provide the flag: `awsclean=false`.
 
-Creating resources on AWS and setting up the environemnt takes a considerable amount of time and so in particular for debugging and short experiments it can make sense to not terminate the instances. If you use this flag, be sure to check manually that instances are terminated when you are done.
+Creating resources on AWS and setting up the environment takes a considerable amount of time. So, for debugging and short experiments, it can make sense not to terminate the instances. If you use this flag, be sure to check that instances are terminated when you are done.
 
 Example:
 ```sh
@@ -323,7 +325,7 @@ pipenv run ansible-playbook clear.yml
 
 ### Experimental Results
 
-The experiment suite creates a matching folder structure on the localhost and on the remote EC2 instances.
+The experiment suite creates a matching folder structure on the localhost and the remote EC2 instances.
 
 Locally, each experiment job (repetition of an experiment run with a specific config) receives a separate folder, i.e., working directory:
 
@@ -332,7 +334,7 @@ Locally, each experiment job (repetition of an experiment run with a specific co
 - `RUN` is the index of the run (starts at 0) 
 - `REPETITION`is the index of the repetitions (starts at 0)
 
-In this folder we have a separate folder for each involved EC2 instance where all result files are downloaded.
+In this folder, we have a separate folder for each involved EC2 instance where all result files are downloaded.
 
 `<HOST>_<HOST INDEX>`
 
@@ -341,16 +343,19 @@ In this folder we have a separate folder for each involved EC2 instance where al
 
 
 Example: 
-The folder `results/exp_example_1626423613/run_2/rep_1/server_0` contains all result files from the 1st server, from the 2nd repetition (rep starts with 0) of the 3rd run (run starts at 0) from the experiment named `example` with id `1626423613`
+The folder `results/exp_example_1626423613/run_2/rep_1/server_0` contains all result files from the 1st server, from the 2nd repetition (rep starts with 0) of the 3rd run (run starts at 0) from the experiment named `example` with id `1626423613`.
 
-On the remote machine, the artifact (code) is executed in the experiment job's working directory. There are two folders in this working directory: `results`and `scratch`. Only the files in `results` are download at the end of the experiment job to the local machine.
+The artifact (code) is executed on the remote machine in the experiment job's working directory. There are two folders in this working directory: `results` and `scratch`. Only the files in `results` are download at the end of the experiment job to the local machine.
 
 
 #### Result Files
 
-The script [scripts/results.py](scripts/results.py) supports loading experiment results in multiple formats into a panda dataframe. 
-The dataframe contains general info (exp name, exp id, run, host), the run config (the parameters), and the experiment run results from your artifact.
-Note, do not include the config in your results file because the script automatically adds the configuration to the dataframe.
+The script [scripts/results.py](scripts/results.py) supports loading experiment results in multiple formats into a panda data frame. 
+The data frame contains:
+General info (exp name, exp id, run, host).
+The run config (the parameters).
+The experiment run results from your artifact.
+Note, do not include the config in your results file because the script automatically adds the configuration to the data frame.
 
 Example: `example`
 ```python
@@ -373,12 +378,12 @@ df = read_df(results_dir, exp,
 
 The provided script can handle the following result files if they follow the conventions:
 
-* `csv`: Ideally, the result file should end in `.csv` and contain a header and then one or multiple result rows. Columns in the header and each row should be separated by `,`. See the notebook [scripts-demo.ipynb](scripts-demo.ipynb) for how to change the column type from string to a number column.
-* `json`/`yaml`:  Ideally, the result file should end in `.json`, `.yaml`, or `.yml` respectively and contain a **flat (unnested) object** with a single result or a **list of flat objects** with multiple results. A list of objects corresponds to multiple rows in the dataframe. Nested JSON objects are flattened (e.g., `{"a": {"b": 1}}` turns to `{"a.b": 1}`) for the dataframe.
+* `CSV: Ideally, the result file should end in `.csv` and contain a header and then one or multiple result rows. Columns in the header and each row should be separated by `,`. See the notebook [scripts-demo.ipynb](scripts-demo.ipynb) for how to change the column type from string to a number column.
+* `JSON`/`YAML`:  Ideally, the result file should end in `.json`, `.yaml`, or `.yml` respectively and contain a **flat (unnested) object** with a single result or a **list of flat objects** with multiple results. A list of objects corresponds to multiple rows in the dataframe. Nested JSON objects are flattened (e.g., `{"a": {"b": 1}}` turns to `{"a.b": 1}`) for the dataframe.
 
-In case your result files follow different conventions, please adapt [scripts/results.py](scripts/results.py) for your needs.
+If your result files follow different conventions, please adapt [scripts/results.py](scripts/results.py) for your needs.
 
-For more details see the example in the notebook [scripts-demo.ipynb](scripts-demo.ipynb) that shows how to work with the dataframe.
+For more details, see the example in the notebook [scripts-demo.ipynb](scripts-demo.ipynb) that shows how to work with the data frame.
 
 <!-- LICENSE -->
 ## License
