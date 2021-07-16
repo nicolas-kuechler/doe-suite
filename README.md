@@ -98,37 +98,37 @@ Finally, after completing the experiment (all jobs) the suite can cleanup the cr
     ```
 
 4. Configure `ssh` and `ssh-agent`
- 
-  * Configure ~/.ssh/config:  (add to file and replace the key for AWS for example with aws_ppl.pem)
-      ```
-      Host ec2*
-      IdentityFile ~/.ssh/{{ exp_base.key_name }} 
-      ForwardAgent yes
-      ```
-  * Add the GitHub private key to ssh-agent. 
-    This allows cloning a GitHub repository on an EC2 instance without copying the private key or entering credentials.
-    The process depends on your environment but should basically be as follows ([(source)](https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh)):
+  
+      * Configure ~/.ssh/config:  (add to file and replace the key for AWS for example with aws_ppl.pem)
+          ```
+          Host ec2*
+          IdentityFile ~/.ssh/{{ exp_base.key_name }} 
+          ForwardAgent yes
+          ```
+      * Add the GitHub private key to ssh-agent. 
+        This allows cloning a GitHub repository on an EC2 instance without copying the private key or entering credentials.
+        The process depends on your environment but should basically be as follows ([(source)](https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh)):
 
-      1. Start ssh-agent in background:
-          ```sh
-          eval "$(ssh-agent -s)"
-          ```
-      2. Add SSH private key to ssh-agent (replace with your key):
-          ```sh
-          ssh-add ~/.ssh/<YOUR PRIVATE KEY>
-          ```
-      3. (On a MAC, need add to keychain)
+          1. Start ssh-agent in background:
+              ```sh
+              eval "$(ssh-agent -s)"
+              ```
+          2. Add SSH private key to ssh-agent (replace with your key):
+              ```sh
+              ssh-add ~/.ssh/<YOUR PRIVATE KEY>
+              ```
+          3. (On a MAC, need add to keychain)
 
 
 5. Install AWS CLI (version 2) and configure Boto
   
-  * Install AWS CLI version 2 [(see instructions)](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html)
+      * Install AWS CLI version 2 [(see instructions)](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html)
 
-  * Configure AWS credentials for Boto [(see instructions)](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html)
-    ```sh
-    aws configure
-    ```
-    By default, credentials should be in `~/.aws/credentials`.
+      * Configure AWS credentials for Boto [(see instructions)](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html)
+        ```sh
+        aws configure
+        ```
+        By default, credentials should be in `~/.aws/credentials`.
   
 
 6. Install required Ansible collections 
