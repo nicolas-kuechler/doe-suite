@@ -24,7 +24,6 @@ opt:                        # a factor with two levels
 # -> Results in 4 runs (combinations of parameters) that are executed. 
 #    Note, the repeated execution of runs is possible. 
 ```
-
 and outputs an experiment result table: 
 
 | exp_name | exp_id     | run   | host     | seed | payload_size_mb | opt   | rt_mean | rt_std |
@@ -38,6 +37,10 @@ and outputs an experiment result table:
 Note, in this experiment `simple`, the `client_0` records in each repetition of a run the response time (`rt`).
 In the table, we show for each configuration the mean and the standard deviation of the response time over multiple runs.
 
+The experiment suite follows the naming conventions of [DoE](https://en.wikipedia.org/wiki/Design_of_experiments):
+A `factor` is the parameter that changes between different runs, and in each run, a `factor` takes a particular `level`, i.e., value.
+
+Moreover, under [Design of Experiments](#design-of-experiments), we show how to design and run experiments that are not a cross-product of factor levels.
 
 <!-- TABLE OF CONTENTS -->
 <details open="open">
@@ -164,7 +167,7 @@ After completing the getting started section, it should be possible to run the [
 6. Install the required Ansible collections 
 
     ```sh
-    ansible-galaxy install -r requirements-collections.yml
+    pipenv run ansible-galaxy install -r requirements-collections.yml
     ```
 
 7. Run the repository initialization helper script and configure the experiment suite 
@@ -179,7 +182,7 @@ After completing the getting started section, it should be possible to run the [
 8. Try running the example experiment design (see [experiments/designs/example.yml](experiments/designs/example.yml))
 
     ```sh
-    ansible-playbook experiment.yml -e "exp=example id=new"
+    pipenv run ansible-playbook experiment.yml -e "exp=example id=new"
     ```
 
 <!-- USAGE EXAMPLES -->
