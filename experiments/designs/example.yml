@@ -1,3 +1,5 @@
+# TODO: add different host configs depending on the experiment using ansible host variables
+
 experiments:
   - experiment_1: # the base config object
       n_repetitions: 2 # how often to repeat each run (i.e. each level config)

@@ -36,6 +36,7 @@
   tags: [print_action]
   when: id == 'new'
 
+# TODO: make this dependent on host variables defined in the experiment YAML
 - name: Setup AWS including VPC and the required EC2 instances
   include_role:
     name: experiment-aws
