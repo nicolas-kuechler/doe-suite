@@ -26,11 +26,11 @@
 #   Setup next (new) experiment run                                      #
 ##########################################################################
 
-- name: 
+- name:
   set_fact:
     new_running_job_id: null
 
-- name: 
+- name:
   set_fact:
     new_running_job_id: "{{ exp_job_ids_pending | list | first }}"
   when: exp_job_ids_running | length == 0
@@ -39,7 +39,7 @@
   set_fact:
     exp_job_ids_pending: "{{ exp_job_ids_pending | reject('equalto', new_running_job_id) | list }}"
     exp_job_ids_running: "['{{ new_running_job_id }}']"
-  when: new_running_job_id is not none 
+  when: new_running_job_id is not none
 
 - name: Set the running job id
   set_fact:
@@ -94,7 +94,7 @@
     cur_run: "{{ exp_run|int + 1 }}"
     n_runs: "{{ exp_runs_ext|length }}"
     cur_rep: "{{ exp_run_rep|int + 1 }}"
-    n_reps: "{{ n_repetitions }}"
+    n_reps: "{{ n_repetitions }}" # TODO: experiment.n_repetitions?
     progress_percent: "{{ (100 * (exp_job_ids|length - exp_job_ids_unfinished|length) / exp_job_ids|length)|round }}"
   tags: [print_action]
   when: new_running_job_id is not none
@@ -160,7 +160,7 @@
 ##########################################################################
 
 - name: Update the job ids list (remove experiment from running)
-  set_fact: 
+  set_fact:
     exp_job_ids_running: []
     exp_job_ids_unfinished: "{{ exp_job_ids_pending }}"
   when: is_cur_exp_finished
@@ -172,4 +172,3 @@
   vars:
     expstate: save
   when: is_cur_exp_finished
-

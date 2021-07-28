@@ -7,69 +7,32 @@
   hosts: localhost
 
   tasks:
-  - name: Load an Experiment Run (init a new run if it does not exist yet)
-    include_role:
-      name: experiment-state
-    vars:
-      expstate: load
-  
-  - name: Schedule the experiments (job ids are 0 to number of experiments-1)
+  - name: Read the experiment configuration
+    include_vars: experiments/designs/{{ exp_suite }}.yml
+
+  - name: Preserve initial variable for all experiments
     set_fact:
-      exp_job_ids: "{{range(0, exp_runs_ext | length, 1) | product(range(0, n_repetitions, 1)) | map('join', '_') | list }}"
-    when: id == 'new' # only schedule if it is a new experiment
+        redefine_exp_id: exp_id is not defined
 
-  - name: Set all jobs to unfinished and pending
-    set_fact:
-      exp_job_ids_unfinished: "{{ exp_job_ids }}" 
-      exp_job_ids_pending: "{{ exp_job_ids }}" 
-    when: id == 'new' # only schedule if it is a new experiment
-
-
-  - name: Save the updated state of the experiment (save job ids)
-    include_role:
-      name: experiment-state
+  - name: Do load and setup for all experiments
+    include_tasks:
+      file: experiment_load_setup.yml
     vars:
-      expstate: save
-    when: id == 'new' # only persist the state if it is a new experiment
+      exp_name: "{{ (item | dict2items | first).key }}"
+      experiment: "{{ (item | dict2items | first).value }}"
+    loop: "{{ experiments }}"
 
-  - debug:
-      msg: "Running Experiment: {{ exp_name }} (id={{ exp_id }})   #runs={{ exp_runs_ext | length }} #reps={{ n_repetitions }}  => #jobs={{ exp_job_ids | length }}"
-    tags: [print_action]
-
-  - debug:
-      msg: "Setup AWS..."
-    tags: [print_action]
-    when: id == 'new'
-
-  - name: Setup AWS including VPC and the required EC2 instances
-    include_role:
-      name: experiment-aws
-    vars:
-      server_ec2_instances_num: "{{ exp_server.ec2_instances_num }}"
-      server_ec2_instances_max_num: "{{ exp_server.ec2_instances_max_num }}"
-      client_ec2_instances_num: "{{ exp_client.ec2_instances_num }}"
-      client_ec2_instances_max_num: "{{ exp_client.ec2_instances_num }}"
-    when: id == 'new' # only change AWS if it is a new experiment
-
-  - debug:
-      var: groups
-
-  - debug:
-      msg: "Setup Host Machines..."
-    tags: [print_action]
 
 ##########################################################################
 #   Setup Machines (Common, Clients Only, Servers Only)                  #
 ##########################################################################
-
-
 
 - name: Setup machines with common setup
   hosts: "{{ hostvars['localhost'].exp_client.host_group }}:{{ hostvars['localhost'].exp_server.host_group }}"
   tasks:
   - debug:
       var: groups
-  - name: 
+  - name:
     include_role:
       name: setup-common
     when: id == 'new' # only setup if it is a new experiment
@@ -79,7 +42,7 @@
   tasks:
   - debug:
       var: groups
-  - name: 
+  - name:
     include_role:
       name: setup-server
     when: id == 'new' # only setup if it is a new experiment
@@ -89,7 +52,7 @@
   tasks:
   - debug:
       var: groups
-  - name: 
+  - name:
     include_role:
       name: setup-client
     when: id == 'new' # only setup if it is a new experiment
@@ -113,7 +76,7 @@
     when: exp_job_ids_unfinished | length > 0  # there are some unfinished jobs left
     loop: "{{ range(0, exp_n_tries, 1)|list }}"
 
-  
+
 ##########################################################################
 #   Cleanup AWS (terminate instances, remove vpc)                        #
 ##########################################################################
@@ -142,6 +105,7 @@
       var: exp_id
     when: id == 'new'
 
+  # TODO: cleanup all experiments
   - debug:
       msg: "Finished Experiment: {{ exp_name }} (id={{ exp_id }})   #runs={{ exp_runs_ext | length }} #reps={{ n_repetitions }}  => #jobs={{ exp_job_ids | length }}"
     tags: [print_action]

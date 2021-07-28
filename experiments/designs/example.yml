@@ -1,31 +1,55 @@
-n_repetitions: 3 # how often to repeat each run (i.e. each level config)
+experiments:
+  - experiment_1: # the base config object
+      n_repetitions: 2 # how often to repeat each run (i.e. each level config)
+      base_config:
+        client:
+          arg1: 10
+          arg2: $FACTOR$
 
-base_experiment: # the base config object
-  client:
-    arg1: 10
-    arg2: $FACTOR$
-  server:
-    arg3: $FACTOR$
-    arg4: "test1"
-  info: $FACTOR$
+        server:
+          arg3: $FACTOR$
+          arg4: "test1"
 
+        info: $FACTOR$
 
-factor_levels: 
-# in the experiments object you have a list for the different experiments with the values for the fields marked as $VARIES$ in the base config object.
-- client:
-    arg2: 1
-  server:
-    arg3: 1
-  info: "c1"
-  
-- client:
-    arg2: 2
-  server:
-    arg3: 2
-  info: "c2"
+      # in the experiments object you have a list for the different experiments
+      # with the values for the fields marked as $FACTOR$ in the base config object.
+      factor_levels:
+        - client:
+            arg2: 1
+          server:
+            arg3: 1
+          info: "c1"
 
-- client:
-    arg2: 3
-  server:
-    arg3: 3
-  info: "c3"
+        # - client:
+        #     arg2: 2
+        #   server:
+        #     arg3: 2
+        #   info: "c2"
+        #
+        # - client:
+        #     arg2: 3
+        #   server:
+        #     arg3: 3
+        #   info: "c3"
+  - experiment_2: # the base config object
+      n_repetitions: 1 # how often to repeat each run (i.e. each level config)
+      base_config:
+        client:
+          arg1: 10
+          arg2: $FACTOR$
+
+        server:
+          arg3: $FACTOR$
+          arg4: "test1"
+
+        info: $FACTOR$
+
+      # in the experiments object you have a list for the different experiments
+      # with the values for the fields marked as $FACTOR$ in the base config object.
+      factor_levels:
+        - client:
+            arg2: 2
+          server:
+            arg3: 2
+          info: "c2"

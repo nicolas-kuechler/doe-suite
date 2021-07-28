@@ -1,0 +1,54 @@
+---
+
+- name: Load an Experiment Run (init a new run if it does not exist yet)
+  include_role:
+    name: experiment-state
+  vars:
+    expstate: load
+
+- debug:
+    msg: "experiment = {{ experiment }}"
+
+- name: Schedule the experiments (job ids are 0 to number of experiments-1)
+  set_fact:
+    exp_job_ids: "{{range(0, exp_runs_ext | length, 1) | product(range(0, experiment.n_repetitions, 1)) | map('join', '_') | list }}"
+  when: id == 'new' # only schedule if it is a new experiment
+
+- name: Set all jobs to unfinished and pending
+  set_fact:
+    exp_job_ids_unfinished: "{{ exp_job_ids }}"
+    exp_job_ids_pending: "{{ exp_job_ids }}"
+  when: id == 'new' # only schedule if it is a new experiment
+
+- name: Save the updated state of the experiment (save job ids)
+  include_role:
+    name: experiment-state
+  vars:
+    expstate: save
+  when: id == 'new' # only persist the state if it is a new experiment
+
+- debug:
+    msg: "Running Experiment: {{ exp_name }} (id={{ exp_id }})   #runs={{ exp_runs_ext | length }} #reps={{ experiment.n_repetitions }}  => #jobs={{ exp_job_ids | length }}"
+  tags: [print_action]
+
+- debug:
+    msg: "Setup AWS..."
+  tags: [print_action]
+  when: id == 'new'
+
+- name: Setup AWS including VPC and the required EC2 instances
+  include_role:
+    name: experiment-aws
+  vars:
+    server_ec2_instances_num: "{{ exp_server.ec2_instances_num }}"
+    server_ec2_instances_max_num: "{{ exp_server.ec2_instances_max_num }}"
+    client_ec2_instances_num: "{{ exp_client.ec2_instances_num }}"
+    client_ec2_instances_max_num: "{{ exp_client.ec2_instances_num }}"
+  when: id == 'new' # only change AWS if it is a new experiment
+
+- debug:
+    var: groups
+
+- debug:
+    msg: "Setup Host Machines..."
+  tags: [print_action]
