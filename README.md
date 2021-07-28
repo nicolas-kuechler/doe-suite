@@ -111,7 +111,7 @@ After completing the getting started section, it should be possible to run the [
     pip install pipenv
     ```
 
-* Moreover, create a `key pair for AWS` [(see instructions)](https://docs.aws.amazon.com/servicecatalog/latest/adminguide/getstarted-keypair.html)
+* Moreover, create a `key pair for AWS` in the region `eu-central-1` [(see instructions)](https://docs.aws.amazon.com/servicecatalog/latest/adminguide/getstarted-keypair.html)
 * and ensure that you can clone remote `repositories with SSH` [(see instructions for GitHub)](https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh).
 
 
