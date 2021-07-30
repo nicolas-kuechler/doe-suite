@@ -3,15 +3,27 @@
 experiments:
   - experiment_1: # the base config object
       n_repetitions: 2 # how often to repeat each run (i.e. each level config)
-      base_config:
+      host_types:
         client:
-          arg1: 10
-          arg2: $FACTOR$
-
+          n: 1
+          roles:
+            init: client-setup
+            start: client-job-start
+            result: client-job-result
         server:
-          arg3: $FACTOR$
-          arg4: "test1"
-
+          n: 1
+          roles:
+            init: server-setup
+            start: server-job-start
+            result: server-job-result
+      base_experiment:
+        host_vars:
+          client:
+            arg1: 10
+            arg2: $FACTOR$
+          server:
+            arg3: $FACTOR$
+            arg4: "test1"
         info: $FACTOR$
 
       # in the experiments object you have a list for the different experiments
@@ -22,13 +34,11 @@ experiments:
           server:
             arg3: 1
           info: "c1"
-
         # - client:
         #     arg2: 2
         #   server:
         #     arg3: 2
         #   info: "c2"
-        #
         # - client:
         #     arg2: 3
         #   server:
@@ -36,15 +46,27 @@ experiments:
         #   info: "c3"
   - experiment_2: # the base config object
       n_repetitions: 1 # how often to repeat each run (i.e. each level config)
-      base_config:
+      host_types:
         client:
-          arg1: 10
-          arg2: $FACTOR$
-
+          n: 1
+          roles:
+            init: client-setup
+            start: client-job-start
+            result: client-job-result
         server:
-          arg3: $FACTOR$
-          arg4: "test1"
-
+          n: 1
+          roles:
+            init: server-setup
+            start: server-job-start
+            result: server-job-result
+      base_experiment:
+        host_vars:
+          client:
+            arg1: 10
+            arg2: $FACTOR$
+          server:
+            arg1: $FACTOR$
+            arg2: "test1"
         info: $FACTOR$
 
       # in the experiments object you have a list for the different experiments
@@ -53,5 +75,5 @@ experiments:
         - client:
             arg2: 2
           server:
-            arg3: 2
+            arg1: 2
           info: "c2"

@@ -12,7 +12,7 @@
 
   - name: Preserve initial variable for all experiments
     set_fact:
-        redefine_exp_id: exp_id is not defined
+        redefine_exp_id: "{{ exp_id is not defined }}"
 
   - name: Do load and setup for all experiments
     include_tasks:
@@ -22,6 +22,12 @@
       experiment: "{{ (item | dict2items | first).value }}"
     loop: "{{ experiments }}"
 
+  - debug:
+      msg: "{{ exp_facts }}"
+
+  # TODO: remove
+  - fail:
+      msg: "Stopping..."
 
 ##########################################################################
 #   Setup Machines (Common, Clients Only, Servers Only)                  #
