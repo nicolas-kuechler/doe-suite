@@ -1,0 +1,16 @@
+---
+
+ec2_instances_num: <<n_hosts>> # TODO: set the number of server instances
+ec2_instances_max_num: <<n_hosts>> # TODO: set the number of server instances (should be the same -> difference is not terminated)
+instance_type: <<instance_type>> # TODO: choose server instance type
+ec2_volume_size: <<volume_size>> # TODO: choose server volume size
+
+# TODO: set how many server hosts to check to determine whether a job is finished
+# check that an experiment is still running by looking at the status of a systemd service
+#   the following flag determines how many servers are checked to see if there is still a running service of the project
+n_hosts_status_check: <<n_hosts_status_check>> # will check the systemd service of remote "server machines" [0, X)
+
+ec2_image: ami-05f7491af5eef733a
+ec2_volume_snapshot: snap-0ccde4e83b88fdd69
+instance_tag: "{{ prj_id }}_server"
+host_group: "tag_Name_{{ prj_id }}_server"
