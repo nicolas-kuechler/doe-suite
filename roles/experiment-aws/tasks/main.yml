@@ -13,9 +13,6 @@
     file: "group_vars/{{ host_group_name }}/main.yml"
     name: host_group_vars
 
-- set_fact:
-    do_create_instances: "{{ (host_values.n_max | int) > 0 }}"
-
 - debug:
     msg: "-> creating EC2 instance for group '{{ host_group_name }}'..."
   tags: [print_action]

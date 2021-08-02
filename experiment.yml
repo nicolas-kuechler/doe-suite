@@ -20,7 +20,10 @@
     vars:
       exp_name: "{{ (item | dict2items | first).key }}"
       experiment: "{{ (item | dict2items | first).value }}"
+      exp_cnt: "{{ ansible_loop.index0 }}"
     loop: "{{ experiments }}"
+    loop_control:
+      extended: yes
 
   - name: Accumulate hosts in the same group among all host types
     set_fact:
@@ -75,7 +78,10 @@
 ##########################################################################
 
 - name: Setup registered host types
-  hosts: "{{ hostvars['localhost']['host_types']['all'].keys() | list }}"
+  hosts: "{{ [ 'tag_name_' + hostvars['localhost']['prj_id'] + '_' ]
+             | product( (hostvars['localhost']['host_types']['all'].keys() | list) )
+             | map('join')
+             | list }}"
   tasks:
   - debug:
       msg: "{{ inventory_hostname }}"
@@ -153,14 +159,10 @@
     tags: [print_action]
     when: awsclean | default(true) | bool  and exp_job_ids_unfinished | length == 0
 
+  # TODO: test this
   - name: Cleanup AWS
     include_role:
-      name: experiment-aws
-    vars:
-      server_ec2_instances_num: 0
-      server_ec2_instances_max_num: 0
-      client_ec2_instances_num: 0
-      client_ec2_instances_max_num: 0
+      name: experimet-clear
     when: awsclean | default(true) | bool  and exp_job_ids_unfinished | length == 0
 
   - name: Output the run id of this experiment for convenience

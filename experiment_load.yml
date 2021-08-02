@@ -36,5 +36,5 @@
     msg: "Running Experiment: {{ exp_name }} (id={{ exp_id }})   \
           #runs={{ exp_facts[exp_name].exp_runs_ext | length }}   \
           #reps={{ experiment.n_repetitions }}    \
-          => #jobs={{ exp_job_ids | length }}"
+          => #jobs={{ exp_facts[exp_name].exp_job_ids | length }}"
   tags: [print_action]

@@ -1,0 +1,24 @@
+---
+
+- name: Collect info about running ec2 instances
+  ec2_instance_info:
+    region: "{{ exp_base.aws_region }}"
+    filters:
+      "dns-name": "{{ group_name }}"
+  loop: "{{ groups['all'] }}"
+  loop_control:
+    loop_var: group_name
+  register: ec2_instances
+
+- name: Extract instance ids of ec2 instances to remove
+  set_fact:
+    ec2_instance_ids: "{{ ec2_instances | json_query('results[*].instances[*].instance_id') | list | flatten }}"
+
+- debug:
+    msg: "Removing instances with the following ids: {{ ec2_instance_ids }}"
+
+- name: Cleanup AWS
+  ec2:
+    region: "{{ exp_base.aws_region }}"
+    instance_ids: "{{ ec2_instance_ids }}"
+    state: absent

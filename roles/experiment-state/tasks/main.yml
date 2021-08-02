@@ -8,15 +8,14 @@
     - expstate == 'load' or expstate == 'save'
     - id == 'new' or id == 'last' or id|int > 0
 
-- name:
-  set_fact:
+- set_fact:
     is_init: False
 
 - name: Set exp id from command argument
   set_fact:
-    exp_id: "{{ id }}"
-  # The last conjunction is a workaround to make it possible to unset exp_id
-  # instead of using "exp_id is not defined"
+    # Use a counter if we don't generate new experiments, since the experiment
+    # ID depends on the number of previous executions of this YAML file.
+    exp_id: "{{ ( id | int ) + ( exp_cnt | int ) }}"
   when: id != 'new' and id != 'last' and redefine_exp_id # continue an experiment run
 
 - name: Find all experiments state of the experiment with '`exp_suite`_`exp_name`_\d+' as name
@@ -40,7 +39,7 @@
 
 - name: Select the experiment state with the highest `exp_id` (i.e., the most recent)
   set_fact:
-    exp_id: "{{ max_exp_id }}"
+    exp_id: "{{ ( max_exp_id | int ) + ( exp_cnt | int ) }}"
   when: id == 'last' and redefine_exp_id # continue the last experiment run
 
 - name: Create new exp id + Mark as init

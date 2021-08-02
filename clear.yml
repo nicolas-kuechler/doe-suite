@@ -1,15 +1,6 @@
 ---
 
-
 - name: Cleanup and Utility
   hosts: localhost
-  tasks:
-
-  - name: Cleanup AWS
-    include_role:
-      name: experiment-aws
-    vars:
-      server_ec2_instances_num: 0
-      server_ec2_instances_max_num: 0
-      client_ec2_instances_num: 0
-      client_ec2_instances_max_num: 0
+  roles:
+    - experimet-clear
