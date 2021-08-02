@@ -16,52 +16,109 @@
 
   - name: Do load and setup for all experiments
     include_tasks:
-      file: experiment_load_setup.yml
+      file: experiment_load.yml
     vars:
       exp_name: "{{ (item | dict2items | first).key }}"
       experiment: "{{ (item | dict2items | first).value }}"
     loop: "{{ experiments }}"
 
-  - debug:
-      msg: "{{ exp_facts }}"
+  - name: Accumulate hosts in the same group among all host types
+    set_fact:
+      host_types: "{{ host_types
+                     | default({})
+                     | combine({ 'all':
+                         {
+                           host_type.key:
+                             { 'n': (host_types | json_query('*.' + host_type.key + '.n') | sum),
+                               'n_max': (host_types | json_query('*.' + host_type.key + '.n_max') | sum)
+                             }
+                         }
+                      }, recursive=True)
+                   }}"
+    with_items:
+      - "{{ state.host_types | dict2items | list }}"
+    loop_control:
+      loop_var: host_type
 
-  # TODO: remove
-  - fail:
-      msg: "Stopping..."
+  - debug:
+      msg: "Setup AWS..."
+    tags: [print_action]
+    when: id == 'new'
+
+  - name: Setup AWS VPC
+    include_role:
+      name: experiment-aws-vpc
+    vars:
+      do_create_vpc: "{{ (host_types['all'] | json_query('*.n_max') | sum) > 0 }}"
+
+  - name: Setup AWS EC2 instances
+    include_role:
+      name: experiment-aws
+    with_items:
+      - "{{ host_types['all'] | dict2items }}"
+    vars:
+      host_group_name: "{{ host_type.key }}"
+      host_values: "{{ host_type.value }}"
+    loop_control:
+      loop_var: host_type
+    when: id == 'new' # only change AWS if it is a new experiment
+
+  - debug:
+      var: groups
+
+  - debug:
+      msg: "Setup Host Machines..."
+    tags: [print_action]
 
 ##########################################################################
 #   Setup Machines (Common, Clients Only, Servers Only)                  #
 ##########################################################################
 
-- name: Setup machines with common setup
-  hosts: "{{ hostvars['localhost'].exp_client.host_group }}:{{ hostvars['localhost'].exp_server.host_group }}"
+- name: Setup registered host types
+  hosts: "{{ hostvars['localhost']['host_types']['all'].keys() | list }}"
   tasks:
   - debug:
-      var: groups
-  - name:
-    include_role:
-      name: setup-common
+      msg: "{{ inventory_hostname }}"
+  # - debug:
+  #     var: groups
+  # - name:
+  #   include_role:
+  #     name: setup-common
     when: id == 'new' # only setup if it is a new experiment
 
-- name: Setup "server" machines with server-specific setup
-  hosts: "{{ hostvars['localhost'].exp_server.host_group }}"
-  tasks:
-  - debug:
-      var: groups
-  - name:
-    include_role:
-      name: setup-server
-    when: id == 'new' # only setup if it is a new experiment
+  # TODO: remove
+  - fail:
+      msg: "Stopping..."
 
-- name: Setup "client" machines with client-specific setup
-  hosts: "{{ hostvars['localhost'].exp_client.host_group }}"
-  tasks:
-  - debug:
-      var: groups
-  - name:
-    include_role:
-      name: setup-client
-    when: id == 'new' # only setup if it is a new experiment
+# - name: Setup machines with common setup
+#   hosts: "{{ hostvars['localhost'].exp_client.host_group }}:{{ hostvars['localhost'].exp_server.host_group }}"
+#   tasks:
+#   - debug:
+#       var: groups
+#   - name:
+#     include_role:
+#       name: setup-common
+#     when: id == 'new' # only setup if it is a new experiment
+#
+# - name: Setup "server" machines with server-specific setup
+#   hosts: "{{ hostvars['localhost'].exp_server.host_group }}"
+#   tasks:
+#   - debug:
+#       var: groups
+#   - name:
+#     include_role:
+#       name: setup-server
+#     when: id == 'new' # only setup if it is a new experiment
+#
+# - name: Setup "client" machines with client-specific setup
+#   hosts: "{{ hostvars['localhost'].exp_client.host_group }}"
+#   tasks:
+#   - debug:
+#       var: groups
+#   - name:
+#     include_role:
+#       name: setup-client
+#     when: id == 'new' # only setup if it is a new experiment
 
 
 ##########################################################################

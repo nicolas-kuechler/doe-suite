@@ -99,7 +99,7 @@
     file: "{{ local.exp_state_dir }}/{{ exp_suite }}_{{ exp_name }}_{{ exp_id }}/state.yml"
     name: state
 
-- name: Set variables (facts) based on loaded state
+- name: Set experiment variables (facts) based on loaded state
   set_fact:
     exp_facts: "{{ exp_facts | default({}) | combine({ exp_name: { fact_item.key : fact_item.value } }, recursive=True) }}"
   with_items:
@@ -111,3 +111,9 @@
     - { 'key': 'n_repetitions', 'value': "{{ state.n_repetitions }}" }
   loop_control:
     loop_var: fact_item
+
+- name: Set host types based on loaded state
+  set_fact:
+    host_types: "{{ host_types \
+                    | default({}) \
+                    | combine({ exp_name: state.host_types }) }}"

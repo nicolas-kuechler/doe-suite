@@ -33,29 +33,8 @@
   when: id == 'new' # only persist the state if it is a new experiment
 
 - debug:
-    msg: "Running Experiment: {{ exp_name }} (id={{ exp_id }})   #runs={{ exp_runs_ext | length }} #reps={{ experiment.n_repetitions }}  => #jobs={{ exp_job_ids | length }}"
+    msg: "Running Experiment: {{ exp_name }} (id={{ exp_id }})   \
+          #runs={{ exp_facts[exp_name].exp_runs_ext | length }}   \
+          #reps={{ experiment.n_repetitions }}    \
+          => #jobs={{ exp_job_ids | length }}"
   tags: [print_action]
-
-# TODO: uncomment
-# - debug:
-#     msg: "Setup AWS..."
-#   tags: [print_action]
-#   when: id == 'new'
-#
-# # TODO: make this dependent on host variables defined in the experiment YAML
-# - name: Setup AWS including VPC and the required EC2 instances
-#   include_role:
-#     name: experiment-aws
-#   vars:
-#     server_ec2_instances_num: "{{ exp_server.ec2_instances_num }}"
-#     server_ec2_instances_max_num: "{{ exp_server.ec2_instances_max_num }}"
-#     client_ec2_instances_num: "{{ exp_client.ec2_instances_num }}"
-#     client_ec2_instances_max_num: "{{ exp_client.ec2_instances_num }}"
-#   when: id == 'new' # only change AWS if it is a new experiment
-#
-# - debug:
-#     var: groups
-#
-# - debug:
-#     msg: "Setup Host Machines..."
-#   tags: [print_action]

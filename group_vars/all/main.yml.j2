@@ -17,12 +17,11 @@ local:
   results_dir: "./results"
   exp_state_dir: experiments/state
 
-
 exp_base:
   key_name: <<key_name>> # TODO: add key pair name
   aws_region: eu-central-1
   name: frankfurt
-  vpc_name: "{{ prj_id }}_vpc_server"
+  vpc_name: "{{ prj_id }}_vpc_base"
   vpc_cidr_block: 10.100.0.0/16
   vpc_subnet_name: "{{ prj_id }}_subnet_az1"
   vpc_subnet_cidr: 10.100.0.0/24

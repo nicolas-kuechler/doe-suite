@@ -6,12 +6,14 @@ experiments:
       host_types:
         client:
           n: 1
+          n_max: 1
           roles:
             init: client-setup
             start: client-job-start
             result: client-job-result
         server:
           n: 1
+          n_max: 1
           roles:
             init: server-setup
             start: server-job-start
@@ -49,12 +51,14 @@ experiments:
       host_types:
         client:
           n: 1
+          n_max: 1
           roles:
             init: client-setup
             start: client-job-start
             result: client-job-result
         server:
           n: 1
+          n_max: 1
           roles:
             init: server-setup
             start: server-job-start
