@@ -77,55 +77,34 @@
 #   Setup Machines (Common, Clients Only, Servers Only)                  #
 ##########################################################################
 
+# This is a somewhat hacky way to construct the group names of all ec2 instances
+# created in the previous step.
+# TODO: just use 'all'?
 - name: Setup registered host types
-  hosts: "{{ [ 'tag_name_' + hostvars['localhost']['prj_id'] + '_' ]
+  # tag_Name_ is a prefix chosen by the ec2 plugin (incl. the captitalization)
+  hosts: "{{ [ 'tag_Name_' + hostvars['localhost']['prj_id'] ]
              | product( (hostvars['localhost']['host_types']['all'].keys() | list) )
-             | map('join')
+             | map('join', '_')
+             | product( ( hostvars['localhost']['experiments'] \
+                          | map('dict2items') \
+                          | map('first') \
+                          | map(attribute='key') \
+                          | list \
+                        ) \
+                      )
+             | map('join', '_')
              | list }}"
+  vars:
+    exp_name: "{{ inventory_hostname | split('_') }}"
   tasks:
-  - debug:
-      msg: "{{ inventory_hostname }}"
-  # - debug:
-  #     var: groups
-  # - name:
-  #   include_role:
-  #     name: setup-common
+  - name:
+    include_role:
+      name: setup-common
     when: id == 'new' # only setup if it is a new experiment
 
   # TODO: remove
   - fail:
       msg: "Stopping..."
-
-# - name: Setup machines with common setup
-#   hosts: "{{ hostvars['localhost'].exp_client.host_group }}:{{ hostvars['localhost'].exp_server.host_group }}"
-#   tasks:
-#   - debug:
-#       var: groups
-#   - name:
-#     include_role:
-#       name: setup-common
-#     when: id == 'new' # only setup if it is a new experiment
-#
-# - name: Setup "server" machines with server-specific setup
-#   hosts: "{{ hostvars['localhost'].exp_server.host_group }}"
-#   tasks:
-#   - debug:
-#       var: groups
-#   - name:
-#     include_role:
-#       name: setup-server
-#     when: id == 'new' # only setup if it is a new experiment
-#
-# - name: Setup "client" machines with client-specific setup
-#   hosts: "{{ hostvars['localhost'].exp_client.host_group }}"
-#   tasks:
-#   - debug:
-#       var: groups
-#   - name:
-#     include_role:
-#       name: setup-client
-#     when: id == 'new' # only setup if it is a new experiment
-
 
 ##########################################################################
 #   Run Experiment Jobs                                                  #

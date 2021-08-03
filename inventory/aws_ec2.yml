@@ -8,6 +8,6 @@ filters:
 # keyed_groups may be used to create custom groups
 strict: False
 keyed_groups:
-# Add hosts to tag_name_value groups for each Name/Value tag pair
+# Add hosts to tag_Name_value groups for each Name/Value tag pair
   - prefix: tag
     key: tags

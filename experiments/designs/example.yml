@@ -3,6 +3,8 @@
 experiments:
   - experiment_1: # the base config object
       n_repetitions: 2 # how often to repeat each run (i.e. each level config)
+      common_roles:
+        - setup_common
       host_types:
         client:
           n: 1
@@ -48,6 +50,8 @@ experiments:
         #   info: "c3"
   - experiment_2: # the base config object
       n_repetitions: 1 # how often to repeat each run (i.e. each level config)
+      common_roles:
+        - setup_common
       host_types:
         client:
           n: 1

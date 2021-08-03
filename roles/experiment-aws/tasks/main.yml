@@ -34,6 +34,7 @@
 - name: Create EC2 Instances
   include_role:
     name: experiment-aws-ec2
+  when: instance_group != 'all'
   vars:
     instance_values: "{{ host_items.value }}"
     instance_exp: "{{ host_items.key }}"
