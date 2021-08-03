@@ -4,10 +4,11 @@
   ec2_instance_info:
     region: "{{ exp_base.aws_region }}"
     filters:
-      "dns-name": "{{ group_name }}"
-  loop: "{{ groups['all'] }}"
+      "tag:Name": "{{ instance_tag | split(ec2_tag_name_prefix) | last }}"
+  when: instance_tag is match(ec2_tag_name_prefix + prj_id + '_*')
+  loop: "{{ groups.keys() }}"
   loop_control:
-    loop_var: group_name
+    loop_var: instance_tag
   register: ec2_instances
 
 - name: Extract instance ids of ec2 instances to remove

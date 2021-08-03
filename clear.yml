@@ -3,4 +3,4 @@
 - name: Cleanup and Utility
   hosts: localhost
   roles:
-    - experimet-clear
+    - experiment-clear
