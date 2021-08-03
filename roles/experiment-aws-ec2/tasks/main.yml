@@ -82,6 +82,8 @@
   when: num_start|int > 0
   register: ec2_start
 
+# TODO: optimization potential: we can store the ec2_start variables and only
+#  wait for SSH after we started all ec2 instances instead of for every started instance
 - name: Wait for SSH to come up
   delegate_to: "{{ item.public_dns_name }}"
   wait_for_connection:

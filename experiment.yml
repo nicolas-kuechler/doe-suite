@@ -31,17 +31,16 @@
                      | default({})
                      | combine({ 'all':
                          {
-                           host_type.key:
-                             { 'n': (host_types | json_query('*.' + host_type.key + '.n') | sum),
-                               'n_max': (host_types | json_query('*.' + host_type.key + '.n_max') | sum)
+                           host_group:
+                             { 'n': (host_types | json_query(host_group + '.*.n') | sum),
+                               'n_max': (host_types | json_query(host_group + '.*.n_max') | sum),
                              }
                          }
                       }, recursive=True)
                    }}"
-    with_items:
-      - "{{ state.host_types | dict2items | list }}"
+    loop: "{{ host_types.keys() }}"
     loop_control:
-      loop_var: host_type
+      loop_var: host_group
 
   - debug:
       msg: "Setup AWS..."
@@ -57,11 +56,12 @@
   - name: Setup AWS EC2 instances
     include_role:
       name: experiment-aws
-    with_items:
-      - "{{ host_types['all'] | dict2items }}"
+    when: host_group_name != 'all'
+    loop: "{{ host_types | dict2items }}"
     vars:
       host_group_name: "{{ host_type.key }}"
-      host_values: "{{ host_type.value }}"
+      host_exp_values: "{{ host_type.value }}"
+      host_n_max_tot: "{{ host_types['all'] | json_query(host_group_name + '.n_max') }}"
     loop_control:
       loop_var: host_type
     when: id == 'new' # only change AWS if it is a new experiment

@@ -3,10 +3,18 @@
 - assert:
     that:
     - host_group_name is defined
-    - host_values is defined
-    - host_values.n is defined
-    - host_values.n_max is defined
-    - (host_values.n_max | int) >= (host_values.n | int)
+    - host_exp_values is defined
+    - host_n_max_tot is defined
+
+- assert:
+    that:
+    - instance_values.n is defined
+    - instance_values.n_max is defined
+    - (instance_values.n_max | int) >= (instance_values.n | int)
+  loop: "{{ host_exp_values.values() }}"
+  loop_control:
+    loop_var:
+      instance_values
 
 - name: "Manually load variables for host in group '{{ host_group_name }}'"
   include_vars:
@@ -16,17 +24,30 @@
 - debug:
     msg: "-> creating EC2 instance for group '{{ host_group_name }}'..."
   tags: [print_action]
-  when: (host_values.n_max | int) > 0
+  when: (host_n_max_tot | int) > 0
 
 - debug:
     msg: "-> terminating EC2 instances for group '{{ host_group_name }}'..."
   tags: [print_action]
-  when: (host_values.n_max | int) == 0
+  when: (host_n_max_tot | int) == 0
 
 - name: Create EC2 Instances
   include_role:
     name: experiment-aws-ec2
   vars:
-    ec2config: "{{ host_group_vars | combine( exp_base ) }}"
-    ec2_instances_num: "{{ host_values.n }}"
-    ec2_instances_max_num: "{{ host_values.n_max }}"
+    instance_values: "{{ host_items.value }}"
+    instance_exp: "{{ host_items.key }}"
+    instance_group: "{{ host_group_name }}_{{ instance_exp }}"
+    ec2config: "{{ host_group_vars \
+                  | combine( exp_base ) \
+                  | combine({ \
+                      'instance_tag': prj_id + '_' + instance_group,
+                      'host_group': instance_group
+                    }) \
+               }}"
+    ec2_instances_num: "{{ instance_values.n }}"
+    ec2_instances_max_num: "{{ instance_values.n_max }}"
+  loop: "{{ host_exp_values | dict2items }}"
+  loop_control:
+    loop_var:
+      host_items

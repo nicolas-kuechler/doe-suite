@@ -115,4 +115,12 @@
   set_fact:
     host_types: "{{ host_types \
                     | default({}) \
-                    | combine({ exp_name: state.host_types }) }}"
+                    | combine({ \
+                        host_type.key: { \
+                          exp_name: host_type.value \
+                        } \
+                      }, recursive=True) \
+                }}"
+  loop: "{{ state.host_types | dict2items }}"
+  loop_control:
+    loop_var: host_type
