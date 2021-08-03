@@ -1,0 +1,96 @@
+
+- assert:
+    that:
+    - ec2config is defined
+
+# TODO: remove
+- debug:
+    msg: "public_dns_names = {{ public_dns_names }}"
+
+- name: Wait for SSH to come up
+  delegate_to: "{{ public_dns_name }}"
+  wait_for_connection:
+    connect_timeout: 3
+    timeout: 320
+  loop: "{{ public_dns_names[ec2config.instance_tag] }}"
+  loop_control:
+    loop_var: public_dns_name
+  when: public_dns_names | length > 0
+
+- name: Collect info about running ec2 instances
+  ec2_instance_info:
+    filters:
+      instance-state-name: [ "running" ]
+      "tag:Prj": '{{ prj_id }}'
+      "tag:Name": '{{ ec2config.instance_tag }}'
+    region: "{{ ec2config.aws_region }}"
+  register: running_instances
+
+- name: Collect info about stopped ec2 instances
+  ec2_instance_info:
+    filters:
+      instance-state-name: [ "stopped" ]
+      "tag:Prj": '{{ prj_id }}'
+      "tag:Name": '{{ ec2config.instance_tag }}'
+    region: "{{ ec2config.aws_region }}"
+  register: stopped_instances
+
+- debug:
+    var: ec2config.ec2_instances_num
+
+- set_fact:
+    running_instance_ids: "{{ running_instances.instances
+                              | map(attribute='instance_id')
+                              | list}}"
+    stopped_instance_ids: "{{ stopped_instances.instances
+                              | map(attribute='instance_id')
+                              | list}}"
+    num_stop: "{{ [ ( running_instances.instances | length ) \
+                    - ( ec2config.ec2_instances_num | int ), 0] \
+                   | max \
+               }}"
+    num_start: "{{ [ ( ec2config.ec2_instances_num | int ) \
+                     - ( running_instances.instances | length ) , 0] \
+                   | max}}"
+
+- debug:
+    msg="start= {{ num_start }}  stop= {{ num_stop }}"
+
+- name: Stopping surplus ec2 instances
+  ec2:
+    instance_ids:  "{{ hostvars[inventory_hostname]['running_instance_ids'][:num_stop|int] }}"
+    region: "{{ ec2config.aws_region }}"
+    state: stopped
+    wait: yes
+  when: (num_stop | int) > 0
+
+- name: Starting required ec2 instances
+  ec2:
+    instance_ids: "{{ hostvars[inventory_hostname]['stopped_instance_ids'][:num_start|int] }}"
+    region: "{{ ec2config.aws_region }}"
+    state: running
+    wait: yes
+  when: (num_start | int > 0)
+  register: ec2_start
+
+- name: Register new dns names
+  set_fact:
+    public_dns_names: "{{ ( public_dns_names | default([]) ) \
+                          + ec2_start.instances }}"
+  when: ec2_start.instances is defined
+
+- name: Wait for SSH of the created EC2 instances to come up
+  delegate_to: "{{ public_dns_name }}"
+  wait_for_connection:
+    connect_timeout: 3
+    timeout: 320
+  loop: "{{ public_dns_names }}"
+  loop_control:
+    loop_var: public_dns_name
+  when: (num_stop | int) > 0 or (num_start | int > 0)
+
+- name: Refresh dynamic ec2 inventory
+  meta: refresh_inventory
+
+- pause:
+    seconds=5

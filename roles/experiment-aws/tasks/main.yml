@@ -38,7 +38,7 @@
   vars:
     instance_values: "{{ host_items.value }}"
     instance_exp: "{{ host_items.key }}"
-    instance_group: "{{ host_group_name }}_{{ instance_exp }}"
+    instance_group: "{{ host_group_name }}{{ separator }}{{ instance_exp }}"
     ec2config: "{{ host_group_vars \
                   | combine( exp_base ) \
                   | combine({ \
@@ -46,8 +46,6 @@
                       'host_group': instance_group
                     }) \
                }}"
-    ec2_instances_num: "{{ instance_values.n }}"
-    ec2_instances_max_num: "{{ instance_values.n_max }}"
   loop: "{{ host_exp_values | dict2items }}"
   loop_control:
     loop_var:

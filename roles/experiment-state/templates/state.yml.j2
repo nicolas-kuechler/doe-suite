@@ -5,6 +5,9 @@ exp_id: {{ exp_id }}
 
 n_repetitions: {{ experiment.n_repetitions }}
 
+common_roles:
+  {{ experiment.common_roles | to_nice_yaml(indent=2) | indent(2) }}
+
 host_types:
   {{ experiment.host_types | to_nice_yaml(indent=2) | indent(2) }}
 

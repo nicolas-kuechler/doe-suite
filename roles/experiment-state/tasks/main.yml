@@ -31,15 +31,17 @@
     max_exp_id: "{{ '0' if state_dirs_found.matched == 0 else (state_dirs_found \
                     | json_query('files[*].path') \
                     | map('split', '_') \
-                    | list \
                     | map('last') \
+                    | map('int') \
                     | list \
                     | sort \
                     | last ) }}"
 
-- name: Select the experiment state with the highest `exp_id` (i.e., the most recent)
+# Since we ran X experiments before, we start with max_exp_id - (X-1) and then
+# increment for each experiment.
+- name: "Construct the experiment ID of the last run experiment(s)"
   set_fact:
-    exp_id: "{{ ( max_exp_id | int ) + ( exp_cnt | int ) }}"
+    exp_id: "{{ ( max_exp_id | int ) - ( (exp_cnt_max | int) - 1 ) + ( exp_cnt | int ) }}"
   when: id == 'last' and redefine_exp_id # continue the last experiment run
 
 - name: Create new exp id + Mark as init
@@ -108,6 +110,7 @@
     - { 'key': 'exp_job_ids_pending', 'value': "{{ state.exp_job_ids_pending }}" }
     - { 'key': 'exp_job_ids_running', 'value': "{{ state.exp_job_ids_running }}" }
     - { 'key': 'n_repetitions', 'value': "{{ state.n_repetitions }}" }
+    - { 'key': 'common_roles', 'value': "{{ state.common_roles }}" }
   loop_control:
     loop_var: fact_item
 

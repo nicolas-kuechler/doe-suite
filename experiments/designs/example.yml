@@ -3,8 +3,8 @@
 experiments:
   - experiment_1: # the base config object
       n_repetitions: 2 # how often to repeat each run (i.e. each level config)
-      common_roles:
-        - setup_common
+      common_roles: # those rules are run for all hosts during the initial setup
+        - setup-common
       host_types:
         client:
           n: 1
@@ -51,7 +51,7 @@ experiments:
   - experiment_2: # the base config object
       n_repetitions: 1 # how often to repeat each run (i.e. each level config)
       common_roles:
-        - setup_common
+        - setup-common
       host_types:
         client:
           n: 1

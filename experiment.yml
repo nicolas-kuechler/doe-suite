@@ -21,6 +21,7 @@
       exp_name: "{{ (item | dict2items | first).key }}"
       experiment: "{{ (item | dict2items | first).value }}"
       exp_cnt: "{{ ansible_loop.index0 }}"
+      exp_cnt_max: "{{ ansible_loop.length }}"
     loop: "{{ experiments }}"
     loop_control:
       extended: yes
@@ -56,7 +57,7 @@
   - name: Setup AWS EC2 instances
     include_role:
       name: experiment-aws
-    when: host_group_name != 'all'
+    when: host_group_name != 'all' and id == 'new'
     loop: "{{ host_types | dict2items }}"
     vars:
       host_group_name: "{{ host_type.key }}"
@@ -64,7 +65,19 @@
       host_n_max_tot: "{{ host_types['all'] | json_query(host_group_name + '.n_max') }}"
     loop_control:
       loop_var: host_type
-    when: id == 'new' # only change AWS if it is a new experiment
+
+  # This loop is almost the same as the above one, but it's more performant
+  # to first launch all EC2 instances and then connect to them.
+  - name: Manage (start/stop) EC2 instances
+    include_role:
+      name: experiment-aws-ec2-manage
+    when: host_group_name != 'all' and id == 'new'
+    loop: "{{ host_types | dict2items }}"
+    vars:
+      host_group_name: "{{ host_type.key }}"
+      host_exp_values: "{{ host_type.value }}"
+    loop_control:
+      loop_var: host_type
 
   - debug:
       var: groups
@@ -74,37 +87,39 @@
     tags: [print_action]
 
 ##########################################################################
-#   Setup Machines (Common, Clients Only, Servers Only)                  #
+#   Setup Machines                                                       #
 ##########################################################################
 
-# This is a somewhat hacky way to construct the group names of all ec2 instances
-# created in the previous step.
-# TODO: just use 'all'?
 - name: Setup registered host types
-  # tag_Name_ is a prefix chosen by the ec2 plugin (incl. the captitalization)
-  hosts: "{{ [ 'tag_Name_' + hostvars['localhost']['prj_id'] ]
-             | product( (hostvars['localhost']['host_types']['all'].keys() | list) )
-             | map('join', '_')
-             | product( ( hostvars['localhost']['experiments'] \
-                          | map('dict2items') \
-                          | map('first') \
-                          | map(attribute='key') \
-                          | list \
-                        ) \
-                      )
-             | map('join', '_')
-             | list }}"
+  hosts: all
   vars:
-    exp_name: "{{ inventory_hostname | split('_') }}"
+    # Get variables that were defined for the localhost to new hosts
+    host_types: "{{ hostvars['localhost']['host_types'] }}"
+    exp_facts: "{{ hostvars['localhost']['exp_facts'] }}"
+
+    # Hacky way to recover variables from the hostname, since they were not
+    # necessarily set if id != 'new'.
+    host_unique_id: "{{ group_names \
+                        | select('match', ec2_tag_name_prefix + '*') \
+                        | first \
+                        | split(ec2_tag_name_prefix + prj_id + '_') \
+                        | last }}"
+    host_group_name: "{{ host_unique_id \
+                         | split(separator)
+                         | first }}"
+    exp_name: "{{ host_unique_id
+                  | split(separator)
+                  | last }}"
   tasks:
-  - name:
+  - name: Execute init roles (incl. common roles for all hosts)
     include_role:
-      name: setup-common
+      name: "{{ role_name }}"
+    loop: "{{ ( ( [ host_types[host_group_name][exp_name].roles.init ] | flatten | list) ) \
+                + ( [ exp_facts[exp_name].common_roles ] | flatten ) }}"
+    loop_control:
+      loop_var: role_name
     when: id == 'new' # only setup if it is a new experiment
 
-  # TODO: remove
-  - fail:
-      msg: "Stopping..."
 
 ##########################################################################
 #   Run Experiment Jobs                                                  #

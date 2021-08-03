@@ -15,11 +15,18 @@
   set_fact:
     ec2_instance_ids: "{{ ec2_instances | json_query('results[*].instances[*].instance_id') | list | flatten }}"
 
-- debug:
-    msg: "Removing instances with the following ids: {{ ec2_instance_ids }}"
+- pause:
+    seconds: 10
+    prompt: |
+      "Removing instances with the following ids:
+       {{ ec2_instance_ids }}
+
+       If the above instance IDs are wrong, abort now! (CTRL+C followed by 'A')"
+  tags: [print_action]
 
 - name: Cleanup AWS
   ec2:
     region: "{{ exp_base.aws_region }}"
     instance_ids: "{{ ec2_instance_ids }}"
     state: absent
+  when: (ec2_instance_ids | length) > 0

@@ -4,6 +4,7 @@ regions:
   - eu-central-1
 filters:
   instance-state-name: ["running"]
+  tag:Prj: <<prj_id>> # TODO: set to the project ID from group_vars/all/main.yml
 
 # keyed_groups may be used to create custom groups
 strict: False

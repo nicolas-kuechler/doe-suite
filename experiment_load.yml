@@ -6,9 +6,6 @@
   vars:
     expstate: load
 
-- debug:
-    msg: "experiment = {{ experiment }}"
-
 - name: Schedule the experiments (job ids are 0 to number of experiments-1)
   set_fact:
     exp_job_ids: "{{ [exp_id]
