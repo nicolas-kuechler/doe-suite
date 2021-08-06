@@ -11,44 +11,53 @@
 - set_fact:
     is_init: False
 
-- name: Set exp id from command argument
-  set_fact:
-    # Use a counter if we don't generate new experiments, since the experiment
-    # ID depends on the number of previous executions of this YAML file.
-    exp_id: "{{ ( id | int ) + ( exp_cnt | int ) }}"
-  when: id != 'new' and id != 'last' and redefine_exp_id # continue an experiment run
+- name: Find and set exp id
+  block:
+    - name: Set exp id from command argument
+      set_fact:
+        # Use a counter if we don't generate new experiments, since the experiment
+        # ID depends on the number of previous executions of this YAML file.
+        exp_id: "{{ ( id | int ) + ( exp_cnt | int ) }}"
+      when: id != 'new' and id != 'last' and redefine_exp_id # continue an experiment run
 
-- name: Find all experiments state of the experiment with '`exp_suite`_`exp_name`_\d+' as name
-  find:
-    paths: "{{ local.exp_state_dir }}"
-    patterns: "^{{ exp_suite }}_.*_\\d+$"
-    file_type: directory
-    use_regex: yes
-  register: state_dirs_found
+    - name: Find all experiments state of the experiment with '`exp_suite`_`exp_name`_\d+' as name
+      find:
+        paths: "{{ local.exp_state_dir }}/{{ exp_suite }}"
+        patterns: "^.*_\\d+$"
+        file_type: directory
+        use_regex: yes
+      register: state_dirs_found
 
-- name: Find the highest `exp_id`
-  set_fact:
-    max_exp_id: "{{ '0' if state_dirs_found.matched == 0 else (state_dirs_found \
-                    | json_query('files[*].path') \
-                    | map('split', '_') \
-                    | map('last') \
-                    | map('int') \
-                    | list \
-                    | sort \
-                    | last ) }}"
+    - name: Find the highest `exp_id`
+      set_fact:
+        max_exp_id: "{{ '0' if state_dirs_found.matched == 0 else (state_dirs_found \
+                        | json_query('files[*].path') \
+                        | map('split', '_') \
+                        | map('last') \
+                        | map('int') \
+                        | list \
+                        | sort \
+                        | last ) }}"
 
-# Since we ran X experiments before, we start with max_exp_id - (X-1) and then
-# increment for each experiment.
-- name: "Construct the experiment ID of the last run experiment(s)"
-  set_fact:
-    exp_id: "{{ ( max_exp_id | int ) - ( (exp_cnt_max | int) - 1 ) + ( exp_cnt | int ) }}"
-  when: id == 'last' and redefine_exp_id # continue the last experiment run
+    - assert:
+        that:
+          - (max_exp_id | int) >= (exp_cnt_max | int)
+      when: id == 'last'
 
-- name: Create new exp id + Mark as init
-  set_fact:
-    is_init: True
-    exp_id: "{{ (max_exp_id | int) + 1 }}"
-  when: id == 'new' and redefine_exp_id and expstate == 'load'  # init experiment
+    # Since we ran X experiments before, we start with max_exp_id - (X-1) and then
+    # increment for each experiment.
+    - name: "Construct the experiment ID of the last run experiment(s)"
+      set_fact:
+        exp_id: "{{ (max_exp_id | int) - ( (exp_cnt_max | int) - 1 ) + (exp_cnt | int) }}"
+      when: id == 'last' and redefine_exp_id # continue the last experiment run
+
+    - name: Create new exp id + mark as init
+      set_fact:
+        is_init: True
+        exp_id: "{{ (max_exp_id | int) + 1 }}"
+      when: id == 'new' and redefine_exp_id and expstate == 'load'  # init experiment
+
+  when: (exp_id is not defined) or redefine_exp_id
 
 - debug:
     msg: "exp_name={{ exp_name }} exp_id={{ exp_id }}"
@@ -82,28 +91,50 @@
 - name: Create exp directory if it does not exist
   delegate_to: localhost
   file:
-    path: "{{ local.exp_state_dir }}/{{ exp_suite }}_{{ exp_name }}_{{ exp_id }}"
+    path: "{{ local.exp_state_dir }}/{{ exp_suite }}/{{ exp_name }}_{{ exp_id }}"
     state: directory
     mode:  0755
   when: is_init
+
+- name: Use previous values for undefined new state values in a state update
+  block:
+    - name: Load previous state
+      include_vars: # Be careful: any variables you set with set_fact will not be overwritten with include_vars due to the variable precedence of different sources in Ansible.
+        file: "{{ local.exp_state_dir }}/{{ exp_suite }}/{{ exp_name }}_{{ exp_id }}/state.yml"
+        name: prev_state
+
+    - name: Set variables to previous value if undefined
+      set_fact:
+        n_repetitions_loc: "{{ n_repetitions_loc | default(prev_state.n_repetitions) }}"
+        host_types_loc: "{{ host_types_loc | default(prev_state.host_types) }}"
+        common_roles_loc: "{{ common_roles_loc | default(prev_state.common_roles) }}"
+  when: experiment is not defined
+
+- name: Set variables to prepare for saving the state
+  set_fact:
+    n_repetitions_loc: "{{ experiment.n_repetitions }}"
+    host_types_loc: "{{ experiment.host_types }}"
+    common_roles_loc: "{{ experiment.common_roles }}"
+  when: experiment is defined
 
 - name: Save the Experiment State in the Run Directory
   delegate_to: localhost
   template:
     src: state.yml.j2
-    dest: "{{ local.exp_state_dir }}/{{ exp_suite }}_{{ exp_name }}_{{ exp_id }}/state.yml"
+    dest: "{{ local.exp_state_dir }}/{{ exp_suite }}/{{ exp_name }}_{{ exp_id }}/state.yml"
     mode:  0755
   when: expstate == 'save' or is_init
 
 - name: Load Experiment State
   include_vars: # Be careful: any variables you set with set_fact will not be overwritten with include_vars due to the variable precedence of different sources in Ansible.
-    file: "{{ local.exp_state_dir }}/{{ exp_suite }}_{{ exp_name }}_{{ exp_id }}/state.yml"
+    file: "{{ local.exp_state_dir }}/{{ exp_suite }}/{{ exp_name }}_{{ exp_id }}/state.yml"
     name: state
 
 - name: Set experiment variables (facts) based on loaded state
   set_fact:
     exp_facts: "{{ exp_facts | default({}) | combine({ exp_name: { fact_item.key : fact_item.value } }, recursive=True) }}"
   with_items:
+    - { 'key': 'exp_id', 'value': "{{ exp_id }}" }
     - { 'key': 'exp_runs_ext', 'value': "{{ state.exp_runs_ext }}" }
     - { 'key': 'exp_job_ids', 'value': "{{ state.exp_job_ids }}" }
     - { 'key': 'exp_job_ids_unfinished', 'value': "{{ state.exp_job_ids_unfinished }}" }
@@ -124,6 +155,18 @@
                         } \
                       }, recursive=True) \
                 }}"
+  loop: "{{ state.host_types | dict2items }}"
+  loop_control:
+    loop_var: host_type
+
+- name: Set host type names (without the special type 'all')
+  set_fact:
+    host_type_names: "{{ state.host_types.keys() | list }}"
+
+- assert:
+    that:
+      - (host_type.value.n_check | int) <= (host_type.value.n | int)
+      - (host_type.value.n | int) <= (host_type.value.n_max | int)
   loop: "{{ state.host_types | dict2items }}"
   loop_control:
     loop_var: host_type

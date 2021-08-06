@@ -1,0 +1,18 @@
+---
+
+# We make at most `exp_n_tries` tries, where we wait `exp_check_wait_time` seconds
+# between tries. Each try checks whether the service on the host (named
+# `host_group_name_long`.service) is still running.
+- name: Check if experiment is still running
+  service_facts:
+  register: services_state
+  when: (exp_job_ids_unfinished | length) > 0
+  until: "'running' not in (services_state | default([]) | json_query(service_query) | list)"
+  retries: "{{ exp_n_tries }}"
+  delay: "{{ exp_check_wait_time }}"
+  vars:
+    service_query: "{{ 'ansible_facts.services.\"' + host_group_name_long + '.service\".state' }}"
+
+- debug:
+    msg: "Completing job..."
+  tags: [print_action]

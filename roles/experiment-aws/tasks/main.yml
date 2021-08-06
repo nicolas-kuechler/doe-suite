@@ -31,6 +31,10 @@
   tags: [print_action]
   when: (host_n_max_tot | int) == 0
 
+# XXX: Optimization potential: it's way faster to generate all instances of the same
+# group at once, instead of per experiment. But for that we need to figure out how
+# to set tags later to assign instances to specific experiments, because the ec2 role
+# names all of them the same by default.
 - name: Create EC2 Instances
   include_role:
     name: experiment-aws-ec2

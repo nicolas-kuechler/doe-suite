@@ -26,6 +26,9 @@
     loop_control:
       extended: yes
 
+  - set_fact:
+      redefine_exp_id: "{{ False }}"
+
   - name: Accumulate hosts in the same group among all host types
     set_fact:
       host_types: "{{ host_types
@@ -92,25 +95,33 @@
 
 - name: Setup registered host types
   hosts: all
-  vars:
-    # Get variables that were defined for the localhost to new hosts
-    host_types: "{{ hostvars['localhost']['host_types'] }}"
-    exp_facts: "{{ hostvars['localhost']['exp_facts'] }}"
-
-    # Hacky way to recover variables from the hostname, since they were not
-    # necessarily set if id != 'new'.
-    host_unique_id: "{{ group_names \
-                        | select('match', ec2_tag_name_prefix + '*') \
-                        | first \
-                        | split(ec2_tag_name_prefix + prj_id + '_') \
-                        | last }}"
-    host_group_name: "{{ host_unique_id \
-                         | split(separator)
-                         | first }}"
-    exp_name: "{{ host_unique_id
-                  | split(separator)
-                  | last }}"
+  strategy: free
   tasks:
+  # TODO: Cleanup: make one role only to set variables for all hosts
+  - set_fact:
+      # Get variables that were defined for the localhost to new hosts
+      host_types: "{{ hostvars['localhost']['host_types'] }}"
+      exp_facts: "{{ hostvars['localhost']['exp_facts'] }}"
+
+      # Hacky way to recover variables from the hostname, since they were not
+      # necessarily set if id != 'new'.
+      host_unique_id: "{{ group_names \
+                          | select('match', ec2_tag_name_prefix + '*') \
+                          | first \
+                          | split(ec2_tag_name_prefix + prj_id + '_') \
+                          | last }}"
+
+  - set_fact:
+      host_group_name: "{{ host_unique_id \
+                           | split(separator)
+                           | first }}"
+      exp_name: "{{ host_unique_id
+                    | split(separator)
+                    | last }}"
+
+  - set_fact:
+      exp_id: "{{ exp_facts[exp_name].exp_id }}" # TODO: cleanup: check if this is set elsewhere and remove it
+
   - name: Execute init roles (incl. common roles for all hosts)
     include_role:
       name: "{{ role_name }}"
@@ -126,18 +137,71 @@
 ##########################################################################
 
 - name: Run and monitor experiment jobs
-  # variables 'exp_n_tries' and 'exp_check_wait_time' control how long this runs
   hosts: localhost
   tasks:
   - debug:
       msg: "Running Experiment Jobs..."
     tags: [print_action]
 
-  - name: Try to sequentially run an experiment and wait until it's finished
+  - name: Run jobs of all experiments
     include_role:
       name: experiment-job
-    when: exp_job_ids_unfinished | length > 0  # there are some unfinished jobs left
-    loop: "{{ range(0, exp_n_tries, 1)|list }}"
+
+
+##########################################################################
+#   Experiment status checking                                           #
+##########################################################################
+
+# the variables 'exp_n_tries', 'exp_check_wait_time', and 'n_check' control how
+# long this runs
+- name: Check the experiment status on all hosts and fetch intermediate results
+  hosts: all
+  strategy: free
+
+  # TODO: outsource this to a file and load with include_vars?
+  # TODO: remove this entirely, setting them once is enough!
+  vars:
+    # Hacky way to recover variables from the hostname, since they were not
+    # necessarily set if id != 'new'.
+    host_group_name_long: "{{ group_names \
+                              | select('match', ec2_tag_name_prefix + '*') \
+                              | first }}" # TODO: refactor
+    host_unique_id: "{{ group_names \
+                        | select('match', ec2_tag_name_prefix + '*') \
+                        | first \
+                        | split(ec2_tag_name_prefix + prj_id + '_') \
+                        | last }}"
+    host_group_name: "{{ host_unique_id \
+                         | split(separator)
+                         | first }}"
+    exp_name: "{{ host_unique_id
+                  | split(separator)
+                  | last }}"
+
+    # Get variables that were defined for the localhost to new hosts
+    host_fact: "{{ hostvars['localhost']['host_types'][host_group_name] }}"
+    exp_fact: "{{ hostvars['localhost']['exp_facts'][exp_name] }}"
+  tasks:
+    - block:
+        - name: "Set variables for status check on host {{ inventory_hostname }}"
+          set_fact:
+            exp_job_ids_unfinished: "{{ exp_fact['exp_job_ids_unfinished'] }}"
+            n_check: "{{ host_fact[exp_name].n_check }}"
+            host_group_idx: "{{ lookup('ansible.utils.index_of', groups[host_group_name_long], 'eq', inventory_hostname) }}"
+
+        - name: "Run status and result fetching for {{ exp_fact.exp_job_ids_unfinished | length }} jobs"
+          include_role:
+            name: experiment-job-status
+          loop: "{{ range(0, (exp_fact.exp_job_ids_unfinished | length), 1) | list }}"
+          loop_control:
+            loop_var: unfinished_job_idx
+
+        - debug:
+            msg: "Finishing experiment {{ exp_name }}"
+          tags: [print_action]
+          when: exp_fact.exp_job_ids_unfinished | length == 0
+
+      when: exp_fact.exp_job_ids_unfinished | length > 0
 
 
 ##########################################################################
@@ -156,7 +220,7 @@
   # TODO: test this
   - name: Cleanup AWS
     include_role:
-      name: experimet-clear
+      name: experiment-clear
     when: awsclean | default(true) | bool  and exp_job_ids_unfinished | length == 0
 
   - name: Output the run id of this experiment for convenience

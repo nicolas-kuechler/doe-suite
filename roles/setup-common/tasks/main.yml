@@ -1,7 +1,7 @@
 ---
 
 - debug:
-    msg: "-> common (client and server)"
+    msg: "-> common"
   tags: [print_action]
 
 - name: Update repositories cache and install required packages
@@ -22,11 +22,11 @@
 
 
 # Use ssh-agent to get code from Git Remote Repository:
-# 
+#
 # 1. Configure ~/.ssh/config:  (add to file and replace the key for example with aws_ppl.pem)
 #    ```
 #    Host ec2*
-#    IdentifyFile ~/.ssh/{{ exp_base.key_name }} 
+#    IdentifyFile ~/.ssh/{{ exp_base.key_name }}
 #    ForwardAgent yes
 #    ```
 #

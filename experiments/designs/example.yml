@@ -9,17 +9,15 @@ experiments:
         client:
           n: 1
           n_max: 1
+          n_check: 1 # will check the systemd service of remote "client machines" [0, X)
           roles:
-            init: client-setup
-            start: client-job-start
-            result: client-job-result
+            init: setup-client # TODO: restructure to only a single key init_role:
         server:
           n: 1
           n_max: 1
+          n_check: 1 # will check the systemd service of remote "client machines" [0, X)
           roles:
-            init: server-setup
-            start: server-job-start
-            result: server-job-result
+            init: setup-server
       base_experiment:
         host_vars:
           client:
@@ -56,25 +54,23 @@ experiments:
         client:
           n: 1
           n_max: 1
+          n_check: 1 # will check the systemd service of remote "client machines" [0, X)
           roles:
-            init: client-setup
-            start: client-job-start
-            result: client-job-result
+            init: setup-client
         server:
           n: 1
           n_max: 1
+          n_check: 1 # will check the systemd service of remote "client machines" [0, X)
           roles:
-            init: server-setup
-            start: server-job-start
-            result: server-job-result
+            init: setup-server
       base_experiment:
         host_vars:
           client:
             arg1: 10
             arg2: $FACTOR$
           server:
-            arg1: $FACTOR$
-            arg2: "test1"
+            arg3: $FACTOR$
+            arg4: "test1"
         info: $FACTOR$
 
       # in the experiments object you have a list for the different experiments
@@ -83,5 +79,5 @@ experiments:
         - client:
             arg2: 2
           server:
-            arg1: 2
+            arg3: 2
           info: "c2"

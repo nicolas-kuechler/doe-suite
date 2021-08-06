@@ -3,10 +3,6 @@
     that:
     - ec2config is defined
 
-# TODO: remove
-- debug:
-    msg: "public_dns_names = {{ public_dns_names }}"
-
 - name: Wait for SSH to come up
   delegate_to: "{{ public_dns_name }}"
   wait_for_connection:
@@ -79,18 +75,20 @@
                           + ec2_start.instances }}"
   when: ec2_start.instances is defined
 
-- name: Wait for SSH of the created EC2 instances to come up
-  delegate_to: "{{ public_dns_name }}"
-  wait_for_connection:
-    connect_timeout: 3
-    timeout: 320
-  loop: "{{ public_dns_names }}"
-  loop_control:
-    loop_var: public_dns_name
+- block:
+  - name: Wait for SSH of the created EC2 instances to come up
+    delegate_to: "{{ public_dns_name }}"
+    wait_for_connection:
+      connect_timeout: 3
+      timeout: 320
+    loop: "{{ public_dns_names }}"
+    loop_control:
+      loop_var: public_dns_name
+
+  - name: Refresh dynamic ec2 inventory
+    meta: refresh_inventory
+
+  - pause:
+      seconds: 5
+
   when: (num_stop | int) > 0 or (num_start | int > 0)
-
-- name: Refresh dynamic ec2 inventory
-  meta: refresh_inventory
-
-- pause:
-    seconds=5

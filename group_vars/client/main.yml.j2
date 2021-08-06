@@ -5,11 +5,5 @@ ec2_instances_max_num: <<n_hosts>> # TODO: set the number of client instances (s
 instance_type: <<instance_type>> # TODO: choose client instance type
 ec2_volume_size: <<volume_size>> # TODO: choose client volume size
 
-# TODO: set how many client hosts to check to determine whether a job is finished
-# check that an experiment is still running by looking at the status of a systemd service
-#   the following flag determine how many clients are checked to see if there is still a running service of the project
-#   (e.g., if an experiment run ends when the first client stops, then the value should be 1 and the value for the server 0 (see below))
-n_hosts_status_check: <<n_hosts_status_check>> # will check the systemd service of remote "client machines" [0, X)
-
 ec2_image: ami-05f7491af5eef733a
 ec2_volume_snapshot: snap-0ccde4e83b88fdd69

@@ -26,6 +26,7 @@
     instance_tags:
       Name: "{{ ec2config.instance_tag }}"
       Prj: "{{ prj_id }}"
+      Exp: "{{ instance_exp }}"
   register: ec2_launch
 
 # Optimization: we first start all ec2 instances and then wait for SSH, refresh

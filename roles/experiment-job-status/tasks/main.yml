@@ -1,41 +1,36 @@
 ---
 
-- assert:
-    that:
-    - exp_client.n_hosts_status_check is defined
-    - exp_server.n_hosts_status_check is defined
-    - exp_client.n_hosts_status_check <= groups[exp_client.host_group] | default([]) | length
-    - exp_server.n_hosts_status_check <= groups[exp_server.host_group] | default([]) | length
+#
+# Experiment status checking
+#
 
-- name: Check if Experiment is Still Running (on clients)
-  delegate_to: "{{ groups[exp_client.host_group][idx] }}"
-  service_facts:
-  register: services_state_clients
-  when: exp_job_ids_unfinished | length > 0 and exp_client.n_hosts_status_check > 0
-  loop: "{{ range(0, exp_client.n_hosts_status_check, 1)|list }}"
-  loop_control:
-    loop_var: idx
+- name: Check the job status (`n_check` in the experiment config YAML controls how many hosts are checked)
+  include_tasks:
+    file: get_status.yml
+  # there are some unfinished jobs left
+  when: (exp_fact.exp_job_ids_unfinished | length) > 0 and (host_group_idx | int) < (n_check | int)
 
+#
+# Experiment result gathering
+#
 
-- name: Check if Experiment is Still Running (on servers)
-  delegate_to: "{{ groups[exp_server.host_group][idx] }}"
-  service_facts:
-  register: services_state_servers
-  when: exp_job_ids_unfinished | length > 0 and exp_server.n_hosts_status_check > 0
-  loop: "{{ range(0, exp_server.n_hosts_status_check, 1)|list }}"
-  loop_control:
-    loop_var: idx
-
-
-- name: Check if current running experiment finished
-  set_fact:
-    clients_stopped:  "{{ 'running' not in services_state_clients| default([]) | json_query(c_query) | list }}"
-    servers_stopped:  "{{ 'running' not in services_state_servers| default([]) | json_query(s_query) | list }}"
-    #clients_stopped_debug:  "{{  services_state_clients| default([]) | json_query(c_query) | list }}"
-    #servers_stopped_debug:  "{{  services_state_servers| default([]) | json_query(s_query) | list }}"
+# Create local directory and fetch results
+- name: Fetch the results
+  include_tasks:
+    file: fetch_results.yml
   vars:
-    c_query: 'results[*].ansible_facts.services."{{ prj_id }}client.service".state'
-    s_query: 'results[*].ansible_facts.services."{{ prj_id }}server.service".state'
+    remote_results_dir: "{{ exp_working_dir }}/results"
+    local_results_dir: "results/{{ exp_suite }}/{{ exp_name }}_{{ exp_id }}/\
+                        run_{{ exp_run }}/rep_{{ exp_run_rep }}"
 
-- set_fact:
-    is_cur_exp_finished: "{{ clients_stopped and servers_stopped }}"
+# Update experiment state
+- name: Update the job ids list (remove experiment from running)
+  set_fact:
+    exp_job_ids_running: []
+    exp_job_ids_unfinished: "{{ exp_job_ids_pending }}"
+
+- name: Save the updated state of the experiment run (save job ids)
+  include_role:
+    name: experiment-state
+  vars:
+    expstate: save
