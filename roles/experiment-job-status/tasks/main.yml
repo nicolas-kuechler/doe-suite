@@ -26,11 +26,15 @@
 # Update experiment state
 - name: Update the job ids list (remove experiment from running)
   set_fact:
+    exp_runs_ext: "{{ exp_fact.exp_runs_ext }}"
+    exp_job_ids: "{{ exp_fact.exp_job_ids }}"
+    exp_job_ids_unfinished: "{{ exp_fact.exp_job_ids_pending }}"
+    exp_job_ids_pending: "{{ exp_fact.exp_job_ids_pending }}"
     exp_job_ids_running: []
-    exp_job_ids_unfinished: "{{ exp_job_ids_pending }}"
 
 - name: Save the updated state of the experiment run (save job ids)
   include_role:
     name: experiment-state
   vars:
     expstate: save
+    redefine_exp_id: "{{ False }}"

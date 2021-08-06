@@ -7,7 +7,7 @@
   service_facts:
   register: services_state
   when: (exp_job_ids_unfinished | length) > 0
-  until: "'running' not in (services_state | default([]) | json_query(service_query) | list)"
+  until: "(services_state | default([]) | json_query(service_query)) != 'running'"
   retries: "{{ exp_n_tries }}"
   delay: "{{ exp_check_wait_time }}"
   vars:

@@ -2,11 +2,12 @@
 
 - assert:
     that:
-    - exp_suite is defined
-    - exp_name is defined
-    - id is defined
-    - expstate == 'load' or expstate == 'save'
-    - id == 'new' or id == 'last' or id|int > 0
+      - redefine_exp_id is defined
+      - exp_suite is defined
+      - exp_name is defined
+      - id is defined
+      - expstate == 'load' or expstate == 'save'
+      - id == 'new' or id == 'last' or id|int > 0
 
 - set_fact:
     is_init: False
