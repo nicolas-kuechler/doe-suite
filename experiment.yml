@@ -106,12 +106,20 @@
   - debug:
       msg: "Running Experiment Jobs..."
     tags: [print_action]
+  
 
-  - name: Try to sequentially run an experiment and wait until it's finished
+  # TODO [nku] control between sequential and spooler
+  - name: Enqueue all jobs in task spooler, periodically check and download results
     include_role:
-      name: experiment-job
+      name: experiment-jobs-spooler
     when: exp_job_ids_unfinished | length > 0  # there are some unfinished jobs left
     loop: "{{ range(0, exp_n_tries, 1)|list }}"
+  
+  #- name: Try to sequentially run an experiment and wait until it's finished
+  #  include_role:
+  #    name: experiment-job
+  #  when: exp_job_ids_unfinished | length > 0  # there are some unfinished jobs left
+  #  loop: "{{ range(0, exp_n_tries, 1)|list }}"
 
   
 ##########################################################################

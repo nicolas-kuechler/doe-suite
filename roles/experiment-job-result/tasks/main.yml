@@ -4,47 +4,33 @@
     that:
     - remote_results_dir is defined
     - local_results_dir is defined
+    - remote_hosts is defined # list of {"host": "<HOST>", "host_type": "<type of host (e.g., server)>", "idx": "<IDX>"}
+    - remote_config_file is defined
 
 - name: Create local folder (for results)
   file:
-    path: "{{ local_results_dir }}/server_{{ idx }}"
+    path: "{{ local_results_dir }}/{{ d.host_type }}_{{ d.idx }}"
     state: directory
     mode: 0755
-  loop: "{{ groups[exp_server.host_group] | default([]) }}" 
+  loop: "{{ remote_hosts }}" 
   loop_control:
-    loop_var: host
-    index_var: idx
-
-- name: Create local folder (for results)
-  file:
-    path: "{{ local_results_dir }}/client_{{ idx }}"
-    state: directory
-    mode: 0755
-  loop: "{{ groups[exp_client.host_group] | default([]) }}" 
-  loop_control:
-    loop_var: host
-    index_var: idx
+    loop_var: d
 
 - name: Fetch Results (if experiment done)
   delegate_to: localhost
-  local_action: command rsync -az "{{ host }}:{{ remote_results_dir }}/*" "{{ local_results_dir }}/server_{{ idx }}"
-  loop: "{{ groups[exp_server.host_group] | default([]) }}" 
+  local_action: command rsync -az "{{ d.host }}:{{ remote_results_dir }}/*" "{{ local_results_dir }}/{{ d.host_type }}_{{ d.idx }}"
+  loop: "{{ remote_hosts }}" 
   loop_control:
-    loop_var: host
-    index_var: idx
+    loop_var: d
 
-
-- name: Fetch Results (if experiment done)
-  delegate_to: localhost
-  local_action: command rsync -az "{{ host }}:{{ remote_results_dir }}/*" "{{ local_results_dir }}/client_{{ idx }}"
-  loop: "{{ groups[exp_client.host_group] | default([]) }}" 
+- name: fetch config
+  ansible.builtin.fetch:
+    src: "{{  remote_config_file }}"
+    dest: "{{ local_results_dir }}/"
+    flat: yes
+    validate_checksum: no
+  delegate_to: "{{ d.host }}"
+  loop: "{{ remote_hosts }}" 
   loop_control:
-    loop_var: host
-    index_var: idx
-
-- name: Save the config of the job
-  delegate_to: localhost
-  template:
-    src: config.yml.j2
-    dest: "{{ local_results_dir }}/config.yml"
-    mode:  0755
+    loop_var: d
+  

@@ -7,6 +7,7 @@
     - expstate == 'load' or expstate == 'save'
     - id == 'new' or id == 'last' or id|int > 0 
 
+
 - name:
   set_fact:
     exp_name: "{{ exp }}"
@@ -53,7 +54,9 @@
     exp_job_ids: []
     exp_job_ids_unfinished: []
     exp_job_ids_pending: []
+    exp_job_ids_queued: []
     exp_job_ids_running: []
+    exp_job_ids_finished: []
   loop: "{{ factor_levels }}"
   when: is_init
   loop_control:
@@ -64,6 +67,75 @@
     - not '$FACTOR$' in (exp_runs_ext | string)
     fail_msg: "missing level for at least one factor in the experiment config (i.e., not all '$FACTOR$' are replaced)"
   when: is_init
+
+
+#################################
+# Start Perform CMD Replace
+
+# TODO [nku] at the moment only $CMD$ is replaced, not sure this makes sense in combination with client server setup
+
+- set_fact:
+    use_exp_cmd: "{{ '$CMD$' in base_experiment }}" 
+  when: is_init
+
+- set_fact:
+      exp_runs_ext_wo_cmd: "{{ exp_runs_ext_wo_cmd | default([]) + [my_run | combine({'$CMD$': '-', '~FACTORS_LEVEL': '-'})] | list}}"
+  loop: "{{ exp_runs_ext }}"
+  loop_control:
+    loop_var: my_run
+  when: is_init and use_exp_cmd
+
+- name: Create a tmp directory if it does not exist
+  ansible.builtin.file:
+    path: tmp
+    state: directory
+    mode: '0755'
+  when: is_init and use_exp_cmd
+
+- name: Create tmp command files
+  copy:
+    dest: tmp/cmd{{ idx }}.yml.j2
+    content: "{{ my_run['$CMD$'] }}"
+  loop: "{{ exp_runs_ext }}"
+  loop_control:
+    index_var: idx
+    loop_var: my_run
+  when: is_init and use_exp_cmd
+
+- name: Apply templating on commands cmds
+  set_fact:
+    cmds: "{{ cmds | default([]) + [lookup('template', 'tmp/cmd{{ idx }}.yml.j2', variable_start_string='[%', variable_end_string='%]')] }}"
+  loop: "{{ exp_runs_ext_wo_cmd }}"
+  loop_control:
+    index_var: idx
+    loop_var: run
+  when: is_init and use_exp_cmd
+    
+- name: set experiments with replaced command
+  set_fact:
+    exp_runs_ext_tmp: "{{ exp_runs_ext_tmp | default([]) + [my_run | combine({'$CMD$': cmds[idx]})] | list}}"
+  loop: "{{ exp_runs_ext }}"
+  loop_control:
+    index_var: idx
+    loop_var: my_run
+  when: is_init and use_exp_cmd
+
+- name: Delete content & directory
+  file:
+    state: absent
+    path: tmp/
+  when: is_init
+
+- name: update experiments ext variable with replaced cmds
+  set_fact:
+    exp_runs_ext: "{{ exp_runs_ext_tmp }}"
+    exp_runs_ext_tmp: none
+  when: is_init and use_exp_cmd
+
+# End Perform CMD Replace
+##################################
+
+
 
 - name: Create exp directory if it does not exist
   delegate_to: localhost
@@ -93,7 +165,26 @@
     exp_job_ids: "{{ state.exp_job_ids }}"
     exp_job_ids_unfinished: "{{ state.exp_job_ids_unfinished }}"
     exp_job_ids_pending: "{{ state.exp_job_ids_pending }}"
+    exp_job_ids_queued: "{{ state.exp_job_ids_queued }}"
     exp_job_ids_running: "{{ state.exp_job_ids_running }}"
+    exp_job_ids_finished: "{{ state.exp_job_ids_finished }}"
     n_repetitions: "{{ state.n_repetitions }}"
   when: expstate == 'load' and not is_init
-  
+
+- name: Logical check that semantics of job id lists are ok
+  assert:
+    that:
+    # check that exp_job_ids is equal to unfinished + finished
+    - exp_job_ids | difference(test_exp_job_ids) | length == 0
+    - test_exp_job_ids | difference(exp_job_ids) | length == 0
+
+    # check that exp_jobs_unfinished is correct
+    - exp_job_ids_unfinished | difference(test_exp_job_ids_unfinished) | length == 0
+    - test_exp_job_ids_unfinished | difference(exp_job_ids_unfinished) | length == 0
+
+    # check that no job_id is in pending, queued, running at the same time
+    - test_exp_job_ids_unfinished | unique | length == test_exp_job_ids_unfinished | length 
+
+  vars:
+    test_exp_job_ids: "{{ exp_job_ids_unfinished|list + exp_job_ids_finished|list }}"
+    test_exp_job_ids_unfinished: "{{ exp_job_ids_pending | list + exp_job_ids_queued | list + exp_job_ids_running | list }}"

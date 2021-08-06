@@ -8,6 +8,7 @@
   become: True
   apt:
     pkg:
+    - task-spooler
     - python3-pip
     - python3.8
     # TODO: add other required packages (for both client and server)

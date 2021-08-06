@@ -8,7 +8,8 @@ base_experiment: # the base config object
     arg3: $FACTOR$
     arg4: "test1"
   info: $FACTOR$
-
+  #$CMD$: $FACTOR$
+  $CMD$: "{{ exp_code_dir }}/.venv/bin/python {{ exp_code_dir }}/demo/client.py -config config.json -a1 [% run.client.arg1 %] -a2 [% run.client.arg2 %]"
 
 factor_levels: 
 # in the experiments object you have a list for the different experiments with the values for the fields marked as $VARIES$ in the base config object.
@@ -17,15 +18,18 @@ factor_levels:
   server:
     arg3: 1
   info: "c1"
+  #$CMD$: "start command [% run.client.arg2 %]"
   
 - client:
     arg2: 2
   server:
     arg3: 2
   info: "c2"
+  #$CMD$: "start command [% run.server.arg3 %]"
 
 - client:
     arg2: 3
   server:
     arg3: 3
   info: "c3"
+  #$CMD$: "start command [% run.info %] [% run.info %]"
