@@ -125,7 +125,7 @@
   - name: Execute init roles (incl. common roles for all hosts)
     include_role:
       name: "{{ role_name }}"
-    loop: "{{ ( ( [ host_types[host_group_name][exp_name].roles.init ] | flatten | list) ) \
+    loop: "{{ ( ( [ host_types[host_group_name][exp_name].init_role ] | flatten | list) ) \
                 + ( [ exp_facts[exp_name].common_roles ] | flatten ) }}"
     loop_control:
       loop_var: role_name
