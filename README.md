@@ -170,8 +170,9 @@ After completing the getting started section, it should be possible to run the [
     pipenv run ansible-galaxy install -r requirements-collections.yml
     ```
 
-7. Run the repository initialization helper script and configure the experiment suite
-    (prompts user input to perform variable substitution in the template [group_vars/all/main.yml.j2](group_vars/all/main.yml.j2)).
+7. Run the repository initialization helper script and configure the experiment suite and the example host types `client` and `server`.
+
+    This prompts user input to perform variable substitution in the `group_vars/*/main.yml.j2` variable templates for the groups [all](group_vars/all/main.yml.j2), [client](group_vars/all/client.yml.j2), and [server](group_vars/all/server.yml.j2). Moreover, it configures the inventory template file [inventory/aws_ec2.yml.j2](inventory/aws_ec2.yml.j2).
 
     When unsure, set the unique `project id` and the AWS `key name` from the prerequisites and otherwise use the default options.
 
