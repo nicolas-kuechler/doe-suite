@@ -14,17 +14,17 @@
 
 In a nutshell, the suite automatically runs experiments where multiple factors are varied based on simple `YAML` files:
 ```YAML
-# experiment design with two factors with two levels each 
-seed: 1234                  # a constant in the experiment 
+# experiment design with two factors with two levels each
+seed: 1234                  # a constant in the experiment
 payload_size_mb:            # a factor with two levels
   $FACTOR$: [1, 128]
 opt:                        # a factor with two levels
   $FACTOR$: [true, false]
-  
-# -> Results in 4 runs (combinations of parameters) that are executed. 
-#    Note, the repeated execution of runs is possible. 
+
+# -> Results in 4 runs (combinations of parameters) that are executed.
+#    Note, the repeated execution of runs is possible.
 ```
-and outputs an experiment result table: 
+and outputs an experiment result table:
 
 | exp_name | exp_id     | run   | host     | seed | payload_size_mb | opt   | rt_mean | rt_std |
 |----------|------------|-------|----------|------|-----------------|-------|---------|--------|
@@ -80,11 +80,11 @@ Moreover, under [Design of Experiments](#design-of-experiments), we show how to 
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-The AWS Ansible Experiment Suite automates the process of running experiments on AWS. 
+The AWS Ansible Experiment Suite automates the process of running experiments on AWS.
 On a high level, the experiment suite creates AWS resources (VPC, EC2 instances), installs required packages, and builds the artifact.
 
 Afterward, the suite sequentially executes jobs of an experimental design (DOE).
-The suite supports a multi-factor and multi-level experiment design with repetition, 
+The suite supports a multi-factor and multi-level experiment design with repetition,
 i.e., it is possible to vary multiple parameters and repeat each run.
 A `YAML`file in [experiments/designs](experiments/designs) describes the full experiment design.
 
@@ -130,7 +130,7 @@ After completing the getting started section, it should be possible to run the [
     ```
 
 4. Configure `ssh` and `ssh-agent`.
-  
+
       * Configure ~/.ssh/config:  (add to file and replace the key for AWS, for example, with aws_ppl.pem)
           ```
           Host ec2*
@@ -138,7 +138,7 @@ After completing the getting started section, it should be possible to run the [
           User ubuntu
           ForwardAgent yes
           ```
-      * Add the GitHub private key to ssh-agent. 
+      * Add the GitHub private key to ssh-agent.
         This allows cloning a GitHub repository on an EC2 instance without copying the private key or entering credentials.
         The process depends on your environment but should be as follows [(source)](https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh):
 
@@ -154,7 +154,7 @@ After completing the getting started section, it should be possible to run the [
 
 
 5. Install AWS CLI (version 2) and configure Boto
-  
+
       * Install AWS CLI version 2 [(see instructions)](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html)
 
       * Configure AWS credentials for Boto [(see instructions)](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html)
@@ -162,15 +162,15 @@ After completing the getting started section, it should be possible to run the [
         aws configure
         ```
         By default, credentials should be in `~/.aws/credentials`.
-  
 
-6. Install the required Ansible collections 
+
+6. Install the required Ansible collections
 
     ```sh
     pipenv run ansible-galaxy install -r requirements-collections.yml
     ```
 
-7. Run the repository initialization helper script and configure the experiment suite 
+7. Run the repository initialization helper script and configure the experiment suite
     (prompts user input to perform variable substitution in the template [group_vars/all/main.yml.j2](group_vars/all/main.yml.j2)).
 
     When unsure, set the unique `project id` and the AWS `key name` from the prerequisites and otherwise use the default options.
@@ -191,7 +191,7 @@ After completing the getting started section, it should be possible to run the [
 The following section discusses: (i) How to adapt the template for your artifact? (ii) How to design (define) experiments? (iii) How to run experiments? (iv) How to clean up AWS resources? (v) How to work with the experimental results?
 
 The experiment suite splits an experiment into individual jobs.
-A job is a single run of the benchmark with one specific configuration. 
+A job is a single run of the benchmark with one specific configuration.
 The relation between an experiment run and a job is that a run is repeated multiple times (see `n_repetitions` in experiment design).
 
 The jobs are derived from the experiment design in [experiment/designs](experiment/designs).
@@ -256,54 +256,70 @@ factor_levels:
 
 #### Table File
 
-For convenience when running a complete factorial design, i.e., experiment with every possible combination of all factor levels, we provide a script (see [scripts/expdesign.py](scripts/expdesign.py)) to generate the required config files based on a more concise representation. 
+For convenience when running a complete factorial design, i.e., experiment with every possible combination of all factor levels, we provide a script (see [scripts/expdesign.py](scripts/expdesign.py)) to generate the required config files based on a more concise representation.
 
 When given a concise experiment configuration with a set of factors and each factor with multiple levels in a "table" form, the script expands the concise "table" form configuration into the experiment design by performing a cross-product of all factor levels.
 
 Simple Example:
 
 ```sh
-  pipenv run python scripts/expdesign.py --exp simple --rep 3
+  pipenv run python scripts/expdesign.py --exps simple
 ```
 
 Experiment in "table" form:
 
 ```YAML
-seed: 1234                  # a constant in the experiment 
-payload_size_mb:            # a factor with two levels
-  $FACTOR$: [1, 128]
-opt:                        # a factor with two levels
-  $FACTOR$: [true, false]   
+n_repetitions: 2  # how often each run is repeated (i.e. each level config)
+common_roles:     # roles that are run for all hosts during the initial setup
+  - setup-common
+host_types:
+  single:
+    n: 1                    # number of current instances
+    init_role: setup-single # role run on the initial instance setup
+base_experiment:
+  seed: 1234                  # a constant in the experiment
+  payload_size_mb:            # a factor with two levels
+    $FACTOR$: [1, 128]
+  opt:                        # a factor with two levels
+    $FACTOR$: [true, false]
 
-# experiments/table/simple.yml 
+# experiments/table/simple.yml
 ```
 
 transforms into the cross product of all factor levels:
 
 An experiment in "design" form:
 ```YAML
-n_repetitions: 3
-
-base_experiment:
-  seed: 1234
-  payload_size_mb: $FACTOR$
-  opt: $FACTOR$
-
-factor_levels:
-- payload_size_mb: 1
-  opt: true
-- payload_size_mb: 1
-  opt: false
-- payload_size_mb: 128
-  opt: true
-- payload_size_mb: 128
-  opt: false
+experiments:
+- simple:
+    n_repetitions: 2
+    common_roles:
+    - setup-common
+    host_types:
+      single:
+        n: 1
+        init_role: setup-single
+        n_max: 1
+        n_check: 1
+    base_experiment:
+      seed: 1234
+      payload_size_mb: $FACTOR$
+      opt: $FACTOR$
+    factor_levels:
+    - payload_size_mb: 1
+      opt: true
+    - payload_size_mb: 1
+      opt: false
+    - payload_size_mb: 128
+      opt: true
+    - payload_size_mb: 128
+      opt: false
 
 # experiments/designs/simple.yml
 ```
 
 
-### Running an Experiment 
+### Running an Experiment
 
 We run an experiment by starting the Ansible playbook.
 We provide the name of an experiment design from `experiments/designs` (e.g., example), and we use `id=new` to run a new complete experiment.  
@@ -359,7 +375,7 @@ Locally, each experiment job (repetition of an experiment run with a specific co
 
 `results/exp_<EXPERIMENT NAME>_ <EXPERIMENT ID>/run_<RUN>/rep_<REPETITION>`
 
-- `RUN` is the index of the run (starts at 0) 
+- `RUN` is the index of the run (starts at 0)
 - `REPETITION`is the index of the repetitions (starts at 0)
 
 In this folder, we have a separate folder for each involved EC2 instance where all result files are downloaded.
@@ -370,7 +386,7 @@ In this folder, we have a separate folder for each involved EC2 instance where a
 - `HOST INDEX` is the index of the host (starts for both clients and servers at 0)
 
 
-Example: 
+Example:
 The folder `results/exp_example_1626423613/run_2/rep_1/server_0` contains all result files from the 1st server, from the 2nd repetition (rep starts with 0) of the 3rd run (run starts at 0) from the experiment named `example` with id `1626423613`.
 
 The artifact (code) is executed on the remote machine in the experiment job's working directory. There are two folders in this working directory: `results` and `scratch`. Only the files in `results` are download at the end of the experiment job to the local machine.
@@ -378,7 +394,7 @@ The artifact (code) is executed on the remote machine in the experiment job's wo
 
 #### Result Files
 
-The script [scripts/results.py](scripts/results.py) supports loading experiment results in multiple formats into a panda data frame. 
+The script [scripts/results.py](scripts/results.py) supports loading experiment results in multiple formats into a panda data frame.
 The data frame contains:
 General info (exp name, exp id, run, host).
 The run config (the parameters).
@@ -396,8 +412,8 @@ exp = {
 df = read_df(results_dir, exp)
 
 # or alternatively provide explicit regex lists for how to treat files (these are the defaults)
-df = read_df(results_dir, exp, 
-                    regex_error_file=[re.compile(r".*_stderr\.log$")],    # output a warning if we there is a non-empty file matching the regex 
+df = read_df(results_dir, exp,
+                    regex_error_file=[re.compile(r".*_stderr\.log$")],    # output a warning if we there is a non-empty file matching the regex
                     regex_ignore_file = [re.compile(r".*_stdout\.log$")], # ignore these files
                     regex_csv_result_file=[re.compile(r".*\.csv$")],      # result file in csv format
                     regex_json_result_file=[re.compile(r".*\.json$")],    # result file in json format
@@ -428,7 +444,7 @@ Project Link: [https://github.com/pps-lab/aws-simple-ansible](https://github.com
 
 
 
-<!-- ACKNOWLEDGEMENTS 
+<!-- ACKNOWLEDGEMENTS
 ## Acknowledgements
 
 -->
