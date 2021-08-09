@@ -1,23 +1,23 @@
 # TODO: add different host configs depending on the experiment using ansible host variables
 
 experiments:
-  - experiment_1: # the base config object
-      n_repetitions: 2 # how often to repeat each run (i.e. each level config)
-      common_roles: # those rules are run for all hosts during the initial setup
+  - experiment_1:       # the experiment configuration
+      n_repetitions: 2  # how often each run is repeated (i.e. each level config)
+      common_roles:     # roles that are run for all hosts during the initial setup
         - setup-common
       host_types:
         client:
-          n: 1
-          n_max: 1
-          n_check: 1 # will check the systemd service of remote "client machines" [0, X)
-          roles:
-            init: setup-client # TODO: restructure to only a single key init_role:
+          n: 1                    # number of current instances
+          n_max: 1                # maximum number of instances
+          n_check: 1              # will check the systemd service of `n_check`
+                                  # remote instances for `n_check` \in [0, X)
+          init_role: setup-client # role run on the initial instance setup
         server:
-          n: 1
-          n_max: 1
-          n_check: 1 # will check the systemd service of remote "client machines" [0, X)
-          roles:
-            init: setup-server
+          n: 1                    # number of current instances
+          n_max: 1                # maximum number of instances
+          n_check: 1              # will check the systemd service of `n_check`
+                                  # remote instances for `n_check` \in [0, X)
+          init_role: setup-server # role run on the initial instance setup
       base_experiment:
         host_vars:
           client:
@@ -36,33 +36,33 @@ experiments:
           server:
             arg3: 1
           info: "c1"
-        # - client:
-        #     arg2: 2
-        #   server:
-        #     arg3: 2
-        #   info: "c2"
-        # - client:
-        #     arg2: 3
-        #   server:
-        #     arg3: 3
-        #   info: "c3"
-  - experiment_2: # the base config object
-      n_repetitions: 1 # how often to repeat each run (i.e. each level config)
-      common_roles:
+        - client:
+            arg2: 2
+          server:
+            arg3: 2
+          info: "c2"
+        - client:
+            arg2: 3
+          server:
+            arg3: 3
+          info: "c3"
+  - experiment_2:       # the experiment configuration
+      n_repetitions: 1  # how often to repeat each run (i.e. each level config)
+      common_roles:     # roles that are run for all hosts during the initial setup
         - setup-common
       host_types:
         client:
-          n: 1
-          n_max: 1
-          n_check: 1 # will check the systemd service of remote "client machines" [0, X)
-          roles:
-            init: setup-client
+          n: 1                    # number of current instances
+          n_max: 1                # maximum number of instances
+          n_check: 1              # will check the systemd service of `n_check`
+                                  # remote instances for `n_check` \in [0, X)
+          init_role: setup-client # role run on the initial instance setup
         server:
-          n: 1
-          n_max: 1
-          n_check: 1 # will check the systemd service of remote "client machines" [0, X)
-          roles:
-            init: setup-server
+          n: 1                    # number of current instances
+          n_max: 1                # maximum number of instances
+          n_check: 1              # will check the systemd service of `n_check`
+                                  # remote instances for `n_check` \in [0, X)
+          init_role: setup-server # role run on the initial instance setup
       base_experiment:
         host_vars:
           client:
