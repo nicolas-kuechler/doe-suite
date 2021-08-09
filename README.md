@@ -224,32 +224,44 @@ These are examples of projects that use the experiment-suite template and what t
 
 The experiment suite runs experiments based on `YAML` files in [experiments/designs](experiments/designs).
 
-An experiment design `YAML` file consists of three parts:
-1. The `base_experiment` consists of all the configuration options. All configuration options that vary between runs (i.e., the factors of the experiment) are marked with the placeholder `$FACTOR$`. The remaining configuration options are filled with a constant.
+An experiment design `YAML` file consists of one or more experiments. Each experiment consists of the following parts:
+1. **General configuration**:
+  - The `n_repetitions` variable specifies how many times to repeat each experiment run. (i.e., how many times to execute an experiment run with the same configurations).
+  - The `common_roles` variable specifies an ansible role that is executed once on the initial instance set up.
 
-2. The list of `factor_levels` specifies the levels that the factors take in a particular experiment run. For example, in the first run of the experiment, the framework replaces the `$FACTOR$` placeholder with the first entry values in the `factors_levels`list.  
+2. **Host types**: this section configures different host types. Each host has its own initial setup role `init_role` and `n` active instances of at most `n_max` instances. `n_check` of those instances are checked to determine whether a host is done.
 
-3. The `n_repetitions` variable specifies how many times to repeat each experiment run. (i.e., how many times to execute an experiment run with the same configurations).
+3. **Base experiment**: The `base_experiment` consists of all the configuration options. All configuration options that vary between runs (i.e., the factors of the experiment) are marked with the placeholder `$FACTOR$`. The remaining configuration options are filled with a constant.
+
+4. **Factor levels**: The list of `factor_levels` specifies the levels that the factors take in a particular experiment run. For example, in the first run of the experiment, the framework replaces the `$FACTOR$` placeholder with the first entry values in the `factors_levels`list.  
 
 
 Example experiment design:
 ```YAML
-n_repetitions: 3
-
-base_experiment:
-  seed: 1234                  # constant across runs
-  payload_size_mb: $FACTOR$   # varies across runs
-  opt: $FACTOR$               # varies across runs
-
-factor_levels:
-# 3 runs where we vary the factors payload and opt.
-# However, for the 1 MB payload, we don't run the opt.
-- payload_size_mb: 1
-  opt: false
-- payload_size_mb: 128
-  opt: true
-- payload_size_mb: 128
-  opt: false
+experiments:
+- simple:
+    n_repetitions: 3
+    common_roles:
+    - setup-common
+    host_types:
+      single:
+        n: 1
+        init_role: setup-single
+        n_max: 1
+        n_check: 1
+    base_experiment:
+      seed: 1234
+      payload_size_mb: $FACTOR$
+      opt: $FACTOR$
+    factor_levels:
+    # 3 runs where we vary the factors payload and opt.
+    # However, for the 1 MB payload, we don't run the opt.
+    - payload_size_mb: 1
+      opt: false
+    - payload_size_mb: 128
+      opt: true
+    - payload_size_mb: 128
+      opt: false
 
 # experiments/designs/xyz.yml
 ```
