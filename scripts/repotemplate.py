@@ -9,6 +9,9 @@ template_name = "main.yml.j2"
 # The template path is assumed to be: f"{vars_base_path}/{group}"
 # The output path is assumed to be f"{template_path}/template_name.rstrip('.j2')"
 
+# Inventory template file path (the output path just strips `j2`)
+inventory_template_path = "inventory"
+inventory_template_name = "aws_ec2.yml.j2"
 
 defaults = {
     "all": {
@@ -19,14 +22,10 @@ defaults = {
         #'key_name': None,
     },
     "server": {
-        'n_hosts': 1,
-        'n_hosts_status_check': 1,
         'instance_type': 't2.medium',
         'volume_size': 16,
     },
     "client": {
-        'n_hosts': 1,
-        'n_hosts_status_check': 1,
         'instance_type': 't2.medium',
         'volume_size': 16
     }
@@ -67,10 +66,6 @@ def prompt_user(d, variables, host):
     else:
         print(f"\nConfiguring \"{host}\" instance...")
 
-        input_num(d, "n_hosts", "> Number of EC2 instances", min=0, max=10)
-
-        input_num(d, "n_hosts_status_check", "> Number of instances to check to determine if experiment job finished", min=0, max=d["n_hosts"])
-
         input_str(d, "instance_type", "> EC2 instance type")
 
         input_num(d, "volume_size", "> EC2 volume size in GB", min=8, max=512)
@@ -85,6 +80,27 @@ def prompt_user(d, variables, host):
 
     return d
 
+def get_env_and_template(template_path, template_name):
+    env = Environment(
+            loader = FileSystemLoader(template_path),
+            autoescape=select_autoescape(),
+            variable_start_string=r'<<',
+            variable_end_string=r'>>'
+    )
+
+    # print(env.list_templates())
+    template = env.get_template(template_name)
+
+    return env, template
+
+def write_template(template, output_path, output_name):
+    # replace the variables
+    content = template.render()
+
+    print(f"Writing {os.path.join(output_path, output_name)}...")
+    with open(os.path.join(output_path, output_name), "w+") as file:
+        file.write(f"{content}\n")
+
 # The values are not reset to the defaults when someone does not accept the config
 # because that can always be achieved with restarting the script. Instead, entries
 # are preserved as the new default values.
@@ -96,15 +112,7 @@ while True:
         output_path = template_path
         output_name = template_name.rstrip(".j2")
 
-        env = Environment(
-                loader = FileSystemLoader(template_path),
-                autoescape=select_autoescape(),
-                variable_start_string=r'<<',
-                variable_end_string=r'>>'
-        )
-
-        # print(env.list_templates())
-        template = env.get_template(template_name)
+        env, template = get_env_and_template(template_path, template_name)
 
         # find all variables in the template file
         with open(os.path.join(template_path, template_name), "r") as file:
@@ -124,18 +132,18 @@ while True:
         for k, v in d[group].items():
             env.globals[k] = v
 
-        # replace the variables
-        content = template.render()
-
-        print(f"Writing {os.path.join(output_path, output_name)}...")
-        with open(os.path.join(output_path, output_name), "w+") as file:
-            file.write(f"{content}\n")
+        write_template(template, output_path, output_name)
 
     print("\n" + "-"*60)
     for group in groups:
         print(f"\n\"{group}\" Configuration: ")
         for k, v in d[group].items():
             print(f"- {k}={v}")
+
+    # Add prj_id also to inventory template
+    env, template = get_env_and_template(inventory_template_path, inventory_template_name)
+    env.globals["prj_id"] = d["all"]["prj_id"]
+    write_template(template, inventory_template_path, inventory_template_name.rstrip(".j2"))
 
     is_ok = pyip.inputYesNo("Confirm (y): [Press enter] ", blank=True, applyFunc= lambda x: x if x else "yes")
     print(is_ok)
