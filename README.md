@@ -214,6 +214,18 @@ For the basic configurations, we provide a script [scripts/repotemplate.py](scri
 pipenv run python scripts/repotemplate.py
 ```
 
+#### Writing Systemd Services
+Jobs are started as systemd services. You need to define there, how host service should be started and with which arguments.
+
+In those service files, the following variables are available:
+- `exp_run_config`: the run config to pass as parameters and access arguments stored in the experiment config. Alternatively, in the working directory there is a file called `config.json` with the run config.
+
+- `host_ips` is a variable with a dictionary containing the private IPs of other hosts belonging to this experiment. For example, for the host types `client` (2 instances) and `server` (1 instance), this could look as follows:
+
+  ```YAML
+  host_ips = { 'client': [ '10.100.0.15', '10.100.0.77' ], 'server': [ '10.100.0.77' ] }
+  ```
+
 #### Further Examples
 
 These are examples of projects that use the experiment-suite template and what the project implements additionally:
