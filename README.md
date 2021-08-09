@@ -334,13 +334,13 @@ experiments:
 ### Running an Experiment
 
 We run an experiment by starting the Ansible playbook.
-We provide the name of an experiment design from `experiments/designs` (e.g., example), and we use `id=new` to run a new complete experiment.  
+We provide the name of an experiment design from `experiments/designs` (e.g., `example`), and we use `id=new` to run a new complete experiment.  
 
 ```sh
-pipenv run ansible-playbook experiment.yml -e "exp=example id=new"
+pipenv run ansible-playbook experiment.yml -e "exp_suite=example id=new"
 ```
 
-When we start a new experiment, we receive an experiment id (epoch timestamp).
+When we start a new experiment, each specified experiment receives an experiment ID (a counter incremented based on the state folders stored in `experiments/state/example`). I.e., when there are multiple experiments specified in the config, each one of them will have its own ID.
 
 The experiment suite periodically checks whether an experiment run is finished and then starts the next one according to the experiment design.
 
@@ -352,13 +352,13 @@ After the number of `exp_n_tries` is exceeded, the playbook stops. An already ru
 To continue checking a previously started experiment, we can specify the ID of the experiment when starting the playbook:
 
 ```sh
-pipenv run ansible-playbook experiment.yml -e "exp=example id=<ID>"
+pipenv run ansible-playbook experiment.yml -e "exp_suite=example id=<ID>"
 ```
 
-For convenience, we can also use `id=last` to continue with the most recent experiment with the provided name:
+For convenience, we can also use `id=last` to continue with the most recent experiment(s) with the provided name. If there are multiple experiments defined in the config, then this command will continue to run all of them (i.e., also multiple experiment IDs).
 
 ```sh
-pipenv run ansible-playbook experiment.yml -e "exp=example id=last"
+pipenv run ansible-playbook experiment.yml -e "exp_suite=example id=last"
 ```
 
 ### Cleaning up AWS

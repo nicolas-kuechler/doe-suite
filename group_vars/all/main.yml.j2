@@ -8,6 +8,7 @@ git_remote_repository: <<git_remote_repository>> # TODO: set remote repository (
 #   'exp_n_tries' is the total number of tries, and 'exp_check_wait_time' is the time in seconds to wait in between checking whether a job finsihed
 #    (playbook runs for roughly 'exp_n_tries' * 'exp_check_wait_time' seconds unless the experiment finishes earlier)
 exp_n_tries: <<exp_n_tries>>   # should be max 1000 (otherwise playbook freezes -> unsure why)
+                               # TODO [mh]: must be tested if this is still an issue, I switched to an `until` loop
 exp_check_wait_time: <<exp_check_wait_time>>
 
 remote:
