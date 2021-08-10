@@ -31,9 +31,6 @@
     region: "{{ ec2config.aws_region }}"
   register: stopped_instances
 
-- debug:
-    var: ec2config.ec2_instances_num
-
 - set_fact:
     running_instance_ids: "{{ running_instances.instances
                               | map(attribute='instance_id')
@@ -42,10 +39,10 @@
                               | map(attribute='instance_id')
                               | list}}"
     num_stop: "{{ [ ( running_instances.instances | length ) \
-                    - ( ec2config.ec2_instances_num | int ), 0] \
+                    - ( instance_values.n_max | int ), 0] \
                    | max \
                }}"
-    num_start: "{{ [ ( ec2config.ec2_instances_num | int ) \
+    num_start: "{{ [ ( instance_values.n_max | int ) \
                      - ( running_instances.instances | length ) , 0] \
                    | max}}"
 
