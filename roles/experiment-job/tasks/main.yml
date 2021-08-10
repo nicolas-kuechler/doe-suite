@@ -15,7 +15,6 @@
     exp_job_ids_pending: "{{ exp_job_ids_pending | default(exp_fact.exp_job_ids_pending) }}"
     exp_job_ids_running: "{{ exp_job_ids_running | default(exp_fact.exp_job_ids_running) }}"
     n_repetitions: "{{ exp_fact.n_repetitions }}"
-    exp_id: "{{ exp_fact.exp_id }}"
 
     do_init_job: "{{ do_init_job | default(False) }}"
 
@@ -131,12 +130,6 @@
     - name: Start new experiment on all hosts (if there is none running atm)
       include_role:
         name: experiment-job-start
-      vars:
-        host_stats: "{{ host_types[host_group_name][exp_name] }}" # TODO: change variable host_types[exp_name] to host_types after renaming
-        host_group_name_long: "{{ ec2_tag_name_prefix + prj_id + '_' + host_group_name + separator + exp_name }}" # TODO search better name
-      loop: "{{ host_type_names }}"
-      loop_control:
-        loop_var: host_group_name
 
     when: new_running_job_id is not none
 
@@ -149,16 +142,6 @@
       name: experiment-state
     vars:
       expstate: save
-
-  - name: Update experiment facts on all involved hosts
-    set_fact:
-      exp_fact: "{{ exp_facts[exp_name] }}"
-      exp_facts: "{{ exp_facts | combine({ exp_name: exp_fact }) }}"
-    delegate_to: "{{ host }}"
-    delegate_facts: true
-    loop: "{{exp_other_hosts + ['localhost'] }}"
-    loop_control:
-      loop_var: host
 
   - debug:
       msg="new_running_job_id={{ new_running_job_id | default('-') }}    pending={{ exp_job_ids_pending }} running={{ exp_job_ids_running }}"

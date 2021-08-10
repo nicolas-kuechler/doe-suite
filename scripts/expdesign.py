@@ -127,7 +127,7 @@ def build_config_product(infile):
             _insert_config(d, key=k, parent_path=path, value=v)
         factor_levels.append(d)
 
-    # Add default values for unset host_type parameters, which are optional in the short table form
+    # Add default values for unset host_facts parameters, which are optional in the short table form
     for v in exp_table["host_types"].values():
         v.setdefault("n_max", v["n"])
         v.setdefault("n_check", v["n"])

@@ -63,11 +63,11 @@
     when: host_group_name != 'all' and id == 'new'
     loop: "{{ host_types | dict2items }}"
     vars:
-      host_group_name: "{{ host_type.key }}"
-      host_exp_values: "{{ host_type.value }}"
+      host_group_name: "{{ host_facts_item.key }}"
+      host_exp_values: "{{ host_facts_item.value }}"
       host_n_max_tot: "{{ host_types['all'] | json_query(host_group_name + '.n_max') }}"
     loop_control:
-      loop_var: host_type
+      loop_var: host_facts_item
 
   # This loop is almost the same as the above one, but it's more performant
   # to first launch all EC2 instances and then connect to them.
@@ -77,10 +77,10 @@
     when: host_group_name != 'all' and id == 'new'
     loop: "{{ host_types | dict2items }}"
     vars:
-      host_group_name: "{{ host_type.key }}"
-      host_exp_values: "{{ host_type.value }}"
+      host_group_name: "{{ host_type_item.key }}"
+      host_exp_values: "{{ host_type_item.value }}"
     loop_control:
-      loop_var: host_type
+      loop_var: host_type_item
 
   - debug:
       var: groups
@@ -101,18 +101,23 @@
   #
   # Set variables on all hosts
   #
+
+  # Multiple set_fact tasks are necessary, since you cannot access variables set in the same task
   - name: Set experiment variables on all hosts
     set_fact:
       # Get variables that were defined for the localhost
-      host_types: "{{ hostvars['localhost']['host_types'] }}"
-      exp_facts: "{{ hostvars['localhost']['exp_facts'] }}"
-      host_type_names: "{{ hostvars['localhost']['host_type_names'] }}"
+      host_types: "{{ hostvars['localhost'].host_types }}"
+      exp_facts: "{{ hostvars['localhost'].exp_facts }}"
+      host_type_names: "{{ hostvars['localhost'].host_type_names }}"
 
       # Hacky way to recover variables from the hostname, since they were not
       # necessarily set if id != 'new'.
-      host_unique_id: "{{ group_names
-                          | select('match', ec2_tag_name_prefix + '*')
-                          | first
+      host_group_name_long: "{{ group_names
+                                | select('match', ec2_tag_name_prefix + '*')
+                                | first }}" # TODO: refactor to a better name
+
+  - set_fact:
+      host_unique_id: "{{ host_group_name_long
                           | split(ec2_tag_name_prefix + prj_id + '_')
                           | last }}"
 
@@ -125,8 +130,8 @@
                     | last }}"
 
   - set_fact:
-      exp_id: "{{ exp_facts[exp_name].exp_id }}" # TODO: cleanup: check if this is set elsewhere and remove it
-      host_type: "{{ host_types[host_group_name][exp_name] }}" # TODO: used? # TODO: rename to host_facts
+      exp_id: "{{ exp_facts[exp_name].exp_id }}"
+      host_facts: "{{ host_types[host_group_name][exp_name] }}"
       exp_fact: "{{ exp_facts[exp_name] }}"
 
   #
@@ -135,8 +140,8 @@
   - name: Execute init roles (incl. common roles for all hosts)
     include_role:
       name: "{{ role_name }}"
-    loop: "{{ ( ( [ host_types[host_group_name][exp_name].init_role ] | flatten | list) )
-                + ( [ exp_facts[exp_name].common_roles ] | flatten ) }}"
+    loop: "{{ ( ( [ host_facts.init_role ] | flatten | list) )
+                + ( [ exp_fact.common_roles ] | flatten ) }}"
     loop_control:
       loop_var: role_name
     when: id == 'new' # only setup if it is a new experiment
@@ -181,9 +186,6 @@
       vars:
         do_init_job: True
 
-    - fail:
-        msg: Stopping...
-
 
 ##########################################################################
 #   Experiment status checking                                           #
@@ -195,50 +197,20 @@
   hosts: "{{ hostvars['localhost'].controller_hosts }}"
   strategy: free
 
-  # TODO: outsource this to a file and load with include_vars?
-  # TODO: remove this entirely, setting them once is enough!
-  vars:
-    # Hacky way to recover variables from the hostname, since they were not
-    # necessarily set if id != 'new'.
-    host_group_name_long: "{{ group_names
-                              | select('match', ec2_tag_name_prefix + '*')
-                              | first }}" # TODO: refactor
-    host_unique_id: "{{ group_names
-                        | select('match', ec2_tag_name_prefix + '*')
-                        | first
-                        | split(ec2_tag_name_prefix + prj_id + '_')
-                        | last }}"
-    host_group_name: "{{ host_unique_id
-                         | split(separator)
-                         | first }}"
-    exp_name: "{{ host_unique_id
-                  | split(separator)
-                  | last }}"
-
-    # Get variables that were defined for the localhost to new hosts
-    host_fact: "{{ hostvars['localhost']['host_types'][host_group_name] }}"
-    exp_fact: "{{ hostvars['localhost']['exp_facts'][exp_name] }}"
   tasks:
-    - name: "Set variables for status check on host {{ inventory_hostname }}"
-      set_fact:
-        exp_job_ids_unfinished: "{{ exp_fact['exp_job_ids_unfinished'] }}"
-        n_check: "{{ host_fact[exp_name].n_check }}"
-        host_group_idx: "{{ lookup('ansible.utils.index_of', groups[host_group_name_long], 'eq', inventory_hostname) }}"
-
     - block:
-        - name: "Run status and result fetching for {{ exp_job_ids_unfinished | length }} jobs"
+        - name: "Run status and result fetching for experiment {{ exp_name }}"
           include_role:
             name: experiment-job-status
-          loop: "{{ range(0, (exp_job_ids_unfinished | length), 1) | list }}"
+          loop: "{{ range(0, (exp_fact.exp_job_ids_unfinished | length), 1) | list }}"
           loop_control:
             loop_var: unfinished_job_idx
 
         - debug:
             msg: "Finishing experiment {{ exp_name }}"
           tags: [print_action]
-          when: exp_job_ids_unfinished | length == 0
 
-      when: exp_job_ids_unfinished | length > 0
+      when: exp_fact.exp_job_ids_unfinished | length > 0
 
 
 ##########################################################################
@@ -252,10 +224,10 @@
   - name: Check if all jobs are finished
     set_fact:
       all_exp_jobs_finished: "{{ (all_exp_jobs_finished | default(True))
-                                 and (exp_fact.exp_job_ids_unfinished | length == 0)}}"
+                                 and (exp_facts_val.exp_job_ids_unfinished | length == 0)}}"
     loop: "{{ exp_facts.values() }}"
     loop_control:
-     loop_var: exp_fact
+     loop_var: exp_facts_val
 
   - block:
     - debug:
@@ -274,13 +246,13 @@
     when: id == 'new'
 
   - debug:
-      msg: "Finished Experiment: {{ exp_name }} (id={{ exp_facts[exp_name].exp_id }})
-            #runs={{ exp_facts[exp_name].exp_runs_ext | length }}
-            #reps={{ experiment.n_repetitions }}
-            => #jobs={{ exp_facts[exp_name].exp_job_ids | length }}"
+      msg: "Finished Experiment: {{ exp_name_loc }} (id={{ exp_fact_loc.exp_id }})
+            #runs={{ exp_fact_loc.exp_runs_ext | length }}
+            #reps={{ exp_fact_loc.n_repetitions }}
+            => #jobs={{ exp_fact_loc.exp_job_ids | length }}"
     vars:
-      exp_name: "{{ exp_facts_item.key }}"
-      exp_fact: "{{ exp_facts_item.value }}"
+      exp_name_loc: "{{ exp_facts_item.key }}"
+      exp_fact_loc: "{{ exp_facts_item.value }}"
     loop: "{{ exp_facts | dict2items }}"
     loop_control:
       loop_var: exp_facts_item

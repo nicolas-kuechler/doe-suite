@@ -51,7 +51,7 @@
 
 - name: Stopping surplus ec2 instances
   ec2:
-    instance_ids:  "{{ hostvars[inventory_hostname]['running_instance_ids'][:num_stop|int] }}"
+    instance_ids:  "{{ hostvars[inventory_hostname].running_instance_ids[:num_stop|int] }}"
     region: "{{ ec2config.aws_region }}"
     state: stopped
     wait: yes
@@ -59,7 +59,7 @@
 
 - name: Starting required ec2 instances
   ec2:
-    instance_ids: "{{ hostvars[inventory_hostname]['stopped_instance_ids'][:num_start|int] }}"
+    instance_ids: "{{ hostvars[inventory_hostname].stopped_instance_ids[:num_start|int] }}"
     region: "{{ ec2config.aws_region }}"
     state: running
     wait: yes

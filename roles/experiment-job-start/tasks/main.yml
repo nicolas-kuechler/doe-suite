@@ -9,9 +9,6 @@
     - running_job_id is defined
 
 
-- debug:
-    var: exp_run_config
-
 ##########################################################################
 #   Setup Service Unit Files                                             #
 ##########################################################################
@@ -26,9 +23,9 @@
                }}"
   vars:
     item_hostvars: "{{ hostvars[host] }}"
-    item_group_name: "{{ hostvars[host]['host_group_name'] }}"
-    item_ip: "{{ hostvars[host]['private_ip_address'] }}"
-  loop: "{{ groups[host_group_name_long] }}"
+    item_group_name: "{{ hostvars[host].host_group_name }}"
+    item_ip: "{{ hostvars[host].private_ip_address }}"
+  loop: "{{ exp_hosts }}"
   loop_control:
     loop_var: host
 
@@ -39,7 +36,7 @@
     dest: "/lib/systemd/system/{{ host_group_name_long }}.service"
     mode: 644
   delegate_to: "{{ host }}"
-  loop: "{{ groups[host_group_name_long] }}"
+  loop: "{{ exp_hosts }}"
   loop_control:
     loop_var: host
   notify:
@@ -51,7 +48,7 @@
     dest: "{{ exp_working_dir }}/config.json"
     mode: 0755
   delegate_to: "{{ host }}"
-  loop: "{{ groups[host_group_name_long] }}"
+  loop: "{{ exp_hosts }}"
   loop_control:
     loop_var: host
   notify:
@@ -73,6 +70,6 @@
     name: "{{ host_group_name_long }}.service"
     state: restarted
     enabled: yes
-  loop: "{{ groups[host_group_name_long] }}"
+  loop: "{{ exp_hosts }}"
   loop_control:
     loop_var: host

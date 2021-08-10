@@ -3,6 +3,6 @@
   become: yes
   delegate_to: "{{ host }}"
   command: systemctl daemon-reload
-  loop: "{{ groups[host_group_name_long] }}"
+  loop: "{{ exp_hosts }}"
   loop_control:
     loop_var: host
