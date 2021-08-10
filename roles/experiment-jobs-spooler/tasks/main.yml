@@ -128,22 +128,23 @@
 #  Enqueue all Jobs                                               #
 ###################################################################
 
-# TODO [nku] ensure to empty queue for is_start_jobs
 
-- name: clear finished jobs from queue
-  ansible.builtin.command:
-    cmd: tsp -C
+- name: clear task spooler queue
+  tsp:
+    clear_tasks: True
   delegate_to: "{{ host }}"
   loop: "{{ remote_hosts }}"
   loop_control:
     loop_var: host
   when: is_start_jobs
 
-
-# TODO [nku] could rewrite as idempotent module (schedule only if label is not present or something like that)
-- name:
-  ansible.builtin.command:
-    cmd: tsp -L {{ job.exp_name}}_{{ job.exp_id }}_{{ job.job_id }} /bin/sh -c 'cd {{ job.exp_working_dir }} &&  ({{ job.exp_run_config['$CMD$'] }} | tee results/stdout.log) 3>&1 1>&2 2>&3 | tee results/stderr.log'
+- name: demo module tsp add command
+  tsp:
+    cmd: "{{ job.exp_run_config['$CMD$'] }}"
+    cmd_label: "{{ job.exp_name}}_{{ job.exp_id }}_{{ job.job_id }}"
+    cmd_working_dir: "{{ job.exp_working_dir }}"
+    cmd_stdout_file: results/stdout.log
+    cmd_stderr_file: results/stderr.log
   delegate_to: "{{ job.host_info.host }}"
   loop: "{{ exp_jobs }}"
   loop_control:
@@ -170,46 +171,19 @@
   when:
   - exp_check_wait_time > 0
 
-- name: Get Status of all Jobs
-  ansible.builtin.command:
-    cmd: tsp
+- name: get status of all jobs
+  tsp_info:
   delegate_to: "{{ host }}"
   loop: "{{ remote_hosts }}"
   loop_control:
     loop_var: host
   register: tsp_result
 
-
-- name: Extract information from tsp responses
-  set_fact: 
-    regex_matches: "{{ tsp_result | json_query(query) | flatten | 
-                        map('regex_search', '([0-9]+)\\s+(queued|running|finished)\\s+[^\\[]+\\[([^_]+)_([0-9]+)_([0-9]+)_([0-9]+)\\].+', '\\1', '\\2', '\\3', '\\4', '\\5', '\\6') }}"
-  vars:
-    query: 'results[*].stdout_lines[1:]'
-
-
-- name: reset tsp entries
+- name: parse tsp info result
   set_fact:
-    tsp_entries: [] 
-
-- set_fact:
-    tsp_entries: "{{ tsp_entries | default([]) | list + [{
-      'tsp_id': match.0, 
-      'tsp_status': match.1, 
-      'exp_name': match.2,
-      'exp_id': match.3,
-      'exp_run': match.4,
-      'exp_run_rep': match.5,
-      'job_id': match.4 + '_' + match.5,
-      'host_info': job_host_assignment[match.4 + '_' + match.5]
-      }] | list }}"
-  loop: "{{ regex_matches }}"
-  loop_control:
-    loop_var: match
-
-- debug:
-    var: tsp_entries
-
+    tsp_entries: "{{ tsp_result | json_query(query) | flatten | map('extend_tsp_label', job_host_assignment) | list }}"
+  vars:
+    query: 'results[*].tasks'
 
 - name: filter tsp_entries to only consider jobs of current exp_name and exp_id
   set_fact:
@@ -217,9 +191,9 @@
 
 
 - set_fact:
-    tsp_entries_running: "{{ tsp_entries | list | selectattr('tsp_status', 'equalto', 'running') | list }}"
-    tsp_entries_finished: "{{ tsp_entries | list | selectattr('tsp_status', 'equalto', 'finished') | list }}"
-    tsp_entries_queued: "{{ tsp_entries | list | selectattr('tsp_status', 'equalto', 'queued') | list }}"
+    tsp_entries_running: "{{ tsp_entries | list | selectattr('state', 'equalto', 'running') | list }}"
+    tsp_entries_finished: "{{ tsp_entries | list | selectattr('state', 'equalto', 'finished') | list }}"
+    tsp_entries_queued: "{{ tsp_entries | list | selectattr('state', 'equalto', 'queued') | list }}"
 
 - set_fact:
     # ignore jobs already marked as finished in experiment state
@@ -253,8 +227,8 @@
     loop_var: entry
 
 - name: Remove finished jobs with downloaded results from queue
-  ansible.builtin.command:
-    cmd: tsp -r {{ entry.tsp_id }}
+  tsp:
+    remove_task_id: "{{ entry.id }}"
   delegate_to: "{{ entry.host_info.host }}"
   loop: "{{ tsp_entries_finished }}"
   loop_control:
