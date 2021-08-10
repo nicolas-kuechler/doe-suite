@@ -146,6 +146,8 @@
   - name: Run jobs of all experiments
     include_role:
       name: experiment-job
+    vars:
+      do_init_job: True
 
 
 ##########################################################################
@@ -182,26 +184,26 @@
     host_fact: "{{ hostvars['localhost']['host_types'][host_group_name] }}"
     exp_fact: "{{ hostvars['localhost']['exp_facts'][exp_name] }}"
   tasks:
-    - block:
-        - name: "Set variables for status check on host {{ inventory_hostname }}"
-          set_fact:
-            exp_job_ids_unfinished: "{{ exp_fact['exp_job_ids_unfinished'] }}"
-            n_check: "{{ host_fact[exp_name].n_check }}"
-            host_group_idx: "{{ lookup('ansible.utils.index_of', groups[host_group_name_long], 'eq', inventory_hostname) }}"
+    - name: "Set variables for status check on host {{ inventory_hostname }}"
+      set_fact:
+        exp_job_ids_unfinished: "{{ exp_fact['exp_job_ids_unfinished'] }}"
+        n_check: "{{ host_fact[exp_name].n_check }}"
+        host_group_idx: "{{ lookup('ansible.utils.index_of', groups[host_group_name_long], 'eq', inventory_hostname) }}"
 
-        - name: "Run status and result fetching for {{ exp_fact.exp_job_ids_unfinished | length }} jobs"
+    - block:
+        - name: "Run status and result fetching for {{ exp_job_ids_unfinished | length }} jobs"
           include_role:
             name: experiment-job-status
-          loop: "{{ range(0, (exp_fact.exp_job_ids_unfinished | length), 1) | list }}"
+          loop: "{{ range(0, (exp_job_ids_unfinished | length), 1) | list }}"
           loop_control:
             loop_var: unfinished_job_idx
 
         - debug:
             msg: "Finishing experiment {{ exp_name }}"
           tags: [print_action]
-          when: exp_fact.exp_job_ids_unfinished | length == 0
+          when: exp_job_ids_unfinished | length == 0
 
-      when: exp_fact.exp_job_ids_unfinished | length > 0
+      when: exp_job_ids_unfinished | length > 0
 
 
 ##########################################################################
@@ -212,24 +214,40 @@
   hosts: localhost
   tasks:
 
-  - debug:
-      msg: "Cleanup AWS..."
-    tags: [print_action]
-    when: awsclean | default(true) | bool  and exp_job_ids_unfinished | length == 0
+  - name: Check if all jobs are finished
+    set_fact:
+      all_exp_jobs_finished: "{{ (all_exp_jobs_finished | default(True)) \
+                                 and (exp_fact.exp_job_ids_unfinished | length == 0)}}"
+    loop: "{{ exp_facts.values() }}"
+    loop_control:
+     loop_var: exp_fact
 
-  # TODO: test this
-  - name: Cleanup AWS
-    include_role:
-      name: experiment-clear
-    when: awsclean | default(true) | bool  and exp_job_ids_unfinished | length == 0
+  - block:
+    - debug:
+        msg: "Cleanup AWS..."
+      tags: [print_action]
+
+    - name: Cleanup AWS
+      include_role:
+        name: experiment-clear
+
+    when: awsclean | default(true) | bool and all_exp_jobs_finished
 
   - name: Output the run id of this experiment for convenience
     debug:
       var: exp_id
     when: id == 'new'
 
-  # TODO: cleanup all experiments
   - debug:
-      msg: "Finished Experiment: {{ exp_name }} (id={{ exp_id }})   #runs={{ exp_runs_ext | length }} #reps={{ n_repetitions }}  => #jobs={{ exp_job_ids | length }}"
+      msg: "Finished Experiment: {{ exp_name }} (id={{ exp_facts[exp_name].exp_id }})   \
+            #runs={{ exp_facts[exp_name].exp_runs_ext | length }}   \
+            #reps={{ experiment.n_repetitions }}    \
+            => #jobs={{ exp_facts[exp_name].exp_job_ids | length }}"
+    vars:
+      exp_name: "{{ exp_facts_item.key }}"
+      exp_fact: "{{ exp_facts_item.value }}"
+    loop: "{{ exp_facts | dict2items }}"
+    loop_control:
+      loop_var: exp_facts_item
+    when: all_exp_jobs_finished
     tags: [print_action]
-    when: exp_job_ids_unfinished | length == 0

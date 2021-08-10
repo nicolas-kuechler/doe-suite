@@ -1,11 +1,27 @@
 ---
+# TODO: remove
+- name: status in experiment-job main
+  debug:
+    msg:
+      - "hostname: {{ inventory_hostname }}"
+      - "exp_job_ids_running: {{ exp_job_ids_running | default('-') }}"
+
+- name: Set init variable
+  set_fact:
+    do_init_job: False
+  when: do_init_job is not defined
 
 - name: Run experiments synchronously on different hosts
   include_tasks: jobs_for_exp.yml
   vars:
-    exp_name: "{{ exp_fact.key }}"
-    exp_value: "{{ exp_fact.value }}" # TODO: rename to exp_fact
+    exp_name: "{{ exp_fact_item.key }}"
+    exp_fact: "{{ exp_fact_item.value }}"
     # host_types: "{{ host_facts[exp_name] }}" # TODO: add definition after renaming host_types -> host_facts
   loop: "{{ exp_facts | dict2items }}"
   loop_control:
-    loop_var: exp_fact
+    loop_var: exp_fact_item
+  when: do_init_job
+
+- name: Step to the next experiment on the same host
+  include_tasks: jobs_for_exp.yml
+  when: not do_init_job

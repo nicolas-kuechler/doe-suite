@@ -2,7 +2,6 @@
 
 - assert:
     that:
-      - redefine_exp_id is defined
       - exp_suite is defined
       - exp_name is defined
       - id is defined
@@ -11,6 +10,7 @@
 
 - set_fact:
     is_init: False
+    redefine_exp_id: "{{ redefine_exp_id | default(False) }}"
 
 - name: Find and set exp id
   block:
@@ -171,3 +171,13 @@
   loop: "{{ state.host_types | dict2items }}"
   loop_control:
     loop_var: host_type
+
+# TODO: remove
+- name: In state TODO
+  debug:
+    msg:
+      - "exp_job_ids_running: {{ exp_job_ids_running | default('-') }}"
+      - "state.exp_job_ids_running: {{ state.exp_job_ids_running }}"
+
+- debug:
+    var: exp_facts[exp_name].exp_job_ids_running
