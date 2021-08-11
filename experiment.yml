@@ -42,7 +42,7 @@
                          }
                       }, recursive=True)
                    }}"
-    loop: "{{ host_types.keys() }}"
+    loop: "{{ host_type_names }}"
     loop_control:
       loop_var: host_group
 
@@ -63,11 +63,11 @@
     when: host_group_name != 'all' and id == 'new'
     loop: "{{ host_types | dict2items }}"
     vars:
-      host_group_name: "{{ host_facts_item.key }}"
-      host_exp_values: "{{ host_facts_item.value }}"
+      host_group_name: "{{ host_type_item.key }}"
+      host_exp_values: "{{ host_type_item.value }}"
       host_n_max_tot: "{{ host_types['all'] | json_query(host_group_name + '.n_max') }}"
     loop_control:
-      loop_var: host_facts_item
+      loop_var: host_type_item
 
   # This loop is almost the same as the above one, but it's more performant
   # to first launch all EC2 instances and then connect to them.
@@ -114,7 +114,7 @@
       # necessarily set if id != 'new'.
       host_group_name_long: "{{ group_names
                                 | select('match', ec2_tag_name_prefix + '*')
-                                | first }}" # TODO: refactor to a better name
+                                | first }}"
 
   - set_fact:
       host_unique_id: "{{ host_group_name_long
