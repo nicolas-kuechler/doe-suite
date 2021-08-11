@@ -198,19 +198,16 @@
   strategy: free
 
   tasks:
-    - block:
-        - name: "Run status and result fetching for experiment {{ exp_name }}"
-          include_role:
-            name: experiment-job-status
-          loop: "{{ range(0, (exp_fact.exp_job_ids_unfinished | length), 1) | list }}"
-          loop_control:
-            loop_var: unfinished_job_idx
+    - name: "Run status and result fetching for experiment {{ exp_name }}"
+      include_role:
+        name: experiment-job-status
+      loop: "{{ range(0, (exp_fact.exp_job_ids_unfinished | length), 1) | list }}"
+      loop_control:
+        loop_var: unfinished_job_idx
 
-        - debug:
-            msg: "Finishing experiment {{ exp_name }}"
-          tags: [print_action]
-
-      when: exp_fact.exp_job_ids_unfinished | length > 0
+    - debug:
+        msg: "Finishing experiment {{ exp_name }}"
+      tags: [print_action]
 
 
 ##########################################################################
