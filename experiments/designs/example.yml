@@ -19,36 +19,36 @@ experiments:
                                   # remote instances for `n_check` \in [0, X)
           init_role: setup-server # role run on the initial instance setup
       base_experiment:
-        host_vars:
+        info: $FACTOR$  # Common variable for all host types
+        host_vars:      # Define variables for the different host types here
           client:
             arg1: 10
             arg2: $FACTOR$
           server:
             arg3: $FACTOR$
             arg4: "test1"
-        info: $FACTOR$
 
       # in the experiments object you have a list for the different experiments
       # with the values for the fields marked as $FACTOR$ in the base config object.
       factor_levels:
-        - host_vars:
+        - info: "c1"
+          host_vars:
             client:
               arg2: 1
             server:
               arg3: 1
-            info: "c1"
-        - host_vars:
+        - info: "c2"
+          host_vars:
             client:
               arg2: 2
             server:
               arg3: 2
-            info: "c2"
-        - host_vars:
+        - info: "c3"
+          host_vars:
             client:
               arg2: 3
             server:
               arg3: 3
-            info: "c3"
   - experiment_2:       # the experiment configuration
       n_repetitions: 1  # how often to repeat each run (i.e. each level config)
       common_roles:     # roles that are run for all hosts during the initial setup
@@ -67,21 +67,21 @@ experiments:
                                   # remote instances for `n_check` \in [0, X)
           init_role: setup-server # role run on the initial instance setup
       base_experiment:
-        host_vars:
+        info: $FACTOR$  # Common variable for all host types
+        host_vars:      # Define variables for the different host types here
           client:
             arg1: 10
             arg2: $FACTOR$
           server:
             arg3: $FACTOR$
             arg4: "test1"
-        info: $FACTOR$
 
       # in the experiments object you have a list for the different experiments
       # with the values for the fields marked as $FACTOR$ in the base config object.
       factor_levels:
-        - host_vars:
+        - info: "c2"
+          host_vars:
             client:
               arg2: 2
             server:
               arg3: 2
-          info: "c2"
