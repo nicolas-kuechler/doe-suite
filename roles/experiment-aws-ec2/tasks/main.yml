@@ -31,11 +31,6 @@
 
 # Optimization: we first start all ec2 instances and then wait for SSH, refresh
 # the inventory, and start/stop other instances afterwards.
-- debug:
-    msg:
-      - "public_dns_names = {{ public_dns_names | default({}) }}"
-      - "ec2_launch = {{ ec2_launch }}"
-
 - name: Register public dns name for postponed inventory update
   set_fact:
     public_dns_names: "{{ public_dns_names | default({}) \

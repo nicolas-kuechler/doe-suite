@@ -21,7 +21,6 @@ base_experiment:
   host_vars:
     client:
       y: "abc"          # constant string config
-
     server:
       z:
         $FACTOR$: [1, 2] # int factor with 2 levels (varying across runs)

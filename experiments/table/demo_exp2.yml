@@ -24,6 +24,5 @@ base_experiment:
         $FACTOR$: ["V1", "V2"]  # string factor with 2 levels (varying across runs)
       test:
         f: "cinfo"              # constant string config
-
     server:
       g: "ginfo"                # constant string config

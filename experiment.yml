@@ -140,8 +140,8 @@
   - name: Execute init roles (incl. common roles for all hosts)
     include_role:
       name: "{{ role_name }}"
-    loop: "{{ ( ( [ host_facts.init_role ] | flatten | list) )
-                + ( [ exp_fact.common_roles ] | flatten ) }}"
+    loop: "{{ ( ( [ host_facts.init_role | default([]) ] | flatten | list) )
+                + ( [ exp_fact.common_roles | default([]) ] | flatten ) }}"
     loop_control:
       loop_var: role_name
     when: id == 'new' # only setup if it is a new experiment

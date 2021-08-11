@@ -31,21 +31,24 @@ experiments:
       # in the experiments object you have a list for the different experiments
       # with the values for the fields marked as $FACTOR$ in the base config object.
       factor_levels:
-        - client:
-            arg2: 1
-          server:
-            arg3: 1
-          info: "c1"
-        - client:
-            arg2: 2
-          server:
-            arg3: 2
-          info: "c2"
-        - client:
-            arg2: 3
-          server:
-            arg3: 3
-          info: "c3"
+        - host_vars:
+            client:
+              arg2: 1
+            server:
+              arg3: 1
+            info: "c1"
+        - host_vars:
+            client:
+              arg2: 2
+            server:
+              arg3: 2
+            info: "c2"
+        - host_vars:
+            client:
+              arg2: 3
+            server:
+              arg3: 3
+            info: "c3"
   - experiment_2:       # the experiment configuration
       n_repetitions: 1  # how often to repeat each run (i.e. each level config)
       common_roles:     # roles that are run for all hosts during the initial setup
@@ -76,8 +79,9 @@ experiments:
       # in the experiments object you have a list for the different experiments
       # with the values for the fields marked as $FACTOR$ in the base config object.
       factor_levels:
-        - client:
-            arg2: 2
-          server:
-            arg3: 2
+        - host_vars:
+            client:
+              arg2: 2
+            server:
+              arg3: 2
           info: "c2"

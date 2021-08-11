@@ -1,7 +1,7 @@
 [Unit]
-Description=Client Service
+Description=Single Service
 
-# TODO: define how to start the client service and with which arguments
+# TODO: define how to start the service and with which arguments
 #       the run config is available in the variable `exp_run_config` to pass as parameters
 #       or in the working directory there is a file called `config.json` with the run config
 
@@ -13,9 +13,7 @@ Description=Client Service
 [Service]
 Type=simple
 WorkingDirectory={{ exp_working_dir }}
-# TODO: add something like this if it needs to wait for another machine
-# ExecStartPre=/bin/bash -c 'until host example.com; do sleep 1; done'
-ExecStart=/bin/sh -c '{{ exp_code_dir }}/.venv/bin/python {{ exp_code_dir }}/demo/client.py -config config.json -a1 {{ exp_run_config.host_vars.client.arg1 }} -a2 {{ exp_run_config.host_vars.client.arg2 }}'
+ExecStart=/usr/bin/echo "seed: {{ exp_run_config.seed }}, payload_size_mb: {{ exp_run_config.payload_size_mb }}, opt: {{ exp_run_config.opt }}"
 User=ubuntu
 
 StandardOutput=file:{{ exp_working_dir }}/results/client_stdout.log

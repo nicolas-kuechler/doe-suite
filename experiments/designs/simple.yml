@@ -9,7 +9,6 @@ experiments:
     host_types:
       single:
         n: 1
-        init_role: setup-single
         n_max: 1
         n_check: 1
     base_experiment:

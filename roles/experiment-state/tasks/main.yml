@@ -72,12 +72,14 @@
     exp_job_ids_running: []
   when: is_init
 
-- name: Init the experiment state by expanding the `experiment.base_experiment.host_vars` with the varying params in the experiments
+- name: Init the experiment state by expanding the `experiment.base_experiment` with the varying params in the experiments
   set_fact:
-    exp_runs_ext: "{{ exp_runs_ext \
-                      | union([experiment.base_experiment.host_vars \
-                      | combine( exp_item, recursive=True ) \
-                      | combine({ '~FACTORS_LEVEL': { 'args': exp_item } }) ])}}"
+    exp_runs_ext: "{{ exp_runs_ext
+                      | union([
+                          experiment.base_experiment
+                          | combine( exp_item, recursive=True )
+                          | combine({ '~FACTORS_LEVEL': { 'args': exp_item } })
+                      ])}}"
   loop: "{{ experiment.factor_levels }}"
   when: is_init
   loop_control:
