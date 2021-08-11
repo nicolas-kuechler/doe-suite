@@ -22,39 +22,43 @@
                   }, recursive=True) \
                }}"
   vars:
-    item_hostvars: "{{ hostvars[host] }}"
     item_group_name: "{{ hostvars[host].host_group_name }}"
     item_ip: "{{ hostvars[host].private_ip_address }}"
   loop: "{{ exp_hosts }}"
   loop_control:
     loop_var: host
 
-- name: "Create unit file for servers of group '{{ host_group_name }}' for experiment '{{ exp_name }}'"
+- name: "Create unit file for servers for experiment '{{ exp_name }}'"
   become: yes
   template:
-    src: "{{ host_group_name }}.service.j2"
-    dest: "/lib/systemd/system/{{ host_group_name_long }}.service"
+    src: "{{ hostvars[host].host_group_name }}.service.j2"
+    dest: "/lib/systemd/system/{{ hostvars[host].host_group_name_long }}.service"
     mode: 644
   delegate_to: "{{ host }}"
   loop: "{{ exp_hosts }}"
   loop_control:
     loop_var: host
-  notify:
-    - reload systemctl
 
 - name: Create config file
   template:
     src: config.json.j2
-    dest: "{{ exp_working_dir }}/config.json"
+    dest: "{{ hostvars[host].exp_working_dir }}/config.json"
     mode: 0755
   delegate_to: "{{ host }}"
   loop: "{{ exp_hosts }}"
   loop_control:
     loop_var: host
-  notify:
-    - reload systemctl
 
-
+- name: reload and restart service
+  become: yes
+  delegate_to: "{{ host }}"
+  systemd:
+    state: restarted
+    daemon_reload: yes
+    name: "{{ hostvars[host].host_group_name_long }}"
+  loop: "{{ exp_hosts }}"
+  loop_control:
+    loop_var: host
 
 ##########################################################################
 #   Starting the Experiment                                              #

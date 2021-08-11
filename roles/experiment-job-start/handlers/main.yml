@@ -1,8 +1,0 @@
-
-- name: reload systemctl
-  become: yes
-  delegate_to: "{{ host }}"
-  command: systemctl daemon-reload
-  loop: "{{ exp_hosts }}"
-  loop_control:
-    loop_var: host
