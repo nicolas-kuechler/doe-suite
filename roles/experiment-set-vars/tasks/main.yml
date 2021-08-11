@@ -1,0 +1,33 @@
+---
+
+# Multiple set_fact tasks are necessary, since you cannot access variables set in the same task
+- name: Set experiment variables on all hosts
+  set_fact:
+    # Get variables that were defined for the localhost
+    host_types: "{{ hostvars['localhost'].host_types }}"
+    exp_facts: "{{ hostvars['localhost'].exp_facts }}"
+    host_type_names: "{{ hostvars['localhost'].host_type_names }}"
+
+    # Hacky way to recover variables from the hostname, since they were not
+    # necessarily set if id != 'new'.
+    host_group_name_long: "{{ group_names
+                              | select('match', ec2_tag_name_prefix + '*')
+                              | first }}"
+
+- set_fact:
+    host_unique_id: "{{ host_group_name_long
+                        | split(ec2_tag_name_prefix + prj_id + '_')
+                        | last }}"
+
+- set_fact:
+    host_group_name: "{{ host_unique_id
+                         | split(separator)
+                         | first }}"
+    exp_name: "{{ host_unique_id
+                  | split(separator)
+                  | last }}"
+
+- set_fact:
+    exp_id: "{{ exp_facts[exp_name].exp_id }}"
+    host_facts: "{{ host_types[host_group_name][exp_name] }}"
+    exp_fact: "{{ exp_facts[exp_name] }}"
