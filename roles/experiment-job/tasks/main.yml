@@ -27,7 +27,7 @@
     - exp_job_ids_running is defined
     - n_repetitions is defined
     - exp_id is defined
-    - exp_check_wait_time is defined
+    - job_check_wait_time is defined
 
 # Skip all tasks if there are no unfinshed jobs left.
 - block:
@@ -37,7 +37,7 @@
         - "exp_job_ids_running: {{ exp_job_ids_running }}"
         - "exp_runs_ext: {{ exp_runs_ext }}"
         - "exp_id: {{ exp_id }}"
-        - "exp_check_wait_time: {{ exp_check_wait_time }}"
+        - "job_check_wait_time: {{ job_check_wait_time }}"
 
 
   ##########################################################################

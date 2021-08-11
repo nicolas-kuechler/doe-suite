@@ -175,10 +175,10 @@
 - name: Update experiment facts on all involved hosts
   set_fact:
     exp_fact: "{{ exp_facts[exp_name] }}"
-    exp_facts: "{{ exp_facts }}"
+    exp_facts: "{{ hostvars['localhost'].exp_facts | combine({ exp_name: exp_facts[exp_name] }) }}"
   delegate_to: "{{ host }}"
   delegate_facts: true
   loop: "{{ exp_hosts + ['localhost'] }}"
   loop_control:
     loop_var: host
-  when: exp_other_hosts is defined and expstate == 'save'
+  when: exp_hosts is defined

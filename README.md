@@ -357,10 +357,10 @@ When we start a new experiment, each specified experiment receives an experiment
 
 The experiment suite periodically checks whether an experiment run is finished and then starts the next one according to the experiment design.
 
-The variable `exp_n_tries` controls the maximum number of times to check whether the experiment finished.
-In between checking, the playbook waits for `exp_check_wait_time` seconds (see `group_vars/all/main.yml`).
+The variable `job_n_tries` controls the maximum number of times to check whether the job finished.
+In between checking, the playbook waits for `job_check_wait_time` seconds (see `group_vars/all/main.yml`).
 
-After the number of `exp_n_tries` is exceeded, the playbook stops. An already running job will continue to run on AWS, but the next job won't start unless the `experiments.yml` playbook runs.
+After the number of `job_n_tries` is exceeded, the playbook aborts. An already running job will continue to run on AWS, but the next job won't start unless the `experiments.yml` playbook runs.
 
 To continue checking a previously started experiment, we can specify the ID of the experiment when starting the playbook:
 

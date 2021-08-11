@@ -1,7 +1,7 @@
 ---
 
 # We loop over all hosts belonging to this experiment. For every host, we make
-# at most `exp_n_tries` tries, where we wait `exp_check_wait_time` seconds
+# at most `job_n_tries` tries, where we wait `job_check_wait_time` seconds
 # between tries. Each try checks whether the service on the host (named
 # `host_group_name_long`.service) is still running.
 - name: Check if experiment is still running
@@ -9,8 +9,8 @@
   service_facts:
   register: services_state
   until: (services_state | default([]) | json_query(service_query)) != 'running'
-  retries: "{{ exp_n_tries }}"
-  delay: "{{ exp_check_wait_time }}"
+  retries: "{{ job_n_tries }}"
+  delay: "{{ job_check_wait_time }}"
   vars:
     service_query: "{{ 'ansible_facts.services.\"' + hostvars[exp_hosts[idx]].host_group_name_long + '.service\".state' }}"
   loop: "{{ range(0, host_facts.n_check | int, 1) | list }}"

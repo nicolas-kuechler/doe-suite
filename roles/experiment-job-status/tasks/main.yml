@@ -1,9 +1,5 @@
 ---
 
-# TODO: remove
-- debug:
-    msg: "unfinished_job_idx: {{ unfinished_job_idx }}"
-
 #
 # Experiment status checking
 #
@@ -46,7 +42,6 @@
     name: experiment-state
   vars:
     expstate: save
-    redefine_exp_id: "{{ False }}"
 
 #
 # Run next job
@@ -54,3 +49,4 @@
 - name: Run the next job
   include_role:
     name: experiment-job
+  when: exp_job_ids_unfinished | length > 0

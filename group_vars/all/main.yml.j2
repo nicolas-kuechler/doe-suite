@@ -5,11 +5,11 @@ git_remote_repository: <<git_remote_repository>> # TODO: set remote repository (
 # TODO: set how often to check and how long to wait in between
 # the playbook checks whether a job finished, fetches the results and starts the next job
 #   these two flags control how often in total, the playbook repeats this before stopping (a job can still continue to run)
-#   'exp_n_tries' is the total number of tries, and 'exp_check_wait_time' is the time in seconds to wait in between checking whether a job finsihed
-#    (playbook runs for roughly 'exp_n_tries' * 'exp_check_wait_time' seconds unless the experiment finishes earlier)
-exp_n_tries: <<exp_n_tries>>   # should be max 1000 (otherwise playbook freezes -> unsure why)
+#   'job_n_tries' is the total number of tries per job, and 'job_check_wait_time' is the time in seconds to wait in between checking whether a job finsihed
+#    (playbook runs for roughly #jobs * 'job_n_tries' * 'job_check_wait_time' seconds unless the experiment finishes earlier)
+job_n_tries: <<job_n_tries>>   # should be max 1000 (otherwise playbook freezes -> unsure why)
                                # TODO [mh]: must be tested if this is still an issue, I switched to an `until` loop
-exp_check_wait_time: <<exp_check_wait_time>>
+job_check_wait_time: <<job_check_wait_time>>
 
 remote:
   dir: "/home/ubuntu"

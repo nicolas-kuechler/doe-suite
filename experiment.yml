@@ -191,7 +191,7 @@
 #   Experiment status checking                                           #
 ##########################################################################
 
-# the variables 'exp_n_tries', 'exp_check_wait_time', and 'n_check' control how
+# the variables 'job_n_tries', 'job_check_wait_time', and 'n_check' control how
 # long this runs
 - name: Check the experiment status on all hosts and fetch intermediate results
   hosts: "{{ hostvars['localhost'].controller_hosts }}"
@@ -227,7 +227,7 @@
                                  and (exp_facts_val.exp_job_ids_unfinished | length == 0)}}"
     loop: "{{ exp_facts.values() }}"
     loop_control:
-     loop_var: exp_facts_val
+      loop_var: exp_facts_val
 
   - block:
     - debug:

@@ -17,8 +17,8 @@ defaults = {
     "all": {
         #'prj_id': None,
         'git_remote_repository': 'git@github.com:pps-lab/aws-simple-ansible.git',
-        'exp_n_tries': 100,
-        'exp_check_wait_time': 5,
+        'job_n_tries': 100,
+        'job_check_wait_time': 5,
         #'key_name': None,
     },
     "server": {
@@ -58,9 +58,9 @@ def prompt_user(d, variables, host):
 
         input_str(d, "git_remote_repository", "> Git remote repository -> cloned on client and server")
 
-        input_num(d, "exp_n_tries", "> Playbook number of tries to check for experiment finished", min=1, max=1000)
+        input_num(d, "job_n_tries", "> Playbook number of tries to check for experiment finished", min=1, max=1000)
 
-        input_num(d, "exp_check_wait_time", "> Time to wait between checking in seconds", min=5, max=None)
+        input_num(d, "job_check_wait_time", "> Time to wait between checking in seconds", min=5, max=None)
 
         input_str(d, "key_name", "> AWS key name -> you must have the private key created via AWS")
     else:
