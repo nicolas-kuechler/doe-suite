@@ -147,13 +147,13 @@
 
 - name: Set host types based on loaded state
   set_fact:
-    host_types: "{{ host_types \
-                    | default({}) \
-                    | combine({ \
-                        host_type_item.key: { \
-                          exp_name: host_type_item.value \
-                        } \
-                      }, recursive=True) \
+    host_types: "{{ host_types
+                    | default({})
+                    | combine({
+                        host_type_item.key: {
+                          exp_name: host_type_item.value
+                        }
+                      }, recursive=True)
                 }}"
   loop: "{{ state.host_types | dict2items }}"
   loop_control:
@@ -162,14 +162,6 @@
 - name: Set host type names (without the special type 'all')
   set_fact:
     host_type_names: "{{ state.host_types.keys() | list }}"
-
-- assert:
-    that:
-      - (host_type_item.value.n_check | int) <= (host_type_item.value.n | int)
-      - (host_type_item.value.n | int) <= (host_type_item.value.n_max | int)
-  loop: "{{ state.host_types | dict2items }}"
-  loop_control:
-    loop_var: host_type_item
 
 - name: Update experiment facts on all involved hosts
   set_fact:

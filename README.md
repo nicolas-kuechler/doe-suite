@@ -250,7 +250,7 @@ An experiment design `YAML` file consists of one or more experiments. Each exper
   - The `n_repetitions` variable specifies how many times to repeat each experiment run. (i.e., how many times to execute an experiment run with the same configurations).
   - The `common_roles` variable specifies an ansible role that is executed once on the initial instance set up.
 
-2. **Host types**: this section configures different host types. Each host has its own initial setup role `init_role` and `n` active instances of at most `n_max` instances. `n_check` of those instances are checked to determine whether a host is done.
+2. **Host types**: this section configures different host types. Each host has its own initial setup role `init_role` and `n` active instances. Set the boolean `check_status` to false if the service running on this host type should not be checked to determine whether a job has finished. The default for `check_status` is true.
 
 3. **Base experiment**: The `base_experiment` consists of all the configuration options. All configuration options that vary between runs (i.e., the factors of the experiment) are marked with the placeholder `$FACTOR$`. The remaining configuration options are filled with a constant.
 
@@ -268,8 +268,6 @@ experiments:
       single:
         n: 1
         init_role: setup-single
-        n_max: 1
-        n_check: 1
     base_experiment:
       seed: 1234
       payload_size_mb: $FACTOR$
@@ -330,8 +328,6 @@ experiments:
     host_types:
       single:
         n: 1
-        n_max: 1
-        n_check: 1
     base_experiment:
       seed: 1234
       payload_size_mb: $FACTOR$

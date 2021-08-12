@@ -1,0 +1,21 @@
+---
+
+- name: Read the experiment configuration
+  include_vars: experiments/designs/{{ exp_suite }}.yml
+
+- name: Ensure experiment names are unique
+  assert:
+    that:
+      - "{{ ( experiments | length ) == ( experiments
+                                          | map('dict2items')
+                                          | json_query('[*][*].key')
+                                          | flatten
+                                          | list
+                                          | unique
+                                          | length ) }}"
+#
+# Add default values
+#
+- name: Add default for check_status if not set
+  set_fact:
+    experiments: "{{ experiments | dict_default('*.*.host_types.*', 'check_status', True) }}"

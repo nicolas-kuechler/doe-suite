@@ -4,11 +4,11 @@
 # Experiment status checking
 #
 
-- name: Check the job status (`n_check` in the experiment config YAML controls how many hosts are checked)
+- name: Check the job status (set `check_status` in the experiment config YAML to false to skip a host type)
   include_tasks:
     file: get_status.yml
   # there are some unfinished jobs left
-  when: (exp_fact.exp_job_ids_unfinished | length) > 0
+  when: (exp_fact.exp_job_ids_unfinished | length) > 0 and host_facts.check_status
 
 #
 # Experiment result gathering

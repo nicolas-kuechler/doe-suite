@@ -2,21 +2,16 @@
 
 experiments:
   - experiment_1:       # the experiment configuration
-      n_repetitions: 2  # how often each run is repeated (i.e. each level config)
+      n_repetitions: 1  # how often each run is repeated (i.e. each level config)
       common_roles:     # roles that are run for all hosts during the initial setup
         - setup-common
       host_types:
         client:
           n: 1                    # number of current instances
-          n_max: 1                # maximum number of instances
-          n_check: 1              # will check the systemd service of `n_check`
-                                  # remote instances for `n_check` \in [0, X)
+          check_status: True      # check the service status of this host type when evaluating whether a job finished (optional, default: True)
           init_role: setup-client # role run on the initial instance setup
         server:
           n: 1                    # number of current instances
-          n_max: 1                # maximum number of instances
-          n_check: 1              # will check the systemd service of `n_check`
-                                  # remote instances for `n_check` \in [0, X)
           init_role: setup-server # role run on the initial instance setup
       base_experiment:
         info: $FACTOR$  # Common variable for all host types
@@ -56,15 +51,9 @@ experiments:
       host_types:
         client:
           n: 1                    # number of current instances
-          n_max: 1                # maximum number of instances
-          n_check: 1              # will check the systemd service of `n_check`
-                                  # remote instances for `n_check` \in [0, X)
           init_role: setup-client # role run on the initial instance setup
         server:
           n: 1                    # number of current instances
-          n_max: 1                # maximum number of instances
-          n_check: 1              # will check the systemd service of `n_check`
-                                  # remote instances for `n_check` \in [0, X)
           init_role: setup-server # role run on the initial instance setup
       base_experiment:
         info: $FACTOR$  # Common variable for all host types

@@ -9,8 +9,6 @@ experiments:
     host_types:
       single:
         n: 1
-        n_max: 1
-        n_check: 1
     base_experiment:
       seed: 1234
       payload_size_mb: $FACTOR$

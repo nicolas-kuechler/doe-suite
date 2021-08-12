@@ -7,12 +7,10 @@ common_roles:     # roles that are run for all hosts during the initial setup
 host_types:
   client:
     n: 1                    # number of current instances
-    n_max: 1                # maximum number of instances (optional, default = n)
-    n_check: 1              # will check the systemd service of `n_check`
-                            # remote instances for `n_check` \in [0, X) (optional, default = n)
     init_role: setup-client # role run on the initial instance setup
   server:
     n: 1
+    check_status: False     # check the service status of this host type when evaluating whether a job finished (optional, default: True)
     init_role: setup-server
 base_experiment:
   w: 13                 # constant int config

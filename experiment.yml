@@ -7,97 +7,84 @@
   hosts: localhost
 
   tasks:
-  - name: Read the experiment configuration
-    include_vars: experiments/designs/{{ exp_suite }}.yml
+    - name: Read the experiment configuration
+      include_role:
+        name: experiment-parse-config
 
-  - name: Ensure experiment names are unique
-    assert:
-      that:
-        - "{{ ( experiments | length ) == ( experiments
-                                            | map('dict2items')
-                                            | json_query('[*][*].key')
-                                            | flatten
-                                            | list
-                                            | unique
-                                            | length ) }}"
+    - name:
+      set_fact:
+        suite_init: True
 
-  - name:
-    set_fact:
-      suite_init: True
+    - name: Do load and setup for all experiments
+      include_tasks:
+        file: experiment_load.yml
+      vars:
+        exp_name: "{{ (experiment_item | dict2items | first).key }}"
+        experiment: "{{ (experiment_item | dict2items | first).value }}"
+      loop: "{{ experiments }}"
+      loop_control:
+        loop_var: experiment_item
 
-  - name: Do load and setup for all experiments
-    include_tasks:
-      file: experiment_load.yml
-    vars:
-      exp_name: "{{ (experiment_item | dict2items | first).key }}"
-      experiment: "{{ (experiment_item | dict2items | first).value }}"
-    loop: "{{ experiments }}"
-    loop_control:
-      loop_var: experiment_item
+    - name:
+      set_fact:
+        suite_init: False
 
-  - name:
-    set_fact:
-      suite_init: False
+    - name: Accumulate hosts in the same group among all host types
+      set_fact:
+        host_types: "{{ host_types
+                       | default({})
+                       | combine({ 'all':
+                           {
+                             host_group: { 'n': (host_types | json_query(host_group + '.*.n') | sum) }
+                           }
+                        }, recursive=True)
+                     }}"
+      loop: "{{ host_type_names }}"
+      loop_control:
+        loop_var: host_group
 
-  - name: Accumulate hosts in the same group among all host types
-    set_fact:
-      host_types: "{{ host_types
-                     | default({})
-                     | combine({ 'all':
-                         {
-                           host_group:
-                             { 'n': (host_types | json_query(host_group + '.*.n') | sum),
-                               'n_max': (host_types | json_query(host_group + '.*.n_max') | sum),
-                             }
-                         }
-                      }, recursive=True)
-                   }}"
-    loop: "{{ host_type_names }}"
-    loop_control:
-      loop_var: host_group
+    - debug:
+        msg: "Setup AWS..."
+      tags: [print_action]
+      when: id == 'new'
 
-  - debug:
-      msg: "Setup AWS..."
-    tags: [print_action]
-    when: id == 'new'
+    - name: Setup AWS VPC
+      include_role:
+        name: experiment-aws-vpc
+      vars:
+        do_create_vpc: "{{ (host_types['all'] | json_query('*.n') | sum) > 0 }}"
 
-  - name: Setup AWS VPC
-    include_role:
-      name: experiment-aws-vpc
-    vars:
-      do_create_vpc: "{{ (host_types['all'] | json_query('*.n_max') | sum) > 0 }}"
+    - name: Setup AWS EC2 instances
+      include_role:
+        name: experiment-aws
+      when: host_group_name != 'all' and id == 'new'
+      loop: "{{ host_types | dict2items }}"
+      vars:
+        host_group_name: "{{ host_type_item.key }}"
+        host_exp_values: "{{ host_type_item.value }}"
+        host_n_tot: "{{ host_types['all'] | json_query(host_group_name + '.n') }}"
+      loop_control:
+        loop_var: host_type_item
 
-  - name: Setup AWS EC2 instances
-    include_role:
-      name: experiment-aws
-    when: host_group_name != 'all' and id == 'new'
-    loop: "{{ host_types | dict2items }}"
-    vars:
-      host_group_name: "{{ host_type_item.key }}"
-      host_exp_values: "{{ host_type_item.value }}"
-      host_n_max_tot: "{{ host_types['all'] | json_query(host_group_name + '.n_max') }}"
-    loop_control:
-      loop_var: host_type_item
+    # This loop is almost the same as the above one, but it's more performant
+    # to first launch all EC2 instances and then connect to them.
+    - name: Manage (start/stop) EC2 instances
+      include_role:
+        name: experiment-aws-ec2-manage
+      when: host_group_name != 'all' and id == 'new'
+      loop: "{{ host_types | dict2items }}"
+      vars:
+        host_group_name: "{{ host_type_item.key }}"
+        host_exp_values: "{{ host_type_item.value }}"
+      loop_control:
+        loop_var: host_type_item
 
-  # This loop is almost the same as the above one, but it's more performant
-  # to first launch all EC2 instances and then connect to them.
-  - name: Manage (start/stop) EC2 instances
-    include_role:
-      name: experiment-aws-ec2-manage
-    when: host_group_name != 'all' and id == 'new'
-    loop: "{{ host_types | dict2items }}"
-    vars:
-      host_group_name: "{{ host_type_item.key }}"
-      host_exp_values: "{{ host_type_item.value }}"
-    loop_control:
-      loop_var: host_type_item
+    - debug:
+        var: groups
 
-  - debug:
-      var: groups
-
-  - debug:
-      msg: "Setup Host Machines..."
-    tags: [print_action]
+    - debug:
+        msg: "Setup Host Machines..."
+      tags: [print_action]
 
 ##########################################################################
 #   Setup Machines                                                       #
@@ -178,7 +165,7 @@
 #   Experiment status checking                                           #
 ##########################################################################
 
-# the variables 'job_n_tries', 'job_check_wait_time', and 'n_check' control how
+# the variables 'job_n_tries', 'job_check_wait_time', and 'check_status' control how
 # long this runs
 - name: Check the experiment status on all hosts and fetch intermediate results
   hosts: "{{ hostvars['localhost'].controller_hosts }}"

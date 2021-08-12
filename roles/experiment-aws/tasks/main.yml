@@ -4,17 +4,7 @@
     that:
     - host_group_name is defined
     - host_exp_values is defined
-    - host_n_max_tot is defined
-
-- assert:
-    that:
-    - instance_values.n is defined
-    - instance_values.n_max is defined
-    - (instance_values.n_max | int) >= (instance_values.n | int)
-  loop: "{{ host_exp_values.values() }}"
-  loop_control:
-    loop_var:
-      instance_values
+    - host_n_tot is defined
 
 - name: "Manually load variables for host in group '{{ host_group_name }}'"
   include_vars:
@@ -24,12 +14,12 @@
 - debug:
     msg: "-> creating EC2 instance for group '{{ host_group_name }}'..."
   tags: [print_action]
-  when: (host_n_max_tot | int) > 0
+  when: (host_n_tot | int) > 0
 
 - debug:
     msg: "-> terminating EC2 instances for group '{{ host_group_name }}'..."
   tags: [print_action]
-  when: (host_n_max_tot | int) == 0
+  when: (host_n_tot | int) == 0
 
 # XXX: Optimization potential: it's way faster to generate all instances of the same
 # group at once, instead of per experiment. But for that we need to figure out how

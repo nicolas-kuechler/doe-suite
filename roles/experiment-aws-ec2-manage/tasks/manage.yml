@@ -39,10 +39,10 @@
                               | map(attribute='instance_id')
                               | list}}"
     num_stop: "{{ [ ( running_instances.instances | length ) \
-                    - ( instance_values.n_max | int ), 0] \
+                    - ( instance_values.n | int ), 0] \
                    | max \
                }}"
-    num_start: "{{ [ ( instance_values.n_max | int ) \
+    num_start: "{{ [ ( instance_values.n | int ) \
                      - ( running_instances.instances | length ) , 0] \
                    | max}}"
 

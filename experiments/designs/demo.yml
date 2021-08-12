@@ -9,14 +9,11 @@ experiments:
     host_types:
       client:
         n: 1
-        n_max: 1
-        n_check: 1
         init_role: setup-client
       server:
         n: 1
+        check_status: false
         init_role: setup-server
-        n_max: 1
-        n_check: 1
     base_experiment:
       w: 13
       x: $FACTOR$
@@ -66,13 +63,9 @@ experiments:
       client:
         n: 1
         init_role: setup-client
-        n_max: 1
-        n_check: 1
       server:
         n: 1
         init_role: setup-server
-        n_max: 1
-        n_check: 1
     base_experiment:
       a: 10
       b: info

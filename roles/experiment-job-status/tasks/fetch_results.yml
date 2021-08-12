@@ -21,3 +21,6 @@
 - name: Fetch Results (if experiment done)
   delegate_to: localhost
   local_action: "command rsync -az '{{ exp_hosts[host_idx] }}:{{ remote_results_dir }}/' '{{ local_results_subdir }}'"
+
+- debug:
+    msg: "Stored result from {{ exp_hosts[host_idx] }}:{{ remote_results_dir }}/ in {{ local_results_subdir }}"

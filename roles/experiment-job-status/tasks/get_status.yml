@@ -13,7 +13,7 @@
   delay: "{{ job_check_wait_time }}"
   vars:
     service_query: "{{ 'ansible_facts.services.\"' + hostvars[exp_hosts[idx]].host_group_name_long + '.service\".state' }}"
-  loop: "{{ range(0, host_facts.n_check | int, 1) | list }}"
+  loop: "{{ range(0, host_facts.n | int, 1) | list }}"
   loop_control:
     loop_var: idx
 

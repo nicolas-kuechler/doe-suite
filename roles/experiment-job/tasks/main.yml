@@ -65,7 +65,8 @@
 
   - name: Extract `exp_run` (run) and `exp_run_rep` (repetition) from `running_job_id`
     set_fact:
-      exp_run: "{{ ( running_job_id | string | split('_') )[1] | int }}"
+      # Job ID structure: <experiment_name>-<run_id>_<rep_id>
+      exp_run: "{{ running_job_id | string | split('-') | last | split('_') | first | int }}"
       exp_run_rep: "{{ running_job_id | string | split('_') | last | int }}"
 
   - name: Set the exp run config

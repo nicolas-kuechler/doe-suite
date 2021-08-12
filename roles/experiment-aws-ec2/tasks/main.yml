@@ -11,7 +11,7 @@
     image: '{{ ec2config.ec2_image }}'
     region: '{{ ec2config.aws_region }}'
     group: '{{ ec2config.sg_name }}'
-    exact_count: '{{ instance_values.n_max }}'
+    exact_count: '{{ instance_values.n }}'
     count_tag:
       Name: '{{ ec2config.instance_tag }}'
     vpc_subnet_id: '{{ ec2config.vpc_subnet_id }}'

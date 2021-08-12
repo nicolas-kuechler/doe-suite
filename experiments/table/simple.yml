@@ -7,10 +7,9 @@ common_roles:     # roles that are run for all hosts during the initial setup
 host_types:
   single:
     n: 1                    # number of current instances
-    init_role: setup-single # role run on the initial instance setup
 base_experiment:
   seed: 1234                  # a constant in the experiment
   payload_size_mb:            # a factor with two levels
     $FACTOR$: [1, 128]
   opt:                        # a factor with two levels
-    $FACTOR$: [true, false] 
+    $FACTOR$: [true, false]

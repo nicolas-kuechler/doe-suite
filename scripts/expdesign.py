@@ -133,16 +133,10 @@ def build_config_product(infile):
             _insert_config(d, key=k, parent_path=path, value=v)
         factor_levels.append(d)
 
-    # Add default values for unset host_facts parameters, which are optional in the short table form
-    for v in exp_table["host_types"].values():
-        v.setdefault("n_max", v["n"])
-        v.setdefault("n_check", v["n"])
-
     # build the final exp config design
     exp_design = exp_table
     exp_design["base_experiment"] = base_experiment
     exp_design["factor_levels"] = factor_levels
-
 
     return exp_design
 
