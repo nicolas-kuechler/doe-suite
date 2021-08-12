@@ -29,13 +29,11 @@
     include_tasks:
       file: experiment_load.yml
     vars:
-      exp_name: "{{ (item | dict2items | first).key }}"
-      experiment: "{{ (item | dict2items | first).value }}"
-      exp_cnt: "{{ ansible_loop.index0 }}"
-      exp_cnt_max: "{{ ansible_loop.length }}"
+      exp_name: "{{ (experiment_item | dict2items | first).key }}"
+      experiment: "{{ (experiment_item | dict2items | first).value }}"
     loop: "{{ experiments }}"
     loop_control:
-      extended: yes
+      loop_var: experiment_item
 
   - name:
     set_fact:
