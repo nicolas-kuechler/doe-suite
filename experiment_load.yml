@@ -6,11 +6,11 @@
   vars:
     expstate: load
 
-- name: Schedule the experiments (job ids are 0 to number of experiments-1)
+- name: Schedule the experiments (job ids are unique per experiment)
   set_fact:
-    exp_job_ids: "{{ [exp_id]
+    exp_job_ids: "{{ [exp_name]
                     | product(range(0, (exp_facts[exp_name].exp_runs_ext | length), 1)) \
-                    | map('join', '_') \
+                    | map('join', '-') \
                     | product(range(0, (exp_facts[exp_name].n_repetitions | int), 1)) \
                     | map('join', '_') \
                     | list }}"
@@ -30,7 +30,7 @@
   when: id == 'new' # only persist the state if it is a new experiment
 
 - debug:
-    msg: "Running Experiment: {{ exp_name }} (id={{ exp_id }})   \
+    msg: "Running Experiment: {{ exp_name }} (suite id={{ exp_suite_id }})   \
           #runs={{ exp_facts[exp_name].exp_runs_ext | length }}   \
           #reps={{ experiment.n_repetitions }}    \
           => #jobs={{ exp_facts[exp_name].exp_job_ids | length }}"

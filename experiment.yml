@@ -10,9 +10,9 @@
   - name: Read the experiment configuration
     include_vars: experiments/designs/{{ exp_suite }}.yml
 
-  - name: Preserve initial variable for all experiments
+  - name:
     set_fact:
-        redefine_exp_id: "{{ exp_id is not defined }}"
+      suite_init: True
 
   - name: Do load and setup for all experiments
     include_tasks:
@@ -26,8 +26,9 @@
     loop_control:
       extended: yes
 
-  - set_fact:
-      redefine_exp_id: "{{ False }}"
+  - name:
+    set_fact:
+      suite_init: False
 
   - name: Accumulate hosts in the same group among all host types
     set_fact:
@@ -214,13 +215,13 @@
 
     when: awsclean | default(true) | bool and all_exp_jobs_finished
 
-  - name: Output the run id of this experiment for convenience
+  - name: Output the experiment suite id for convenience
     debug:
-      var: exp_id
+      var: exp_suite_id
     when: id == 'new'
 
   - debug:
-      msg: "Finished Experiment: {{ exp_name_loc }} (id={{ exp_fact_loc.exp_id }})
+      msg: "Finished Experiment: {{ exp_name_loc }} (suite id={{ exp_suite_id }})
             #runs={{ exp_fact_loc.exp_runs_ext | length }}
             #reps={{ exp_fact_loc.n_repetitions }}
             => #jobs={{ exp_fact_loc.exp_job_ids | length }}"

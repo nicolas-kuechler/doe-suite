@@ -20,7 +20,7 @@
     file: fetch_results.yml
   vars:
     remote_results_dir: "{{ exp_working_dir }}/results"
-    local_results_dir: "results/{{ exp_suite }}/{{ exp_name }}_{{ exp_id }}/\
+    local_results_dir: "results/{{ exp_suite }}_{{ exp_suite_id }}/{{ exp_name }}/\
                         run_{{ exp_run }}/rep_{{ exp_run_rep }}"
   loop: "{{ range(0, (exp_hosts | length), 1) | list }}"
   loop_control:

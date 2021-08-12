@@ -5,7 +5,6 @@
     - exp_working_dir is defined
     - exp_code_dir is defined
     - exp_run_config is defined
-    - exp_id is defined
     - running_job_id is defined
 
 

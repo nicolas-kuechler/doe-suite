@@ -14,24 +14,32 @@
 
 In a nutshell, the suite automatically runs experiments where multiple factors are varied based on simple `YAML` files:
 ```YAML
+n_repetitions: 2  # how often each run is repeated (i.e. each level config)
+common_roles:     # roles that are run for all hosts during the initial setup
+  - setup-common
+host_types: # Different types of hosts
+  single:
+    n: 1    # number of current instances
 # experiment design with two factors with two levels each
-seed: 1234                  # a constant in the experiment
-payload_size_mb:            # a factor with two levels
-  $FACTOR$: [1, 128]
-opt:                        # a factor with two levels
-  $FACTOR$: [true, false]
+base_experiment:
+  seed: 1234                  # a constant in the experiment
+  payload_size_mb:            # a factor with two levels
+    $FACTOR$: [1, 128]
+  opt:                        # a factor with two levels
+    $FACTOR$: [true, false]
+
 
 # -> Results in 4 runs (combinations of parameters) that are executed.
 #    Note, the repeated execution of runs is possible.
 ```
 and outputs an experiment result table:
 
-| exp_name | exp_id     | run   | host     | seed | payload_size_mb | opt   | rt_mean | rt_std |
-|----------|------------|-------|----------|------|-----------------|-------|---------|--------|
-| simple   | 1626440718 | run_0 | client_0 | 1234 | 1               | true  | 5.2     | 0.3    |
-| simple   | 1626440718 | run_1 | client_0 | 1234 | 1               | false | 32.9    | 1.5    |
-| simple   | 1626440718 | run_2 | client_0 | 1234 | 128             | true  | 67.3    | 2.1    |
-| simple   | 1626440718 | run_3 | client_0 | 1234 | 128             | false | 1356.2  | 10.2   |
+| exp_name | exp_suite_id | run   | host     | seed | payload_size_mb | opt   | rt_mean | rt_std |
+|----------|-------------|-------|----------|------|-----------------|-------|---------|--------|
+| simple   | 1626440718  | run_0 | client_0 | 1234 | 1               | true  | 5.2     | 0.3    |
+| simple   | 1626440718  | run_1 | client_0 | 1234 | 1               | false | 32.9    | 1.5    |
+| simple   | 1626440718  | run_2 | client_0 | 1234 | 128             | true  | 67.3    | 2.1    |
+| simple   | 1626440718  | run_3 | client_0 | 1234 | 128             | false | 1356.2  | 10.2   |
 
 
 Note, in this experiment `simple`, the `client_0` records in each repetition of a run the response time (`rt`).

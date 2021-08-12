@@ -18,6 +18,7 @@
     host_unique_id: "{{ host_group_name_long
                         | split(ec2_tag_name_prefix + prj_id + '_')
                         | last }}"
+    exp_host_type_host_idx: "{{ groups[host_group_name_long].index(inventory_hostname) }}"
 
 - set_fact:
     host_group_name: "{{ host_unique_id
@@ -28,6 +29,6 @@
                   | last }}"
 
 - set_fact:
-    exp_id: "{{ exp_facts[exp_name].exp_id }}"
+    exp_suite_id: "{{ exp_facts[exp_name].exp_suite_id }}"
     host_facts: "{{ host_types[host_group_name][exp_name] }}"
     exp_fact: "{{ exp_facts[exp_name] }}"
