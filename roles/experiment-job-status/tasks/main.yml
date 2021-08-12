@@ -8,7 +8,7 @@
   include_tasks:
     file: get_status.yml
   # there are some unfinished jobs left
-  when: (exp_fact.exp_job_ids_unfinished | length) > 0 and host_facts.check_status
+  when: (exp_fact.exp_job_ids_unfinished | length) > 0
 
 #
 # Experiment result gathering

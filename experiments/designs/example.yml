@@ -2,7 +2,7 @@
 
 experiments:
   - experiment_1:       # the experiment configuration
-      n_repetitions: 1  # how often each run is repeated (i.e. each level config)
+      n_repetitions: 2  # how often each run is repeated (i.e. each level config)
       common_roles:     # roles that are run for all hosts during the initial setup
         - setup-common
       host_types:
