@@ -14,17 +14,23 @@
 # Experiment result gathering
 #
 
+- name: Set result directory path
+  set_fact:
+    remote_results_dir: "{{ exp_working_dir }}/results"
+    local_results_dir: "results/{{ exp_suite }}_{{ exp_suite_id }}/{{ exp_name }}/\
+                        run_{{ exp_run }}/rep_{{ exp_run_rep }}"
+
 # Create local directory and fetch results
 - name: Fetch the results
   include_tasks:
     file: fetch_results.yml
-  vars:
-    remote_results_dir: "{{ exp_working_dir }}/results"
-    local_results_dir: "results/{{ exp_suite }}_{{ exp_suite_id }}/{{ exp_name }}/\
-                        run_{{ exp_run }}/rep_{{ exp_run_rep }}"
   loop: "{{ range(0, (exp_hosts | length), 1) | list }}"
   loop_control:
     loop_var: host_idx
+
+- name: Save the config of the job
+  delegate_to: localhost
+  local_action: "command rsync -az '{{ inventory_hostname }}:{{ exp_working_dir }}/config.json' '{{ local_results_dir }}'"
 
 #
 # Update experiment state

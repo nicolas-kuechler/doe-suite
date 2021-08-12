@@ -21,7 +21,3 @@
 - name: Fetch Results (if experiment done)
   delegate_to: localhost
   local_action: "command rsync -az '{{ exp_hosts[host_idx] }}:{{ remote_results_dir }}/' '{{ local_results_subdir }}'"
-
-- name: Save the config of the job
-  delegate_to: localhost
-  local_action: "command rsync -az '{{ exp_hosts[host_idx] }}:{{ exp_working_dir }}/config.json' '{{ local_results_subdir }}'"
