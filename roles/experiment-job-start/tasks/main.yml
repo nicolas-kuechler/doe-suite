@@ -71,7 +71,7 @@
   delegate_to: "{{ host }}"
 
   service:
-    name: "{{ host_group_name_long }}.service"
+    name: "{{ hostvars[host].host_group_name_long }}.service"
     state: restarted
     enabled: yes
   loop: "{{ exp_hosts }}"
