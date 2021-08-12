@@ -79,6 +79,10 @@
       loop_control:
         loop_var: host_type_item
 
+    - name: Save hosts belonging to this experiment suite in `suite_all`
+      set_fact:
+        suite_all: "{{ groups[ec2_tag_prj_prefix + prj_id] }}"
+
     - debug:
         var: groups
 
@@ -91,7 +95,7 @@
 ##########################################################################
 
 - name: Setup registered host types
-  hosts: all
+  hosts: "{{ hostvars['localhost'].suite_all }}"
   strategy: free
   tasks:
 

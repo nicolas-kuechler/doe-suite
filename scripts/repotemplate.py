@@ -9,10 +9,6 @@ template_name = "main.yml.j2"
 # The template path is assumed to be: f"{vars_base_path}/{group}"
 # The output path is assumed to be f"{template_path}/template_name.rstrip('.j2')"
 
-# Inventory template file path (the output path just strips `j2`)
-inventory_template_path = "inventory"
-inventory_template_name = "aws_ec2.yml.j2"
-
 defaults = {
     "all": {
         #'prj_id': None,
@@ -139,11 +135,6 @@ while True:
         print(f"\n\"{group}\" Configuration: ")
         for k, v in d[group].items():
             print(f"- {k}={v}")
-
-    # Add prj_id also to inventory template
-    env, template = get_env_and_template(inventory_template_path, inventory_template_name)
-    env.globals["prj_id"] = d["all"]["prj_id"]
-    write_template(template, inventory_template_path, inventory_template_name.rstrip(".j2"))
 
     is_ok = pyip.inputYesNo("Confirm (y): [Press enter] ", blank=True, applyFunc= lambda x: x if x else "yes")
     print(is_ok)
