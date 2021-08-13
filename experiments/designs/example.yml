@@ -1,7 +1,7 @@
 # TODO: add different host configs depending on the experiment using ansible host variables
 
 experiments:
-  - experiment_1:       # the experiment configuration
+  - experiment_1:       # the experiment configuration (unique name of experiment)
       n_repetitions: 2  # how often each run is repeated (i.e. each level config)
       common_roles:     # roles that are run for all hosts during the initial setup
         - setup-common
@@ -15,8 +15,9 @@ experiments:
           init_role: setup-server # role run on the initial instance setup
       base_experiment:
         info: $FACTOR$  # Common variable for all host types
-        host_vars:      # Define variables for the different host types here
-          client:
+        host_vars:      # Define variables for the different host types here. 
+                        # Note, this is only a convention to group variables by host type., e.g., in practice also a host of type "client" can use variables from "server"  
+          client:       
             arg1: 10
             arg2: $FACTOR$
           server:
@@ -44,7 +45,7 @@ experiments:
               arg2: 3
             server:
               arg3: 3
-  - experiment_2:       # the experiment configuration
+  - experiment_2:       # the experiment configuration (unique name of experiment)
       n_repetitions: 1  # how often to repeat each run (i.e. each level config)
       common_roles:     # roles that are run for all hosts during the initial setup
         - setup-common
@@ -58,6 +59,7 @@ experiments:
       base_experiment:
         info: $FACTOR$  # Common variable for all host types
         host_vars:      # Define variables for the different host types here
+                        # Note, this is only a convention to group variables by host type., e.g., in practice also a host of type "client" can use variables from "server"  
           client:
             arg1: 10
             arg2: $FACTOR$
