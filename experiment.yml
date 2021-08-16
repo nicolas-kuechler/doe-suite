@@ -19,9 +19,9 @@
       include_role:
         name: experiment-load
       vars:
-        exp_name: "{{ (experiment_item | dict2items | first).key }}"
-        experiment: "{{ (experiment_item | dict2items | first).value }}"
-      loop: "{{ experiments }}"
+        exp_name: "{{ experiment_item.key }}"
+        experiment: "{{ experiment_item.value }}"
+      loop: "{{ experiments | dict2items }}"
       loop_control:
         loop_var: experiment_item
 

@@ -1,4 +1,5 @@
 import os
+import subprocess
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape, meta
 import pyinputplus as pyip
@@ -8,6 +9,47 @@ groups = ["all", "server", "client"]
 template_name = "main.yml.j2"
 # The template path is assumed to be: f"{vars_base_path}/{group}"
 # The output path is assumed to be f"{template_path}/template_name.rstrip('.j2')"
+
+default_ubuntu_ami = "ami-0f71a4467ddbe4776"
+
+# Try to find the latest ubuntu ami (the AWS CLI must be configured for this to work).
+try:
+    proc_aws = subprocess.Popen([
+        "aws",
+        "ec2",
+        "describe-images",
+        "--filters",
+        "Name=name,Values=ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*",
+        "--query",
+        "Images[*].[ImageId,CreationDate]",
+        "--output",
+        "text",
+    ], stdout=subprocess.PIPE)
+
+    proc_sort = subprocess.Popen([
+        "sort",
+        "-k2",
+        "-r"
+    ], stdin=proc_aws.stdout, stdout=subprocess.PIPE)
+
+    proc_aws.stdout.close()
+
+    proc_head = subprocess.Popen([
+        "head",
+        "-n1"
+    ], stdin=proc_sort.stdout, stdout=subprocess.PIPE)
+
+    proc_sort.stdout.close()
+
+    proc_awk = subprocess.Popen([
+         "awk",
+         "{print $1}"
+    ], stdin=proc_head.stdout, stdout=subprocess.PIPE)
+
+    ubuntu_ami = proc_awk.communicate()[0].encode().rstrip()
+except:
+    print(f"WARNING: Failed to get latest ubuntu AMI, using {default_ubuntu_ami}")
+    ubuntu_ami = default_ubuntu_ami
 
 defaults = {
     "all": {
@@ -20,10 +62,12 @@ defaults = {
     "server": {
         'instance_type': 't2.medium',
         'volume_size': 16,
+        'ec2_image': ubuntu_ami
     },
     "client": {
         'instance_type': 't2.medium',
-        'volume_size': 16
+        'volume_size': 16,
+        'ec2_image': ubuntu_ami
     }
 }
 
@@ -65,6 +109,8 @@ def prompt_user(d, variables, host):
         input_str(d, "instance_type", "> EC2 instance type")
 
         input_num(d, "volume_size", "> EC2 volume size in GB", min=8, max=512)
+
+        input_str(d, "ec2_image", "> EC2 image AMI")
 
 
     remaining_variables = list(filter(lambda x: not (x in d), variables))

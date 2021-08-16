@@ -231,7 +231,7 @@ In those service files, the following variables are available:
 - `host_ips` is a variable with a dictionary containing the private IPs of other hosts belonging to this experiment. For example, for the host types `client` (2 instances) and `server` (1 instance), this could look as follows:
 
   ```YAML
-  host_ips = { 'client': [ '10.100.0.15', '10.100.0.77' ], 'server': [ '10.100.0.77' ] }
+  host_ips = { 'client': [ '10.100.0.15', '10.100.0.77' ], 'server': [ '10.100.0.76' ] }
   ```
 
 #### Further Examples
@@ -259,28 +259,27 @@ An experiment design `YAML` file consists of one or more experiments. Each exper
 
 Example experiment design:
 ```YAML
-experiments:
-- simple:
-    n_repetitions: 3
-    common_roles:
-    - setup-common
-    host_types:
-      single:
-        n: 1
-        init_role: setup-single
-    base_experiment:
-      seed: 1234
-      payload_size_mb: $FACTOR$
-      opt: $FACTOR$
-    factor_levels:
-    # 3 runs where we vary the factors payload and opt.
-    # However, for the 1 MB payload, we don't run the opt.
-    - payload_size_mb: 1
-      opt: false
-    - payload_size_mb: 128
-      opt: true
-    - payload_size_mb: 128
-      opt: false
+simple:
+  n_repetitions: 3
+  common_roles:
+  - setup-common
+  host_types:
+    single:
+      n: 1
+      init_role: setup-single
+  base_experiment:
+    seed: 1234
+    payload_size_mb: $FACTOR$
+    opt: $FACTOR$
+  factor_levels:
+  # 3 runs where we vary the factors payload and opt.
+  # However, for the 1 MB payload, we don't run the opt.
+  - payload_size_mb: 1
+    opt: false
+  - payload_size_mb: 128
+    opt: true
+  - payload_size_mb: 128
+    opt: false
 
 # experiments/designs/xyz.yml
 ```
@@ -320,27 +319,26 @@ transforms into the cross product of all factor levels:
 
 An experiment in "design" form:
 ```YAML
-experiments:
-- simple:
-    n_repetitions: 2
-    common_roles:
-    - setup-common
-    host_types:
-      single:
-        n: 1
-    base_experiment:
-      seed: 1234
-      payload_size_mb: $FACTOR$
-      opt: $FACTOR$
-    factor_levels:
-    - payload_size_mb: 1
-      opt: true
-    - payload_size_mb: 1
-      opt: false
-    - payload_size_mb: 128
-      opt: true
-    - payload_size_mb: 128
-      opt: false
+simple:
+  n_repetitions: 2
+  common_roles:
+  - setup-common
+  host_types:
+    single:
+      n: 1
+  base_experiment:
+    seed: 1234
+    payload_size_mb: $FACTOR$
+    opt: $FACTOR$
+  factor_levels:
+  - payload_size_mb: 1
+    opt: true
+  - payload_size_mb: 1
+    opt: false
+  - payload_size_mb: 128
+    opt: true
+  - payload_size_mb: 128
+    opt: false
 
 # experiments/designs/simple.yml
 ```
@@ -449,12 +447,15 @@ df = read_df(results_dir, exp,
 
 The provided script can handle the following result files if they follow the conventions:
 
-* `CSV: Ideally, the result file should end in `.csv` and contain a header and then one or multiple result rows. Columns in the header and each row should be separated by `,`. See the notebook [scripts-demo.ipynb](scripts-demo.ipynb) for how to change the column type from string to a number column.
+* CSV: Ideally, the result file should end in `.csv` and contain a header and then one or multiple result rows. Columns in the header and each row should be separated by `,`. See the notebook [scripts-demo.ipynb](scripts-demo.ipynb) for how to change the column type from string to a number column.
 * `JSON`/`YAML`:  Ideally, the result file should end in `.json`, `.yaml`, or `.yml` respectively and contain a **flat (unnested) object** with a single result or a **list of flat objects** with multiple results. A list of objects corresponds to multiple rows in the dataframe. Nested JSON objects are flattened (e.g., `{"a": {"b": 1}}` turns to `{"a.b": 1}`) for the dataframe.
 
 If your result files follow different conventions, please adapt [scripts/results.py](scripts/results.py) for your needs.
 
 For more details, see the example in the notebook [scripts-demo.ipynb](scripts-demo.ipynb) that shows how to work with the data frame.
+
+## More Documentation
+More documentation can be found [here](./docs).
 
 <!-- LICENSE -->
 ## License
