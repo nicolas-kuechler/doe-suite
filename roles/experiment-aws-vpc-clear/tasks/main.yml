@@ -1,6 +1,6 @@
 ---
 
-- name: Get VPC ID 
+- name: Get VPC ID
   amazon.aws.ec2_vpc_net_info:
     filters:
       "tag:Name": "{{ exp_base.vpc_name }}"
@@ -10,7 +10,7 @@
 - name: Extract Vpc id
   set_fact:
     vpc_id: "{{ vpc_result.vpcs[0].vpc_id | default('undefined') }}"
-    
+
 - name: Remove All Routes from Security Group
   ec2_group:
     name: "{{ exp_base.sg_name }}"
@@ -29,7 +29,7 @@
     state: absent
   when: vpc_id != 'undefined'
   register: result
-  retries: 4
+  retries: 10
   delay: 5
   until: result is not failed
 
@@ -63,14 +63,14 @@
 
 # Delete VPC
 - name: Delete the Server VPC
-  ec2_vpc_net:   
+  ec2_vpc_net:
     name: "{{ exp_base.vpc_name }}"
     cidr_block: "{{ exp_base.vpc_cidr_block }}"
-    region: "{{exp_base.aws_region }}"  
-    state: absent  
+    region: "{{exp_base.aws_region }}"
+    state: absent
     purge_cidrs: yes
   register: vpc_delete
-  retries: 4
+  retries: 10
   delay: 5
   until: vpc_delete is not failed
 

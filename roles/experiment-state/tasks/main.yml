@@ -2,7 +2,7 @@
 
 - assert:
     that:
-      - exp_suite is defined
+      - suite is defined
       - exp_name is defined
       - id is defined
       - expstate == 'load' or expstate == 'save'
@@ -15,22 +15,22 @@
 - block:
     - name: Set suite id from command argument
       set_fact:
-        exp_suite_id: "{{ id | int }}"
+        suite_id: "{{ id | int }}"
       when: id != 'new' and id != 'last' # continue the last experiment suite run
 
     - block:
-        - name: Find all experiments state of the experiment with '`exp_suite`_\d+' as name
+        - name: Find all experiments state of the experiment with '`suite`_\d+' as name
           find:
             paths: "{{ local.exp_state_dir }}"
-            patterns: "^{{exp_suite}}_\\d+$"
+            patterns: "^{{suite}}_\\d+$"
             file_type: directory
             use_regex: yes
-          register: exp_suite_dirs_found
+          register: suite_dirs_found
 
-        - name: Find the highest `exp_suite_id`
+        - name: Find the highest `suite_id`
           set_fact:
-            max_exp_suite_id: "{{ ansible_date_time.epoch if exp_suite_dirs_found.matched == 0
-                                  else (exp_suite_dirs_found
+            max_suite_id: "{{ ansible_date_time.epoch if suite_dirs_found.matched == 0
+                                  else (suite_dirs_found
                                   | json_query('files[*].path')
                                   | sort
                                   | last
@@ -40,19 +40,19 @@
         - name: Create new suite id + mark as init
           set_fact:
             is_init: True
-            exp_suite_id: "{{ (max_exp_suite_id | int) + 1 }}"
+            suite_id: "{{ (max_suite_id | int) + 1 }}"
           when: id == 'new' and expstate == 'load'  # init experiment
 
         - name: Set suite ID to the highest one that was found
           set_fact:
-            exp_suite_id: "{{ max_exp_suite_id | int }}"
+            suite_id: "{{ max_suite_id | int }}"
           when: id == 'new' and expstate == 'load'  # init experiment
 
       when: id == 'new' or id == 'last'
-  when: exp_suite_id is not defined
+  when: suite_id is not defined
 
 - debug:
-    msg: "exp_suite_id={{ exp_suite_id }}, exp_name={{ exp_name }}"
+    msg: "suite_id={{ suite_id }}, exp_name={{ exp_name }}"
 
 - name: Reset experiment state to []
   set_fact:
@@ -84,7 +84,7 @@
 
 - name: Set experiment directory
   set_fact:
-    exp_state_dir: "{{ local.exp_state_dir }}/{{ exp_suite }}_{{ exp_suite_id }}/{{ exp_name }}"
+    exp_state_dir: "{{ local.exp_state_dir }}/{{ suite }}_{{ suite_id }}/{{ exp_name }}"
 
 - name: Create exp directory if it does not exist
   delegate_to: localhost
@@ -97,7 +97,7 @@
 - name: Use previous values for undefined new state values in a state update
   block:
     - name: Load previous state
-      include_vars: # Be careful: any variables you set with set_fact will not be overwritten with include_vars due to the variable precedence of different sources in Ansible.
+      include_vars:
         file: "{{ exp_state_dir }}/state.yml"
         name: prev_state
 
@@ -133,8 +133,8 @@
 - name: Set experiment variables (facts) based on loaded state
   set_fact:
     exp_facts: "{{ exp_facts | default({}) | combine({ exp_name: { fact_item.key : fact_item.value } }, recursive=True) }}"
-  with_items:
-    - { 'key': 'exp_suite_id', 'value': "{{ exp_suite_id }}" }
+  loop:
+    - { 'key': 'suite_id', 'value': "{{ suite_id }}" }
     - { 'key': 'exp_runs_ext', 'value': "{{ state.exp_runs_ext }}" }
     - { 'key': 'exp_job_ids', 'value': "{{ state.exp_job_ids }}" }
     - { 'key': 'exp_job_ids_unfinished', 'value': "{{ state.exp_job_ids_unfinished }}" }

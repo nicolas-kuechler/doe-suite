@@ -17,7 +17,7 @@
 - name: Set result directory path
   set_fact:
     remote_results_dir: "{{ exp_working_dir }}/results"
-    local_results_dir: "results/{{ exp_suite }}_{{ exp_suite_id }}/{{ exp_name }}/\
+    local_results_dir: "results/{{ suite }}_{{ suite_id }}/{{ exp_name }}/\
                         run_{{ exp_run }}/rep_{{ exp_run_rep }}"
 
 # Create local directory and fetch results

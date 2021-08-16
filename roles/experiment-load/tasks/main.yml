@@ -30,7 +30,7 @@
   when: id == 'new' # only persist the state if it is a new experiment
 
 - debug:
-    msg: "Running Experiment: {{ exp_name }} (suite id={{ exp_suite_id }})   \
+    msg: "Running Experiment: {{ exp_name }} (suite id={{ suite_id }})   \
           #runs={{ exp_facts[exp_name].exp_runs_ext | length }}   \
           #reps={{ experiment.n_repetitions }}    \
           => #jobs={{ exp_facts[exp_name].exp_job_ids | length }}"

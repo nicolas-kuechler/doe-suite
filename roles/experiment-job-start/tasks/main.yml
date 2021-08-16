@@ -63,8 +63,6 @@
 #   Starting the Experiment                                              #
 ##########################################################################
 
-# TODO: the client must be robust against a not-available server, there is no sleep
-# in between the roles anymore.
 - name: Start services
   become: yes
   delegate_to: "{{ host }}"

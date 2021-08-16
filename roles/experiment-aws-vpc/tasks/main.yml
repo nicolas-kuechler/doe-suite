@@ -2,7 +2,7 @@
 
 - assert:
     that:
-    - do_create_vpc
+    - do_create_vpc is defined
 
 - debug:
     msg: "-> creating VPC..."

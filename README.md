@@ -34,7 +34,7 @@ base_experiment:
 ```
 and outputs an experiment result table:
 
-| exp_name | exp_suite_id | run   | host     | seed | payload_size_mb | opt   | rt_mean | rt_std |
+| exp_name | suite_id | run   | host     | seed | payload_size_mb | opt   | rt_mean | rt_std |
 |----------|-------------|-------|----------|------|-----------------|-------|---------|--------|
 | simple   | 1626440718  | run_0 | client_0 | 1234 | 1               | true  | 5.2     | 0.3    |
 | simple   | 1626440718  | run_1 | client_0 | 1234 | 1               | false | 32.9    | 1.5    |
@@ -352,7 +352,7 @@ We run an experiment by starting the Ansible playbook.
 We provide the name of an experiment design from `experiments/designs` (e.g., `example`), and we use `id=new` to run a new complete experiment.  
 
 ```sh
-pipenv run ansible-playbook experiment.yml -e "exp_suite=example id=new"
+pipenv run ansible-playbook experiment.yml -e "suite=example id=new"
 ```
 
 When we start a new experiment, each specified experiment receives an experiment ID (a counter incremented based on the state folders stored in `experiments/state/example`). I.e., when there are multiple experiments specified in the config, each one of them will have its own ID.
@@ -367,13 +367,13 @@ After the number of `job_n_tries` is exceeded, the playbook aborts. An already r
 To continue checking a previously started experiment, we can specify the ID of the experiment when starting the playbook:
 
 ```sh
-pipenv run ansible-playbook experiment.yml -e "exp_suite=example id=<ID>"
+pipenv run ansible-playbook experiment.yml -e "suite=example id=<ID>"
 ```
 
 For convenience, we can also use `id=last` to continue with the most recent experiment(s) with the provided name. If there are multiple experiments defined in the config, then this command will continue to run all of them (i.e., also multiple experiment IDs).
 
 ```sh
-pipenv run ansible-playbook experiment.yml -e "exp_suite=example id=last"
+pipenv run ansible-playbook experiment.yml -e "suite=example id=last"
 ```
 
 ### Cleaning up AWS

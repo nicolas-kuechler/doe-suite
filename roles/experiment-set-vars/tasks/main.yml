@@ -29,6 +29,6 @@
                   | last }}"
 
 - set_fact:
-    exp_suite_id: "{{ exp_facts[exp_name].exp_suite_id }}"
+    suite_id: "{{ exp_facts[exp_name].suite_id }}"
     host_facts: "{{ host_types[host_group_name][exp_name] }}"
     exp_fact: "{{ exp_facts[exp_name] }}"

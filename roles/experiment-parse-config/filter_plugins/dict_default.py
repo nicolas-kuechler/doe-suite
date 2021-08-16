@@ -30,8 +30,9 @@ def dict_default(d, query, attr, default):
     The query supports the wildcard character '*' and expects dot notation (i.e., d.plants and not d['plants']).
     The wildcard tolerates lists.
 
-    Example usage:
+    # Example usage:
 
+    ## Dictionary
     data = {
         "animals": {
             "cats": 10,
@@ -43,11 +44,48 @@ def dict_default(d, query, attr, default):
         }
     }
 
+    ## Example 1
+
     Set a default for the plants "cacti":
     {{ data | dict_default("plants", "cacti", 0) }}
 
+    Results in the new dictionary:
+    data = {
+        "animals": {
+            "cats": 10,
+            "dogs": 1
+        }
+        "plants": {
+            "bushes": 2,
+            "pot plants": 3,
+            "cacti": 0
+        }
+    }
+
+    ## Example 2
+
     Set a default category "other" for all entries if its not present:
     {{ data | dict_default("*", "other", 0) }}
+
+    Results in the new dictionary:
+    data = {
+        "animals": {
+            "cats": 10,
+            "dogs": 1,
+            "other": 0
+        }
+        "plants": {
+            "bushes": 2,
+            "pot plants": 3,
+            "other": 0
+        }
+    }
+
+    # Remarks
+
+    Note that this filter can only add key/value pairs to an existing dictionaries:
+    - WRONG: {{ data | dict_default("plants.house", "cacti", 0) }} because data["plants"] does not contain a dictionary for key "house".
+    - CAREFUL: {{ data | dict_default("plants", "house.cacti", 0) }} adds the entry "house.cacti": 0. It does NOT add a dictionary under key "house" with the entry "cacti": 0
     """
 
     keys = query.split(".")

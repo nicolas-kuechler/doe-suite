@@ -4,7 +4,7 @@ def main():
 
     parser = argparse.ArgumentParser(description='Transform experiment definition in table form into design form required by the experiment suite')
 
-    parser.add_argument('--exp_suite', help='experiment suite name', type=str)
+    parser.add_argument('--suite', help='experiment suite name', type=str)
 
     parser.add_argument('--exps', help='experiment name(s) (experiment file name without .yml ending)', nargs="+", type=str, required=True)
 
@@ -14,16 +14,16 @@ def main():
 
     args = parser.parse_args()
 
-    exp_suite   = args.exp_suite
+    suite   = args.suite
     inputdir    = args.inputdir
     outpath     = args.outpath
     exps        = args.exps
 
-    if not exp_suite:
-        exp_suite = exps[0]
+    if not suite:
+        suite = exps[0]
 
     if not outpath:
-        outpath = f"experiments/designs/{exp_suite}.yml"
+        outpath = f"experiments/designs/{suite}.yml"
 
     with open(outpath, 'w') as out_fp:
         print(f"Writing experiment design to: {outpath}\n")

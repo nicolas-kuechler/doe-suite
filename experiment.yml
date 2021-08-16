@@ -16,8 +16,8 @@
         suite_init: True
 
     - name: Do load and setup for all experiments
-      include_tasks:
-        file: experiment_load.yml
+      include_role:
+        name: experiment-load
       vars:
         exp_name: "{{ (experiment_item | dict2items | first).key }}"
         experiment: "{{ (experiment_item | dict2items | first).value }}"
@@ -217,11 +217,11 @@
 
   - name: Output the experiment suite id for convenience
     debug:
-      var: exp_suite_id
+      var: suite_id
     when: id == 'new'
 
   - debug:
-      msg: "Finished Experiment: {{ exp_name_loc }} (suite id={{ exp_suite_id }})
+      msg: "Finished Experiment: {{ exp_name_loc }} (suite id={{ suite_id }})
             #runs={{ exp_fact_loc.exp_runs_ext | length }}
             #reps={{ exp_fact_loc.n_repetitions }}
             => #jobs={{ exp_fact_loc.exp_job_ids | length }}"

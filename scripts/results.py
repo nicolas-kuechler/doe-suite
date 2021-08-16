@@ -79,7 +79,7 @@ def _parse_file(path, file, regex_error_file, regex_ignore_file, regex_csv_resul
     return d_lst
 
 
-def read_df(results_dir, exp_suites, regex_error_file = [re.compile(r".*_stderr\.log$")],
+def read_df(results_dir, suites, regex_error_file = [re.compile(r".*_stderr\.log$")],
                     regex_ignore_file = [re.compile(r".*_stdout\.log$")],
                     regex_csv_result_file=[re.compile(r".*\.csv$")],
                     regex_json_result_file=[re.compile(r".*\.json$")],
@@ -91,7 +91,7 @@ def read_df(results_dir, exp_suites, regex_error_file = [re.compile(r".*_stderr\
 
     Parameters:
     results_dir: the base folder where the results are located
-    exp_suites: a dict that controls which results to include {exp_suite_name: [exp_suite_id_1, exp_suite_id_2, ...]}
+    suites: a dict that controls which results to include {suite_name: [suite_id_1, suite_id_2, ...]}
     regex_error_file: a list of regex that matches files that indicate errors if they are non-empty (outputs a warning)
     regex_ignore_file: a list of regex that matches files to ignore (e.g., stdout)
     regex_csv_result_file: a list of regex that match result files in csv format (first row is header, then there can be multiple rows of results)
@@ -104,14 +104,14 @@ def read_df(results_dir, exp_suites, regex_error_file = [re.compile(r".*_stderr\
 
     res_lst = []
 
-    for exp_suite in exp_suites.keys():
+    for suite in suites.keys():
 
-        for exp_suite_id in exp_suites[exp_suite]:
-            exp_suite_dir = os.path.join(results_dir, f"{exp_suite}_{exp_suite_id}")
-            exps = os.listdir(exp_suite_dir)
+        for suite_id in suites[suite]:
+            suite_dir = os.path.join(results_dir, f"{suite}_{suite_id}")
+            exps = os.listdir(suite_dir)
 
             for exp in exps:
-                exp_dir = os.path.join(exp_suite_dir, exp)
+                exp_dir = os.path.join(suite_dir, exp)
                 runs = _list_dir_only(exp_dir)
 
                 for run in runs:
@@ -138,7 +138,7 @@ def read_df(results_dir, exp_suites, regex_error_file = [re.compile(r".*_stderr\
                                 files = _list_files_only(host_dir)
 
                                 job_info = {
-                                    "exp_suite_id": exp_suite_id,
+                                    "suite_id": suite_id,
                                     "exp_name": exp,
                                     "run": run,
                                     "rep": rep,

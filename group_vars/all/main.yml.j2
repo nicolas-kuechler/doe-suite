@@ -2,11 +2,13 @@ prj_id: <<prj_id>> # TODO: set a project id (will be used to identify resources 
 git_remote_repository: <<git_remote_repository>> # TODO: set remote repository (code will be cloned on each client and server host )
 
 
-# TODO: set how often to check and how long to wait in between
-# the playbook checks whether a job finished, fetches the results and starts the next job
-#   these two flags control how often in total, the playbook repeats this before stopping (a job can still continue to run)
-#   'job_n_tries' is the total number of tries per job, and 'job_check_wait_time' is the time in seconds to wait in between checking whether a job finsihed
-#    (playbook runs for roughly #jobs * 'job_n_tries' * 'job_check_wait_time' seconds unless the experiment finishes earlier)
+# TODO: The following parameters define how the playbook checks whether a job finished, fetches the results and starts the next job.
+# - 'job_n_tries' is the maximal number times we check the job's status before aborting
+# - 'job_check_wait_time' is the time (in seconds) to wait in between checking whether a job finished
+# Note that those parameters directly influence the playbook duration:
+# Each experiments runs for at most #jobs * 'job_n_tries' * 'job_check_wait_time' seconds (usually less when the experiment finishes earlier).
+# The experiments are mostly run concurrently (apart from the setup and cleanup parts). Thus, the experiment with the most jobs defines the
+# maximal duration. But as experiments usually use fewer than 'job_n_tries' tries, an experiment with few long-running jobs can be the bottleneck too.
 job_n_tries: <<job_n_tries>>   # should be max 1000 (otherwise playbook freezes -> unsure why)
                                # TODO [mh]: must be tested if this is still an issue, I switched to an `until` loop
 job_check_wait_time: <<job_check_wait_time>>

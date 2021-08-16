@@ -1,7 +1,7 @@
 ---
 
 - name: Read the experiment configuration
-  include_vars: experiments/designs/{{ exp_suite }}.yml
+  include_vars: experiments/designs/{{ suite }}.yml
 
 - name: Ensure experiment names are unique
   assert:
