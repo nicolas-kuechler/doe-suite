@@ -230,8 +230,8 @@ In those service files, the following variables are available:
 
 - `host_ips` is a variable with a dictionary containing the private IPs of other hosts belonging to this experiment. For example, for the host types `client` (2 instances) and `server` (1 instance), this could look as follows:
 
-  ```YAML
-  host_ips = { 'client': [ '10.100.0.15', '10.100.0.77' ], 'server': [ '10.100.0.76' ] }
+  ```JSON
+  host_ips = { "client": [ "10.100.0.15", "10.100.0.77" ], "server": [ "10.100.0.76" ] }
   ```
 
 #### Further Examples
@@ -398,7 +398,7 @@ The experiment suite creates a matching folder structure on the localhost and th
 
 Locally, each experiment job (repetition of an experiment run with a specific config) receives a separate folder, i.e., working directory:
 
-`results/exp_<EXPERIMENT NAME>_ <EXPERIMENT ID>/run_<RUN>/rep_<REPETITION>`
+`results/exp_<EXPERIMENT NAME>_<EXPERIMENT ID>/run_<RUN>/rep_<REPETITION>`
 
 - `RUN` is the index of the run (starts at 0)
 - `REPETITION`is the index of the repetitions (starts at 0)
