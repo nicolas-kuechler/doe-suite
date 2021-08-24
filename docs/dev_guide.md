@@ -34,7 +34,7 @@ To add a variable to the experiment state, do:
     - `exp_facts[exp_name]` -> `exp_fact`
 
 
-- `host_facts`: This data structure is a dictionary with the experiment name as key and the different host types that belong to this experiment and their configuration as values.
+- `host_types`: This data structure is a dictionary with the host type as a key. For each host type, it stores a dictionary with the experiment name as key and the host configuration (for this host type and experiment) as value. `all` is a special entry that collects the total number of instances for each `host_type` summed over all experiments (attention: its second key is the host type and not the experiment name!). The `...` below are just an ellipsis to make the example more concise and do not represent actual values.
 
   Example:
   ```YAML
@@ -43,29 +43,35 @@ To add a variable to the experiment state, do:
       'experiment_1': {
         'init_role': 'setup-client',
         'n': 1,
-        'n_check': 1,
-        'n_max': 1
+        'check_status': false
       },
       'experiment_2': {
         'init_role': 'setup-client',
         'n': 1,
-        'n_check': 1,
-        'n_max': 1
+        'check_status': false
       }
     },
     'server': {
       'experiment_1': {...},
       'experiment_2': {...}
     }
+    'all': {
+      'client': {
+        'n': 2
+      }
+      'server': {
+        'n': ...
+      }
+    }
   }
   ```
 
   Naming:
     - `host_types[group]` -> `host_type`
-    - `host_types[group][exp_name]` -> host_facts
+    - `host_types[group][exp_name]` -> `host_facts`
 
 
-- `host_type_names`: A list of all host types, without the special type `all` (i.e., not equal to `host_types.keys()`). This is convenient to loop through host types.
+- `host_type_names`: A list of all host types, without the special key `all` (i.e., not equal to `host_types.keys()`). This is convenient to loop through host types.
 
 
 - `exp_hosts`: variable set on "controller" hosts which contains a list of hosts involved in the current experiment.
