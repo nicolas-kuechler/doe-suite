@@ -234,6 +234,8 @@ In those service files, the following variables are available:
   host_ips = { "client": [ "10.100.0.15", "10.100.0.77" ], "server": [ "10.100.0.76" ] }
   ```
 
+Examples are in the [roles/experiment-job-start/templates](roles/experiment-job-start/templates) folder.
+
 #### Further Examples
 
 These are examples of projects that use the experiment-suite template and what the project implements additionally:
@@ -343,17 +345,24 @@ simple:
 # experiments/designs/simple.yml
 ```
 
+##### Multi-Experiment Table File
+Multiple experiment table files can be translated and combined into a single experiment design. In the following example, the two experiment tables [demo_exp1](./experiments/table/demo_exp1.yml) and [demo_exp2](./experiments/table/demo_exp2.yml) are combined to one experiment design file [demo](./experiments/designs/demo.yml), which contains two experiments called `demo_exp1` and `demo_exp2`.
 
-### Running an Experiment
+```bash
+./scripts/expdesign.py --suite demo --exps demo_exp1 demo_exp2
+```
 
-We run an experiment by starting the Ansible playbook.
+
+### Running an Experiment Suite
+
+We run an experiment suite by starting the Ansible playbook.
 We provide the name of an experiment design from `experiments/designs` (e.g., `example`), and we use `id=new` to run a new complete experiment.  
 
 ```sh
 pipenv run ansible-playbook experiment.yml -e "suite=example id=new"
 ```
 
-When we start a new experiment, each specified experiment receives an experiment ID (a counter incremented based on the state folders stored in `experiments/state/example`). I.e., when there are multiple experiments specified in the config, each one of them will have its own ID.
+When we start a new experiment suite, it receives a unique ID (epoch timestamp). Each experiment of the suite must have a unique name in the experiment design specification.
 
 The experiment suite periodically checks whether an experiment run is finished and then starts the next one according to the experiment design.
 
@@ -368,7 +377,7 @@ To continue checking a previously started experiment, we can specify the ID of t
 pipenv run ansible-playbook experiment.yml -e "suite=example id=<ID>"
 ```
 
-For convenience, we can also use `id=last` to continue with the most recent experiment(s) with the provided name. If there are multiple experiments defined in the config, then this command will continue to run all of them (i.e., also multiple experiment IDs).
+For convenience, we can also use `id=last` to continue executing the most recent experiment suite (the one with the highest suite ID). If there are multiple experiments defined in the config, then this command will continue to run all of them.
 
 ```sh
 pipenv run ansible-playbook experiment.yml -e "suite=example id=last"
@@ -468,7 +477,7 @@ Distributed under the Apache License. See `LICENSE` for more information.
 
 Nicolas Küchler - [nicolas-kuechler](https://github.com/nicolas-kuechler)
 
-Miro Haller - [Miro-H](https://github.com/Miro-H) 
+Miro Haller - [Miro-H](https://github.com/Miro-H)
 
 Project Link: [https://github.com/pps-lab/aws-simple-ansible](https://github.com/pps-lab/aws-simple-ansible)
 
