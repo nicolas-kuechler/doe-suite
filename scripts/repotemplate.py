@@ -1,6 +1,7 @@
 import os
 import subprocess
 
+from ast import literal_eval
 from jinja2 import Environment, FileSystemLoader, select_autoescape, meta
 import pyinputplus as pyip
 
@@ -10,7 +11,7 @@ template_name = "main.yml.j2"
 # The template path is assumed to be: f"{vars_base_path}/{group}"
 # The output path is assumed to be f"{template_path}/template_name.rstrip('.j2')"
 
-default_ubuntu_ami = "ami-0f71a4467ddbe4776"
+default_ubuntu_ami = "ami-02e5f497990930ec1"
 
 # Try to find the latest ubuntu ami (the AWS CLI must be configured for this to work).
 try:
@@ -23,7 +24,7 @@ try:
         "--query",
         "Images[*].[ImageId,CreationDate]",
         "--output",
-        "text",
+        "text"
     ], stdout=subprocess.PIPE)
 
     proc_sort = subprocess.Popen([
@@ -46,7 +47,7 @@ try:
          "{print $1}"
     ], stdin=proc_head.stdout, stdout=subprocess.PIPE)
 
-    ubuntu_ami = proc_awk.communicate()[0].encode().rstrip()
+    ubuntu_ami = proc_awk.communicate()[0].decode().rstrip()
 except:
     print(f"WARNING: Failed to get latest ubuntu AMI, using {default_ubuntu_ami}")
     ubuntu_ami = default_ubuntu_ami
@@ -62,12 +63,14 @@ defaults = {
     "server": {
         'instance_type': 't2.medium',
         'volume_size': 16,
-        'ec2_image': ubuntu_ami
+        'ec2_image': ubuntu_ami,
+        'snapshot_id': None
     },
     "client": {
         'instance_type': 't2.medium',
         'volume_size': 16,
-        'ec2_image': ubuntu_ami
+        'ec2_image': ubuntu_ami,
+        'snapshot_id': None
     }
 }
 
@@ -111,6 +114,26 @@ def prompt_user(d, variables, host):
         input_num(d, "volume_size", "> EC2 volume size in GB", min=8, max=512)
 
         input_str(d, "ec2_image", "> EC2 image AMI")
+
+        # Find the SnapshotId for this instance
+        if "snapshot_id" not in d or d["snapshot_id"] == None:
+            try:
+                snapshot_id = literal_eval(subprocess.check_output([
+                    "aws",
+                    "ec2",
+                    "describe-images",
+                    "--image-ids",
+                    d["ec2_image"],
+                    "--query",
+                    "Images[0].BlockDeviceMappings[*].Ebs.SnapshotId"
+                ]).decode())[0]
+
+                d["snapshot_id"] = snapshot_id
+            except:
+                print(f"WARNING: could not fetch snapshot id for {d['ec2_image']}")
+                pass
+
+        input_str(d, "snapshot_id", "> Snapshot ID for this instance")
 
 
     remaining_variables = list(filter(lambda x: not (x in d), variables))
