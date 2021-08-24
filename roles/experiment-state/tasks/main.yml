@@ -46,7 +46,7 @@
         - name: Set suite ID to the highest one that was found
           set_fact:
             suite_id: "{{ max_suite_id | int }}"
-          when: id == 'new' and expstate == 'load'  # init experiment
+          when: id == 'last' and expstate == 'load'  # init experiment
 
       when: id == 'new' or id == 'last'
   when: suite_id is not defined
@@ -170,7 +170,7 @@
                    | combine({ exp_name: hostvars[inventory_hostname].exp_facts[exp_name] }) }}"
   delegate_to: "{{ host }}"
   delegate_facts: true
-  loop: "{{ exp_hosts + ['localhost'] }}"
+  loop: "{{ exp_hosts }}"
   loop_control:
     loop_var: host
   when: exp_hosts is defined

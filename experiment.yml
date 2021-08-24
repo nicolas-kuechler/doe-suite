@@ -196,13 +196,28 @@
   hosts: localhost
   tasks:
 
-  - name: Check if all jobs are finished
-    set_fact:
-      all_exp_jobs_finished: "{{ (all_exp_jobs_finished | default(True))
-                                 and (exp_facts_val.exp_job_ids_unfinished | length == 0)}}"
-    loop: "{{ exp_facts.values() }}"
-    loop_control:
-      loop_var: exp_facts_val
+  - block:
+    - name: Reset exp_facts
+      set_fact:
+          exp_facts_keys: "{{ exp_facts.keys() }}"
+          exp_facts: {}
+
+    - name: Load current experiment state (exp_facts) on localhost
+      include_role:
+        name: experiment-state
+      vars:
+        expstate: load
+      loop: "{{ exp_facts_keys }}"
+      loop_control:
+        loop_var: exp_name
+
+    - name: Check if all jobs are finished
+      set_fact:
+        all_exp_jobs_finished: "{{ (all_exp_jobs_finished | default(True))
+                                   and (exp_facts_val.exp_job_ids_unfinished | length == 0)}}"
+      loop: "{{ exp_facts.values() }}"
+      loop_control:
+        loop_var: exp_facts_val
 
   - block:
     - debug:
