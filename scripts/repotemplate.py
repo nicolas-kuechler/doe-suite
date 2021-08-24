@@ -1,15 +1,21 @@
 import os
 import subprocess
+import signal
+import sys
 
 from ast import literal_eval
 from jinja2 import Environment, FileSystemLoader, select_autoescape, meta
 import pyinputplus as pyip
 
+DEFAULT_HOST_TYPE = "host_type"
+
 vars_base_path = "group_vars"
+templates_base_path = "resources/repotemplate/group_vars"
 groups = ["all", "server", "client"]
 template_name = "main.yml.j2"
-# The template path is assumed to be: f"{vars_base_path}/{group}"
-# The output path is assumed to be f"{template_path}/template_name.rstrip('.j2')"
+# The template path is assumed to be: f"{templates_base_path}/<<NAME>>", where
+# <<NAME>> is 'all' for the group 'all' and the string 'DEFAULT_HOST_TYPE' for all other host types.
+# The output path is assumed to be f"{vars_base_path}/{group}/template_name.rstrip('.j2')"
 
 default_ubuntu_ami = "ami-02e5f497990930ec1"
 
@@ -71,9 +77,20 @@ defaults = {
         'volume_size': 16,
         'ec2_image': ubuntu_ami,
         'snapshot_id': None
+    },
+    # General default values
+    DEFAULT_HOST_TYPE: {
+        'instance_type': 't2.medium',
+        'volume_size': 16,
+        'ec2_image': ubuntu_ami,
+        'snapshot_id': None
     }
 }
 
+
+def signal_handler(sig, frame):
+    print("\nAborting config...")
+    exit(0)
 
 def input_str(d, key, msg):
     if key in d:
@@ -158,24 +175,78 @@ def get_env_and_template(template_path, template_name):
 
     return env, template
 
-def write_template(template, output_path, output_name):
+def write_template(template, output_path):
     # replace the variables
     content = template.render()
 
-    print(f"Writing {os.path.join(output_path, output_name)}...")
-    with open(os.path.join(output_path, output_name), "w+") as file:
+    print(f"Writing {output_path}...")
+    with open(output_path, "w+") as file:
         file.write(f"{content}\n")
+
+def ask_confirmation(question, yes_msg=None, no_msg=None, default_answer="y"):
+    """
+    Ask a question and require the user to answer yes/no.
+
+    :return: True is the user answered yes.
+    """
+
+    is_ok = pyip.inputYesNo(
+        f"{question} ({default_answer}): [Press enter] ",
+        blank=True, applyFunc= lambda x: x if x else default_answer
+    )
+    if is_ok == "yes":
+        if yes_msg:
+            print(yes_msg)
+        return True
+    else:
+        if no_msg:
+            print(no_msg)
+        return False
+
+def parse_group_list(group_list):
+    if group_list == "":
+        return []
+    return list(map(str.strip, group_list.split(",")))
+
+def validate_group_list(group_list):
+    if any(map(lambda t: " " in t, parse_group_list(group_list))):
+        raise Exception("Host types cannot contain spaces.")
 
 # The values are not reset to the defaults when someone does not accept the config
 # because that can always be achieved with restarting the script. Instead, entries
 # are preserved as the new default values.
 d = defaults
 
+# Catch CTRL+C, exit gracefully
+signal.signal(signal.SIGINT, signal_handler)
+
 while True:
+    if not ask_confirmation(f"Create default host types ({', '.join(groups[1:])})?"):
+        groups = pyip.inputCustom(
+            validate_group_list,
+            prompt="Input comma-separated host types to create (may be empty, 'all' is always created): ",
+            blank=True,
+            postValidateApplyFunc=parse_group_list
+        )
+
+        if "all" not in groups:
+            groups = ["all"] + groups
+
+    templates_to_write = dict()
+    configured_groups = groups[:]
+
     for group in groups:
-        template_path = f"{vars_base_path}/{group}"
-        output_path = template_path
-        output_name = template_name.rstrip(".j2")
+        if group == "all":
+            template_path = f"{templates_base_path}/all"
+        else:
+            template_path = f"{templates_base_path}/{DEFAULT_HOST_TYPE}"
+
+        output_path = f"{vars_base_path}/{group}/{template_name.rstrip('.j2')}"
+
+        if os.path.exists(output_path):
+            if not ask_confirmation(f"Group vars for '{group}' already exist, overwrite?", no_msg=f"Skipping '{output_path}'"):
+                configured_groups.remove(group)
+                continue
 
         env, template = get_env_and_template(template_path, template_name)
 
@@ -186,28 +257,37 @@ while True:
         variables = meta.find_undeclared_variables(ast)
 
         # check if all the variables with defaults are actually detected variables
-        for k in defaults[group].keys():
+        group_defaults = defaults.get(group, defaults[DEFAULT_HOST_TYPE])
+        for k in group_defaults.keys():
             if k not in variables:
                 raise ValueError(f"Variable {k} with default is missing in {template_name}")
 
         # prompt the user to select the configuration
-        d[group] = prompt_user(defaults[group], variables, group)
+        d[group] = prompt_user(group_defaults, variables, group)
 
         # set the variable config globally in env
         for k, v in d[group].items():
             env.globals[k] = v
 
-        write_template(template, output_path, output_name)
+        templates_to_write[output_path] = template
+        print()
 
     print("\n" + "-"*60)
-    for group in groups:
+    for group in configured_groups:
         print(f"\n\"{group}\" Configuration: ")
         for k, v in d[group].items():
             print(f"- {k}={v}")
 
-    is_ok = pyip.inputYesNo("Confirm (y): [Press enter] ", blank=True, applyFunc= lambda x: x if x else "yes")
-    print(is_ok)
-    if is_ok == "yes":
+    if ask_confirmation("Confirm", yes_msg="finishing config.", no_msg="restart config.\n\n"):
+        # Write changes to disk
+        for output_path, template in templates_to_write.items():
+            output_dir = os.path.dirname(output_path)
+            if not os.path.isdir(output_dir):
+                if os.path.exists(output_dir):
+                    print(f"Error: Cannot create directory, '{output_dir}' is already a file!")
+                    exit(1)
+                os.mkdir(output_dir)
+
+            write_template(template, output_path)
+
         break
-    else:
-        print("\n\n")
