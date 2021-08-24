@@ -34,13 +34,16 @@ base_experiment:
 ```
 and outputs an experiment result table:
 
-| exp_name | suite_id | run   | host     | seed | payload_size_mb | opt   | rt_mean | rt_std |
-|----------|-------------|-------|----------|------|-----------------|-------|---------|--------|
-| simple   | 1626440718  | run_0 | client_0 | 1234 | 1               | true  | 5.2     | 0.3    |
-| simple   | 1626440718  | run_1 | client_0 | 1234 | 1               | false | 32.9    | 1.5    |
-| simple   | 1626440718  | run_2 | client_0 | 1234 | 128             | true  | 67.3    | 2.1    |
-| simple   | 1626440718  | run_3 | client_0 | 1234 | 128             | false | 1356.2  | 10.2   |
-
+| suite_name | suite_id | exp_name | run  | rep | host_type | host_idx  | opt   | payload_size_mb | seed  | rt_mean | rt_std |
+|------------|------------|--------|------|-----|-----------|-----------|-------|-----------------|-------|---------|--------|
+| simple     | 1628778258 | simple | 2    | 1   | single    | 0         | True  | 128             | 1234  | 32.1    | 1.8    |
+| simple     | 1628778258 | simple | 2    | 0   | single    | 0         | True  | 128             | 1234  | 38.3    | 2.6    |
+| simple     | 1628778258 | simple | 3    | 1   | single    | 0         | False | 128             | 1234  | 8.0     | 1.8    |
+| simple     | 1628778258 | simple | 3    | 0   | single    | 0         | False | 128             | 1234  | 29.0    | 0.1    |
+| simple     | 1628778258 | simple | 1    | 1   | single    | 0         | False | 1               | 1234  | 20.8    | 2.0    |
+| simple     | 1628778258 | simple | 1    | 0   | single    | 0         | False | 1               | 1234  | 18.7    | 2.1    |
+| simple     | 1628778258 | simple | 0    | 1   | single    | 0         | True  | 1               | 1234  | 11.3    | 0.6    |
+| simple     | 1628778258 | simple | 0    | 0   | single    | 0         | True  | 1               | 1234  | 37.4    | 2.8    |
 
 Note, in this experiment `simple`, the `client_0` records in each repetition of a run the response time (`rt`).
 In the table, we show for each configuration the mean and the standard deviation of the response time over multiple runs.

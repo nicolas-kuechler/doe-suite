@@ -13,7 +13,7 @@ Description=Single Service
 [Service]
 Type=simple
 WorkingDirectory={{ exp_working_dir }}
-ExecStart=/usr/bin/echo "{ \"rt_mean\": $((1 + $RANDOM % 100)).$(($RANDOM % 10)), \"rt_std\": $((1 + $RANDOM % 10)).$(($RANDOM % 10)) }"
+ExecStart=/usr/bin/echo "{ \"rt_mean\": {{ range(0, 42) | random }}.{{ range(0, 9) | random }}, \"rt_std\": {{ range(0, 3) | random }}.{{ range(0, 9) | random }} }"
 User=ubuntu
 
 StandardOutput=file:{{ exp_working_dir }}/results/client.json

@@ -141,8 +141,8 @@ def read_df(results_dir, suites, regex_error_file = [re.compile(r".*_stderr\.log
                                     "suite_name": suite,
                                     "suite_id": suite_id,
                                     "exp_name": exp,
-                                    "run": run,
-                                    "rep": rep,
+                                    "run": int(run.split("_")[-1]),
+                                    "rep": int(rep.split("_")[-1]),
                                     "host_type": host_type,
                                     "host_idx": host_idx
                                 }
