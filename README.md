@@ -468,6 +468,8 @@ Distributed under the Apache License. See `LICENSE` for more information.
 
 Nicolas Küchler - [nicolas-kuechler](https://github.com/nicolas-kuechler)
 
+Miro Haller - [Miro-H](https://github.com/Miro-H) 
+
 Project Link: [https://github.com/pps-lab/aws-simple-ansible](https://github.com/pps-lab/aws-simple-ansible)
 
 
