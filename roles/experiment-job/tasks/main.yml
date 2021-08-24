@@ -1,175 +1,150 @@
-# - if running is empty: setup new experiment
-#
+---
+
 - assert:
     that:
-    - exp_job_ids_running is defined
+    - exp_name is defined
+    - exp_fact is defined
+
+# Set those variables to be able to conveniently update them. We update exp_fact in the end.
+- name: Set local experiment variables
+  set_fact:
+    # Only use the values from exp_fact if it there has not been an updated version set locally.
+    exp_runs_ext: "{{ exp_runs_ext | default(exp_fact.exp_runs_ext) }}"
+    exp_job_ids: "{{ exp_job_ids | default(exp_fact.exp_job_ids) }}"
+    exp_job_ids_unfinished: "{{ exp_job_ids_unfinished | default(exp_fact.exp_job_ids_unfinished) }}"
+    exp_job_ids_pending: "{{ exp_job_ids_pending | default(exp_fact.exp_job_ids_pending) }}"
+    exp_job_ids_running: "{{ exp_job_ids_running | default(exp_fact.exp_job_ids_running) }}"
+    n_repetitions: "{{ exp_fact.n_repetitions }}"
+
+    do_init_job: "{{ do_init_job | default(False) }}"
+
+- assert:
+    that:
     - exp_runs_ext is defined
-    - exp_id is defined
-    - exp_check_wait_time is defined
+    - exp_job_ids is defined
+    - exp_job_ids_unfinished is defined
+    - exp_job_ids_pending is defined
+    - exp_job_ids_running is defined
+    - n_repetitions is defined
+    - suite_id is defined
+    - job_check_wait_time is defined
 
-- name: Check if no unfinished jobs -> end role (play)
-  meta: end_play
-  when: exp_job_ids_unfinished | length == 0
-
-- debug:
-    var: exp_job_ids_running
-- debug:
-    var: exp_runs_ext
-- debug:
-    var: exp_id
-- debug:
-    var: exp_check_wait_time
-
-
-
-##########################################################################
-#   Setup next (new) experiment run                                      #
-##########################################################################
-
-- name: 
-  set_fact:
-    new_running_job_id: null
-
-- name: 
-  set_fact:
-    new_running_job_id: "{{ exp_job_ids_pending | list | first }}"
-  when: exp_job_ids_running | length == 0
-
-- name:
-  set_fact:
-    exp_job_ids_pending: "{{ exp_job_ids_pending | reject('equalto', new_running_job_id) | list }}"
-    exp_job_ids_running: "['{{ new_running_job_id }}']"
-  when: new_running_job_id is not none 
-
-- name: Set the running job id
-  set_fact:
-    running_job_id: "{{ exp_job_ids_running[0]|string }}"
-
-- name: Extract `exp_run` (run) and `exp_run_rep` (repetition) from `running_job_id`
-  set_fact:
-    exp_run: "{{ running_job_id | string | split('_')| first | int }}"
-    exp_run_rep: "{{ running_job_id | string | split('_')| last | int }}"
-
-- name: Set the exp run config
-  set_fact:
-    exp_run_config: "{{ exp_runs_ext[exp_run | int] }}"
-
-- name: Set the experiment working directory
-  set_fact:
-    exp_working_dir: "{{ remote.dir }}/results/exp_{{ exp_name }}_{{ exp_id }}/run_{{ exp_run }}/rep_{{ exp_run_rep }}"
-    exp_code_dir: "{{ remote.dir }}/code"
+# Skip all tasks if there are no unfinshed jobs left.
+- block:
+  - debug:
+      msg:
+        - "exp_job_ids_pending: {{ exp_job_ids_pending }}"
+        - "exp_job_ids_running: {{ exp_job_ids_running }}"
+        - "exp_runs_ext: {{ exp_runs_ext }}"
+        - "suite_id: {{ suite_id }}"
+        - "job_check_wait_time: {{ job_check_wait_time }}"
 
 
-- name: Create results directory
-  file:
-    path: "{{ exp_working_dir }}/results"
-    state: directory
-    mode: 0755
-    group: ubuntu
-    owner: ubuntu
-  delegate_to: "{{ host }}"
-  loop: "{{ groups[exp_client.host_group]| default([]) | union(groups[exp_server.host_group]| default([]) ) }}"
-  loop_control:
-    loop_var: host
+  ##########################################################################
+  #   Setup next (new) experiment run                                      #
+  ##########################################################################
 
-- name: Create scratch directory
-  file:
-    path: "{{ exp_working_dir }}/scratch"
-    state: directory
-    mode: 0755
-    group: ubuntu
-    owner: ubuntu
-  delegate_to: "{{ host }}"
-  loop: "{{ groups[exp_client.host_group]| default([]) | union(groups[exp_server.host_group]| default([])) }}"
-  loop_control:
-    loop_var: host
+  - name:
+    set_fact:
+      new_running_job_id: null
 
-##########################################################################
-#   Start a new experiment (as a service -> does not block)              #
-##########################################################################
+  - name: Find new running job ID
+    set_fact:
+      new_running_job_id: "{{ exp_job_ids_pending | first }}"
+    when: (exp_job_ids_running | length) == 0
 
-- debug:
-    msg: "Starting new job... run={{ exp_run }} repetition={{ exp_run_rep }}     |     Experiment Progress {{ progress_percent }}%  (overall)"
-  vars:
-    cur_run: "{{ exp_run|int + 1 }}"
-    n_runs: "{{ exp_runs_ext|length }}"
-    cur_rep: "{{ exp_run_rep|int + 1 }}"
-    n_reps: "{{ n_repetitions }}"
-    progress_percent: "{{ (100 * (exp_job_ids|length - exp_job_ids_unfinished|length) / exp_job_ids|length)|round }}"
-  tags: [print_action]
-  when: new_running_job_id is not none
+  - name:
+    set_fact:
+      exp_job_ids_pending: "{{ exp_job_ids_pending | reject('equalto', new_running_job_id) | list }}"
+      exp_job_ids_running: "{{ [ new_running_job_id ] }}"
+    when: new_running_job_id is not none
 
-- name: Start new experiment (if there is no running atm)
-  include_role:
-    name: experiment-job-start
-  when: new_running_job_id is not none
+  - name: Set the running job id
+    set_fact:
+      running_job_id: "{{ exp_job_ids_running[0] | string }}"
 
+  - name: Extract `exp_run` (run) and `exp_run_rep` (repetition) from `running_job_id`
+    set_fact:
+      # Job ID structure: <experiment_name>-<run_id>_<rep_id>
+      exp_run: "{{ running_job_id | string | split('-') | last | split('_') | first | int }}"
+      exp_run_rep: "{{ running_job_id | string | split('_') | last | int }}"
 
-##########################################################################
-#   Update experiment state                                              #
-##########################################################################
+  - name: Set the exp run config
+    set_fact:
+      exp_run_config: "{{ exp_runs_ext[exp_run | int] }}"
 
-- name: Save the updated state of the experiment run (save job ids)
-  include_role:
-    name: experiment-state
-  vars:
-    expstate: save
+  - name: Set the experiment working directory
+    set_fact:
+      exp_working_dir: "{{ remote.dir }}/results/{{ suite }}_{{ suite_id }}/{{ exp_name }}/\
+                        run_{{ exp_run }}/rep_{{ exp_run_rep }}"
+      exp_code_dir: "{{ remote.dir }}/code"
 
+  - name: Update run facts on other hosts of the same experiment
+    set_fact:
+      exp_working_dir: "{{ exp_working_dir }}"
+      exp_run: "{{ exp_run }}"
+      exp_run_rep: "{{ exp_run_rep }}"
+      exp_run_config: "{{ exp_run_config }}"
+    delegate_to: "{{ host }}"
+    delegate_facts: true
+    loop: "{{ exp_other_hosts }}"
+    loop_control:
+      loop_var: host
 
-- debug:
-    msg="new_running_job_id={{ new_running_job_id| default('-')}}    pending={{ exp_job_ids_pending }} running={{ exp_job_ids_running }}"
+  - block:
+    - name: Create results directory
+      file:
+        path: "{{ exp_working_dir }}/results"
+        state: directory
+        mode: 0755
+        group: ubuntu
+        owner: ubuntu
+      delegate_to: "{{ host }}"
+      loop: "{{ exp_hosts }}"
+      loop_control:
+        loop_var: host
 
-- name: Check if no unfinished jobs -> end role (play)
-  meta: end_play
-  when: exp_job_ids_unfinished | length == 0
+    - name: Create scratch directory
+      file:
+        path: "{{ exp_working_dir }}/scratch"
+        state: directory
+        mode: 0755
+        group: ubuntu
+        owner: ubuntu
+      delegate_to: "{{ host }}"
+      loop: "{{ exp_hosts }}"
+      loop_control:
+        loop_var: host
+    when: do_init_job
 
-##########################################################################
-#   Wait and then check if experiment finished                           #
-##########################################################################
+  ##########################################################################
+  #   Start a new experiment (as a service -> does not block)              #
+  ##########################################################################
+  - block:
+    - debug:
+        msg: "Starting new job... suite={{ suite_id }} exp={{ exp_name }} run={{ exp_run }} repetition={{ exp_run_rep }}     \
+              |     Experiment Progress {{ progress_percent }}%  (overall)"
+      vars:
+        progress_percent: "{{ (100 * (exp_job_ids|length - exp_job_ids_unfinished|length) / exp_job_ids|length)|round }}"
+      tags: [print_action]
 
-- name: Sleep for X seconds before checking job status
-  wait_for:
-    timeout: "{{ exp_check_wait_time }}"
-  when:
-  - exp_check_wait_time > 0
+    - name: Start new experiment on all hosts (if there is none running atm)
+      include_role:
+        name: experiment-job-start
 
-- name: Check the job status ('exp_client.n_hosts_status_check' and 'exp_server.n_hosts_status_check' controls how many hosts are checked)
-  include_role:
-    name: experiment-job-status
+    when: new_running_job_id is not none
 
-- debug:
-    msg: "Completing job..."
-  tags: [print_action]
-  when: is_cur_exp_finished
+  ##########################################################################
+  #   Update experiment state                                              #
+  ##########################################################################
 
-##########################################################################
-#   Create local directory and fetch results                         #
-##########################################################################
+  - name: Save the updated state of the experiment run (save job ids)
+    include_role:
+      name: experiment-state
+    vars:
+      expstate: save
 
-- name: Fetch the results
-  include_role:
-    name: experiment-job-result
-  vars:
-    remote_results_dir: "{{ exp_working_dir }}/results"
-    local_results_dir: results/exp_{{ exp_name }}_{{ exp_id }}/run_{{ exp_run }}/rep_{{ exp_run_rep }}
-  when: is_cur_exp_finished
+  - debug:
+      msg="new_running_job_id={{ new_running_job_id | default('-') }}    pending={{ exp_job_ids_pending }} running={{ exp_job_ids_running }}"
 
-
-##########################################################################
-#   Update experiment state                                              #
-##########################################################################
-
-- name: Update the job ids list (remove experiment from running)
-  set_fact: 
-    exp_job_ids_running: []
-    exp_job_ids_unfinished: "{{ exp_job_ids_pending }}"
-  when: is_cur_exp_finished
-
-
-- name: Save the updated state of the experiment run (save job ids)
-  include_role:
-    name: experiment-state
-  vars:
-    expstate: save
-  when: is_cur_exp_finished
-
+  when: (exp_job_ids_unfinished | length) != 0

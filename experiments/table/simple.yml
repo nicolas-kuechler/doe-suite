@@ -1,0 +1,15 @@
+# "Dense" table representation of experiment "simple". This can be translated to a full ansible experiment config with
+# scripts/expdesign.py.
+
+n_repetitions: 2  # how often each run is repeated (i.e. each level config)
+common_roles:     # roles that are run for all hosts during the initial setup
+  - setup-common
+host_types:
+  single:
+    n: 1                    # number of current instances
+base_experiment:
+  seed: 1234                  # a constant in the experiment
+  payload_size_mb:            # a factor with two levels
+    $FACTOR$: [1, 128]
+  opt:                        # a factor with two levels
+    $FACTOR$: [true, false]

@@ -1,0 +1,37 @@
+---
+
+- name: Load an Experiment Run (init a new run if it does not exist yet)
+  include_role:
+    name: experiment-state
+  vars:
+    expstate: load
+
+- name: Schedule the experiments (job ids are unique per experiment)
+  set_fact:
+    exp_job_ids: "{{ [exp_name]
+                    | product(range(0, (exp_facts[exp_name].exp_runs_ext | length), 1)) \
+                    | map('join', '-') \
+                    | product(range(0, (exp_facts[exp_name].n_repetitions | int), 1)) \
+                    | map('join', '_') \
+                    | list }}"
+  when: id == 'new' # only schedule if it is a new experiment
+
+- name: Set all jobs to unfinished and pending
+  set_fact:
+    exp_job_ids_unfinished: "{{ exp_job_ids }}"
+    exp_job_ids_pending: "{{ exp_job_ids }}"
+  when: id == 'new' # only schedule if it is a new experiment
+
+- name: Save the updated state of the experiment (save job ids)
+  include_role:
+    name: experiment-state
+  vars:
+    expstate: save
+  when: id == 'new' # only persist the state if it is a new experiment
+
+- debug:
+    msg: "Running Experiment: {{ exp_name }} (suite id={{ suite_id }})   \
+          #runs={{ exp_facts[exp_name].exp_runs_ext | length }}   \
+          #reps={{ experiment.n_repetitions }}    \
+          => #jobs={{ exp_facts[exp_name].exp_job_ids | length }}"
+  tags: [print_action]

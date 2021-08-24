@@ -5,104 +5,72 @@
     - exp_working_dir is defined
     - exp_code_dir is defined
     - exp_run_config is defined
-    - exp_id is defined
     - running_job_id is defined
-
-
-- debug:
-    var: exp_run_config
 
 
 ##########################################################################
 #   Setup Service Unit Files                                             #
 ##########################################################################
 
-- name: Provide connection information 
+- name: Provide connection information
   set_fact:
-    servers_ip: "{{ groups[exp_server.host_group]|default({}) | map('extract', hostvars) | map(attribute='private_ip_address') }}"
-    clients_ip: "{{ groups[exp_client.host_group]|default({}) | map('extract', hostvars) | map(attribute='private_ip_address') }}"
-
-- name: Create Unit File for Server
-  become: yes
-  delegate_to: "{{ host }}"
-  template:
-    src: server.service.j2
-    dest: "/lib/systemd/system/{{ prj_id }}server.service"
-    mode: 644
-  notify:
-  - reload systemctl
-  loop: "{{ groups[exp_server.host_group] | default([]) }}"
+    host_ips: "{{ host_ips \
+                  | default({}) \
+                  | combine({ \
+                    item_group_name: [item_ip] \
+                  }, recursive=True) \
+               }}"
+  vars:
+    item_group_name: "{{ hostvars[host].host_group_name }}"
+    item_ip: "{{ hostvars[host].private_ip_address }}"
+  loop: "{{ exp_hosts }}"
   loop_control:
     loop_var: host
 
-
-- name: Create Unit File for Clients
+- name: "Create unit file for servers for experiment '{{ exp_name }}'"
   become: yes
-  delegate_to: "{{ host }}"
   template:
-    src: client.service.j2
-    dest: "/lib/systemd/system/{{ prj_id }}client.service"
+    src: "{{ hostvars[host].host_group_name }}.service.j2"
+    dest: "/lib/systemd/system/{{ hostvars[host].host_group_name_long }}.service"
     mode: 644
-  notify:
-  - reload systemctl
-  loop: "{{ groups[exp_client.host_group] | default([]) }}"
+  delegate_to: "{{ host }}"
+  loop: "{{ exp_hosts }}"
   loop_control:
     loop_var: host
-    index_var: client_idx
-
 
 - name: Create config file
-  delegate_to: "{{ host }}"
   template:
     src: config.json.j2
-    dest: "{{ exp_working_dir }}/config.json"
+    dest: "{{ hostvars[host].exp_working_dir }}/config.json"
     mode: 0755
-  loop: "{{ groups[exp_client.host_group] | default([]) | union(groups[exp_server.host_group] |default([])) }}"
+  delegate_to: "{{ host }}"
+  loop: "{{ exp_hosts }}"
   loop_control:
     loop_var: host
-    index_var: client_idx
 
-
-- name: Reload client and server services
+- name: reload and restart service
   become: yes
   delegate_to: "{{ host }}"
-  command:
-    cmd: systemctl daemon-reload
-  loop: "{{ groups[exp_client.host_group] | default([]) | union(groups[exp_server.host_group] |default([])) }}"
+  systemd:
+    state: restarted
+    daemon_reload: yes
+    name: "{{ hostvars[host].host_group_name_long }}"
+  loop: "{{ exp_hosts }}"
   loop_control:
     loop_var: host
-
-
 
 ##########################################################################
-#   Starting the Experiment   (start server and client service)          #
+#   Starting the Experiment                                              #
 ##########################################################################
 
-- name: Start Server
+- name: Start services
   become: yes
   delegate_to: "{{ host }}"
 
-  service: 
-    name: "{{ prj_id }}server.service"
+  service:
+    name: "{{ hostvars[host].host_group_name_long }}.service"
     state: restarted
     enabled: yes
-  loop: "{{ groups[exp_server.host_group]  | default([]) }}"
-  loop_control:
-    loop_var: host
-
-- name: Sleep for x seconds for server to launch
-  wait_for:
-    timeout: 5
-  delegate_to: localhost
-  when: groups[exp_server.host_group] | default([]) | length > 0 and groups[exp_client.host_group] | default([]) |length > 0
-
-- name: Start Client(s)
-  become: yes
-  delegate_to: "{{ host }}"
-  service: 
-    name: "{{ prj_id }}client.service"
-    state: restarted
-    enabled: yes
-  loop: "{{ groups[exp_client.host_group] | default([]) }}"
+  loop: "{{ exp_hosts }}"
   loop_control:
     loop_var: host

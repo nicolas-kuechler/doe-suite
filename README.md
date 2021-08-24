@@ -14,25 +14,36 @@
 
 In a nutshell, the suite automatically runs experiments where multiple factors are varied based on simple `YAML` files:
 ```YAML
-# experiment design with two factors with two levels each 
-seed: 1234                  # a constant in the experiment 
-payload_size_mb:            # a factor with two levels
-  $FACTOR$: [1, 128]
-opt:                        # a factor with two levels
-  $FACTOR$: [true, false]
-  
-# -> Results in 4 runs (combinations of parameters) that are executed. 
-#    Note, the repeated execution of runs is possible. 
+n_repetitions: 2  # how often each run is repeated (i.e. each level config)
+common_roles:     # roles that are run for all hosts during the initial setup
+  - setup-common
+host_types: # Different types of hosts
+  single:
+    n: 1    # number of current instances
+# experiment design with two factors with two levels each
+base_experiment:
+  seed: 1234                  # a constant in the experiment
+  payload_size_mb:            # a factor with two levels
+    $FACTOR$: [1, 128]
+  opt:                        # a factor with two levels
+    $FACTOR$: [true, false]
+
+
+# -> Results in 4 runs (combinations of parameters) that are executed.
+#    Note, the repeated execution of runs is possible.
 ```
-and outputs an experiment result table: 
+and outputs an experiment result table:
 
-| exp_name | exp_id     | run   | host     | seed | payload_size_mb | opt   | rt_mean | rt_std |
-|----------|------------|-------|----------|------|-----------------|-------|---------|--------|
-| simple   | 1626440718 | run_0 | client_0 | 1234 | 1               | true  | 5.2     | 0.3    |
-| simple   | 1626440718 | run_1 | client_0 | 1234 | 1               | false | 32.9    | 1.5    |
-| simple   | 1626440718 | run_2 | client_0 | 1234 | 128             | true  | 67.3    | 2.1    |
-| simple   | 1626440718 | run_3 | client_0 | 1234 | 128             | false | 1356.2  | 10.2   |
-
+| suite_name | suite_id | exp_name | run  | rep | host_type | host_idx  | opt   | payload_size_mb | seed  | rt_mean | rt_std |
+|------------|------------|--------|------|-----|-----------|-----------|-------|-----------------|-------|---------|--------|
+| simple     | 1628778258 | simple | 2    | 1   | single    | 0         | True  | 128             | 1234  | 32.1    | 1.8    |
+| simple     | 1628778258 | simple | 2    | 0   | single    | 0         | True  | 128             | 1234  | 38.3    | 2.6    |
+| simple     | 1628778258 | simple | 3    | 1   | single    | 0         | False | 128             | 1234  | 8.0     | 1.8    |
+| simple     | 1628778258 | simple | 3    | 0   | single    | 0         | False | 128             | 1234  | 29.0    | 0.1    |
+| simple     | 1628778258 | simple | 1    | 1   | single    | 0         | False | 1               | 1234  | 20.8    | 2.0    |
+| simple     | 1628778258 | simple | 1    | 0   | single    | 0         | False | 1               | 1234  | 18.7    | 2.1    |
+| simple     | 1628778258 | simple | 0    | 1   | single    | 0         | True  | 1               | 1234  | 11.3    | 0.6    |
+| simple     | 1628778258 | simple | 0    | 0   | single    | 0         | True  | 1               | 1234  | 37.4    | 2.8    |
 
 Note, in this experiment `simple`, the `client_0` records in each repetition of a run the response time (`rt`).
 In the table, we show for each configuration the mean and the standard deviation of the response time over multiple runs.
@@ -80,11 +91,11 @@ Moreover, under [Design of Experiments](#design-of-experiments), we show how to 
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-The AWS Ansible Experiment Suite automates the process of running experiments on AWS. 
+The AWS Ansible Experiment Suite automates the process of running experiments on AWS.
 On a high level, the experiment suite creates AWS resources (VPC, EC2 instances), installs required packages, and builds the artifact.
 
 Afterward, the suite sequentially executes jobs of an experimental design (DOE).
-The suite supports a multi-factor and multi-level experiment design with repetition, 
+The suite supports a multi-factor and multi-level experiment design with repetition,
 i.e., it is possible to vary multiple parameters and repeat each run.
 A `YAML`file in [experiments/designs](experiments/designs) describes the full experiment design.
 
@@ -130,7 +141,7 @@ After completing the getting started section, it should be possible to run the [
     ```
 
 4. Configure `ssh` and `ssh-agent`.
-  
+
       * Configure ~/.ssh/config:  (add to file and replace the key for AWS, for example, with aws_ppl.pem)
           ```
           Host ec2*
@@ -138,7 +149,7 @@ After completing the getting started section, it should be possible to run the [
           User ubuntu
           ForwardAgent yes
           ```
-      * Add the GitHub private key to ssh-agent. 
+      * Add the GitHub private key to ssh-agent.
         This allows cloning a GitHub repository on an EC2 instance without copying the private key or entering credentials.
         The process depends on your environment but should be as follows [(source)](https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh):
 
@@ -154,7 +165,7 @@ After completing the getting started section, it should be possible to run the [
 
 
 5. Install AWS CLI (version 2) and configure Boto
-  
+
       * Install AWS CLI version 2 [(see instructions)](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html)
 
       * Configure AWS credentials for Boto [(see instructions)](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html)
@@ -162,16 +173,17 @@ After completing the getting started section, it should be possible to run the [
         aws configure
         ```
         By default, credentials should be in `~/.aws/credentials`.
-  
 
-6. Install the required Ansible collections 
+
+6. Install the required Ansible collections
 
     ```sh
     pipenv run ansible-galaxy install -r requirements-collections.yml
     ```
 
-7. Run the repository initialization helper script and configure the experiment suite 
-    (prompts user input to perform variable substitution in the template [group_vars/all/main.yml.j2](group_vars/all/main.yml.j2)).
+7. Run the repository initialization helper script and configure the experiment suite and the example host types `client` and `server`.
+
+    This prompts user input to perform variable substitution in the `group_vars/*/main.yml.j2` variable templates for the groups [all](group_vars/all/main.yml.j2), [client](group_vars/all/client.yml.j2), and [server](group_vars/all/server.yml.j2).
 
     When unsure, set the unique `project id` and the AWS `key name` from the prerequisites and otherwise use the default options.
 
@@ -191,7 +203,7 @@ After completing the getting started section, it should be possible to run the [
 The following section discusses: (i) How to adapt the template for your artifact? (ii) How to design (define) experiments? (iii) How to run experiments? (iv) How to clean up AWS resources? (v) How to work with the experimental results?
 
 The experiment suite splits an experiment into individual jobs.
-A job is a single run of the benchmark with one specific configuration. 
+A job is a single run of the benchmark with one specific configuration.
 The relation between an experiment run and a job is that a run is repeated multiple times (see `n_repetitions` in experiment design).
 
 The jobs are derived from the experiment design in [experiment/designs](experiment/designs).
@@ -207,11 +219,25 @@ Each job of an experiment receives an id: `<RUN>_<REP>`.
 The template repository contains `TODO`s in places where things typically need to be adjusted for a specific project.
 For example, configuring the AWS EC2 instances (how many? which type? etc.), installing additional packages, and running the code.
 
-For the basic configurations, we provide a script [scripts/repotemplate.py](scripts/repotemplate.py) that provides reasonable default options for the most important parameters (already done in the installation section).
+For the basic configurations, we provide a script [scripts/repotemplate.py](scripts/repotemplate.py) that provides reasonable default options for the most important parameters (already done in the installation section). This script can also be used to create configuration files for custom host types (answer `no` for the question `Create default host types?` to select yourself, which host types are generated).
 
 ```sh
 pipenv run python scripts/repotemplate.py
 ```
+
+#### Writing Systemd Services
+Jobs are started as systemd services. You need to define there, how host service should be started and with which arguments.
+
+In those service files, the following variables are available:
+- `exp_run_config`: the run config to pass as parameters and access arguments stored in the experiment config. Alternatively, in the working directory there is a file called `config.json` with the run config.
+
+- `host_ips` is a variable with a dictionary containing the private IPs of other hosts belonging to this experiment. For example, for the host types `client` (2 instances) and `server` (1 instance), this could look as follows:
+
+  ```JSON
+  host_ips = { "client": [ "10.100.0.15", "10.100.0.77" ], "server": [ "10.100.0.76" ] }
+  ```
+
+Examples are in the [roles/experiment-job-start/templates](roles/experiment-job-start/templates) folder.
 
 #### Further Examples
 
@@ -224,113 +250,140 @@ These are examples of projects that use the experiment-suite template and what t
 
 The experiment suite runs experiments based on `YAML` files in [experiments/designs](experiments/designs).
 
-An experiment design `YAML` file consists of three parts:
-1. The `base_experiment` consists of all the configuration options. All configuration options that vary between runs (i.e., the factors of the experiment) are marked with the placeholder `$FACTOR$`. The remaining configuration options are filled with a constant.
+An experiment design `YAML` file consists of one or more experiments. Each experiment consists of the following parts:
+1. **General configuration**:
+  - The `n_repetitions` variable specifies how many times to repeat each experiment run. (i.e., how many times to execute an experiment run with the same configurations).
+  - The `common_roles` variable specifies an ansible role that is executed once on the initial instance set up.
 
-2. The list of `factor_levels` specifies the levels that the factors take in a particular experiment run. For example, in the first run of the experiment, the framework replaces the `$FACTOR$` placeholder with the first entry values in the `factors_levels`list.  
+2. **Host types**: this section configures different host types. Each host has its own initial setup role `init_role` and `n` active instances. Set the boolean `check_status` to false if the service running on this host type should not be checked to determine whether a job has finished. The default for `check_status` is true.
 
-3. The `n_repetitions` variable specifies how many times to repeat each experiment run. (i.e., how many times to execute an experiment run with the same configurations).
+3. **Base experiment**: The `base_experiment` consists of all the configuration options. All configuration options that vary between runs (i.e., the factors of the experiment) are marked with the placeholder `$FACTOR$`. The remaining configuration options are filled with a constant.
+
+4. **Factor levels**: The list of `factor_levels` specifies the levels that the factors take in a particular experiment run. For example, in the first run of the experiment, the framework replaces the `$FACTOR$` placeholder with the first entry values in the `factors_levels`list.  
 
 
 Example experiment design:
 ```YAML
-n_repetitions: 3
-
-base_experiment:
-  seed: 1234                  # constant across runs
-  payload_size_mb: $FACTOR$   # varies across runs
-  opt: $FACTOR$               # varies across runs
-
-factor_levels:
-# 3 runs where we vary the factors payload and opt.
-# However, for the 1 MB payload, we don't run the opt.
-- payload_size_mb: 1
-  opt: false
-- payload_size_mb: 128
-  opt: true
-- payload_size_mb: 128
-  opt: false
+simple:
+  n_repetitions: 3
+  common_roles:
+  - setup-common
+  host_types:
+    single:
+      n: 1
+      init_role: setup-single
+  base_experiment:
+    seed: 1234
+    payload_size_mb: $FACTOR$
+    opt: $FACTOR$
+  factor_levels:
+  # 3 runs where we vary the factors payload and opt.
+  # However, for the 1 MB payload, we don't run the opt.
+  - payload_size_mb: 1
+    opt: false
+  - payload_size_mb: 128
+    opt: true
+  - payload_size_mb: 128
+    opt: false
 
 # experiments/designs/xyz.yml
 ```
 
 #### Table File
 
-For convenience when running a complete factorial design, i.e., experiment with every possible combination of all factor levels, we provide a script (see [scripts/expdesign.py](scripts/expdesign.py)) to generate the required config files based on a more concise representation. 
+For convenience when running a complete factorial design, i.e., experiment with every possible combination of all factor levels, we provide a script (see [scripts/expdesign.py](scripts/expdesign.py)) to generate the required config files based on a more concise representation.
 
 When given a concise experiment configuration with a set of factors and each factor with multiple levels in a "table" form, the script expands the concise "table" form configuration into the experiment design by performing a cross-product of all factor levels.
 
 Simple Example:
 
 ```sh
-  pipenv run python scripts/expdesign.py --exp simple --rep 3
+  pipenv run python scripts/expdesign.py --exps simple
 ```
 
 Experiment in "table" form:
 
 ```YAML
-seed: 1234                  # a constant in the experiment 
-payload_size_mb:            # a factor with two levels
-  $FACTOR$: [1, 128]
-opt:                        # a factor with two levels
-  $FACTOR$: [true, false]   
+n_repetitions: 2  # how often each run is repeated (i.e. each level config)
+common_roles:     # roles that are run for all hosts during the initial setup
+  - setup-common
+host_types:
+  single:
+    n: 1                    # number of current instances
+base_experiment:
+  seed: 1234                  # a constant in the experiment
+  payload_size_mb:            # a factor with two levels
+    $FACTOR$: [1, 128]
+  opt:                        # a factor with two levels
+    $FACTOR$: [true, false]
 
-# experiments/table/simple.yml 
+# experiments/table/simple.yml
 ```
 
 transforms into the cross product of all factor levels:
 
 An experiment in "design" form:
 ```YAML
-n_repetitions: 3
-
-base_experiment:
-  seed: 1234
-  payload_size_mb: $FACTOR$
-  opt: $FACTOR$
-
-factor_levels:
-- payload_size_mb: 1
-  opt: true
-- payload_size_mb: 1
-  opt: false
-- payload_size_mb: 128
-  opt: true
-- payload_size_mb: 128
-  opt: false
+simple:
+  n_repetitions: 2
+  common_roles:
+  - setup-common
+  host_types:
+    single:
+      n: 1
+  base_experiment:
+    seed: 1234
+    payload_size_mb: $FACTOR$
+    opt: $FACTOR$
+  factor_levels:
+  - payload_size_mb: 1
+    opt: true
+  - payload_size_mb: 1
+    opt: false
+  - payload_size_mb: 128
+    opt: true
+  - payload_size_mb: 128
+    opt: false
 
 # experiments/designs/simple.yml
 ```
 
+##### Multi-Experiment Table File
+Multiple experiment table files can be translated and combined into a single experiment design. In the following example, the two experiment tables [demo_exp1](./experiments/table/demo_exp1.yml) and [demo_exp2](./experiments/table/demo_exp2.yml) are combined to one experiment design file [demo](./experiments/designs/demo.yml), which contains two experiments called `demo_exp1` and `demo_exp2`.
 
-### Running an Experiment 
-
-We run an experiment by starting the Ansible playbook.
-We provide the name of an experiment design from `experiments/designs` (e.g., example), and we use `id=new` to run a new complete experiment.  
-
-```sh
-pipenv run ansible-playbook experiment.yml -e "exp=example id=new"
+```bash
+./scripts/expdesign.py --suite demo --exps demo_exp1 demo_exp2
 ```
 
-When we start a new experiment, we receive an experiment id (epoch timestamp).
+
+### Running an Experiment Suite
+
+We run an experiment suite by starting the Ansible playbook.
+We provide the name of an experiment design from `experiments/designs` (e.g., `example`), and we use `id=new` to run a new complete experiment.  
+
+```sh
+pipenv run ansible-playbook experiment.yml -e "suite=example id=new"
+```
+
+When we start a new experiment suite, it receives a unique ID (epoch timestamp). Each experiment of the suite must have a unique name in the experiment design specification.
 
 The experiment suite periodically checks whether an experiment run is finished and then starts the next one according to the experiment design.
 
-The variable `exp_n_tries` controls the maximum number of times to check whether the experiment finished.
-In between checking, the playbook waits for `exp_check_wait_time` seconds (see `group_vars/all/main.yml`).
+The variable `job_n_tries` controls the maximum number of times to check whether the job finished.
+In between checking, the playbook waits for `job_check_wait_time` seconds (see `group_vars/all/main.yml`).
 
-After the number of `exp_n_tries` is exceeded, the playbook stops. An already running job will continue to run on AWS, but the next job won't start unless the `experiments.yml` playbook runs.
+After the number of `job_n_tries` is exceeded, the playbook aborts. An already running job will continue to run on AWS, but the next job won't start unless the `experiments.yml` playbook runs.
 
 To continue checking a previously started experiment, we can specify the ID of the experiment when starting the playbook:
 
 ```sh
-pipenv run ansible-playbook experiment.yml -e "exp=example id=<ID>"
+pipenv run ansible-playbook experiment.yml -e "suite=example id=<ID>"
 ```
 
-For convenience, we can also use `id=last` to continue with the most recent experiment with the provided name:
+For convenience, we can also use `id=last` to continue executing the most recent experiment suite (the one with the highest suite ID). If there are multiple experiments defined in the config, then this command will continue to run all of them.
 
 ```sh
-pipenv run ansible-playbook experiment.yml -e "exp=example id=last"
+pipenv run ansible-playbook experiment.yml -e "suite=example id=last"
 ```
 
 ### Cleaning up AWS
@@ -357,9 +410,9 @@ The experiment suite creates a matching folder structure on the localhost and th
 
 Locally, each experiment job (repetition of an experiment run with a specific config) receives a separate folder, i.e., working directory:
 
-`results/exp_<EXPERIMENT NAME>_ <EXPERIMENT ID>/run_<RUN>/rep_<REPETITION>`
+`results/exp_<EXPERIMENT NAME>_<EXPERIMENT ID>/run_<RUN>/rep_<REPETITION>`
 
-- `RUN` is the index of the run (starts at 0) 
+- `RUN` is the index of the run (starts at 0)
 - `REPETITION`is the index of the repetitions (starts at 0)
 
 In this folder, we have a separate folder for each involved EC2 instance where all result files are downloaded.
@@ -370,7 +423,7 @@ In this folder, we have a separate folder for each involved EC2 instance where a
 - `HOST INDEX` is the index of the host (starts for both clients and servers at 0)
 
 
-Example: 
+Example:
 The folder `results/exp_example_1626423613/run_2/rep_1/server_0` contains all result files from the 1st server, from the 2nd repetition (rep starts with 0) of the 3rd run (run starts at 0) from the experiment named `example` with id `1626423613`.
 
 The artifact (code) is executed on the remote machine in the experiment job's working directory. There are two folders in this working directory: `results` and `scratch`. Only the files in `results` are download at the end of the experiment job to the local machine.
@@ -378,7 +431,7 @@ The artifact (code) is executed on the remote machine in the experiment job's wo
 
 #### Result Files
 
-The script [scripts/results.py](scripts/results.py) supports loading experiment results in multiple formats into a panda data frame. 
+The script [scripts/results.py](scripts/results.py) supports loading experiment results in multiple formats into a panda data frame.
 The data frame contains:
 General info (exp name, exp id, run, host).
 The run config (the parameters).
@@ -396,8 +449,8 @@ exp = {
 df = read_df(results_dir, exp)
 
 # or alternatively provide explicit regex lists for how to treat files (these are the defaults)
-df = read_df(results_dir, exp, 
-                    regex_error_file=[re.compile(r".*_stderr\.log$")],    # output a warning if we there is a non-empty file matching the regex 
+df = read_df(results_dir, exp,
+                    regex_error_file=[re.compile(r".*_stderr\.log$")],    # output a warning if we there is a non-empty file matching the regex
                     regex_ignore_file = [re.compile(r".*_stdout\.log$")], # ignore these files
                     regex_csv_result_file=[re.compile(r".*\.csv$")],      # result file in csv format
                     regex_json_result_file=[re.compile(r".*\.json$")],    # result file in json format
@@ -406,12 +459,15 @@ df = read_df(results_dir, exp,
 
 The provided script can handle the following result files if they follow the conventions:
 
-* `CSV: Ideally, the result file should end in `.csv` and contain a header and then one or multiple result rows. Columns in the header and each row should be separated by `,`. See the notebook [scripts-demo.ipynb](scripts-demo.ipynb) for how to change the column type from string to a number column.
+* CSV: Ideally, the result file should end in `.csv` and contain a header and then one or multiple result rows. Columns in the header and each row should be separated by `,`. See the notebook [scripts-demo.ipynb](scripts-demo.ipynb) for how to change the column type from string to a number column.
 * `JSON`/`YAML`:  Ideally, the result file should end in `.json`, `.yaml`, or `.yml` respectively and contain a **flat (unnested) object** with a single result or a **list of flat objects** with multiple results. A list of objects corresponds to multiple rows in the dataframe. Nested JSON objects are flattened (e.g., `{"a": {"b": 1}}` turns to `{"a.b": 1}`) for the dataframe.
 
 If your result files follow different conventions, please adapt [scripts/results.py](scripts/results.py) for your needs.
 
 For more details, see the example in the notebook [scripts-demo.ipynb](scripts-demo.ipynb) that shows how to work with the data frame.
+
+## More Documentation
+More documentation can be found [here](./docs).
 
 <!-- LICENSE -->
 ## License
@@ -424,11 +480,13 @@ Distributed under the Apache License. See `LICENSE` for more information.
 
 Nicolas Küchler - [nicolas-kuechler](https://github.com/nicolas-kuechler)
 
+Miro Haller - [Miro-H](https://github.com/Miro-H)
+
 Project Link: [https://github.com/pps-lab/aws-simple-ansible](https://github.com/pps-lab/aws-simple-ansible)
 
 
 
-<!-- ACKNOWLEDGEMENTS 
+<!-- ACKNOWLEDGEMENTS
 ## Acknowledgements
 
 -->

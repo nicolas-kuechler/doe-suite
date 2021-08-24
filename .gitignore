@@ -7,4 +7,8 @@ experiments/state/
 *.retry
 .boto
 
+# Python
 Pipfile.lock
+
+# MacOS
+.DS_Store

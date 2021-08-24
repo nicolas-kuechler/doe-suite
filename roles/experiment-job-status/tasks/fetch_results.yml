@@ -1,0 +1,26 @@
+---
+
+- assert:
+    that:
+    - remote_results_dir is defined
+    - local_results_dir is defined
+
+- name: set local result subdir
+  set_fact:
+    local_results_subdir: "{{ local_results_dir }}/\
+                           {{ hostvars[exp_hosts[host_idx]].host_group_name }}/\
+                           host_{{ exp_host_type_host_idx }}"
+
+- name: Create local result subfolder (for results)
+  file:
+    path: "{{ local_results_subdir }}"
+    state: directory
+    mode: 0755
+  delegate_to: localhost
+
+- name: Fetch Results (if experiment done)
+  delegate_to: localhost
+  local_action: "command rsync -az '{{ exp_hosts[host_idx] }}:{{ remote_results_dir }}/' '{{ local_results_subdir }}'"
+
+- debug:
+    msg: "Stored result from {{ exp_hosts[host_idx] }}:{{ remote_results_dir }}/ in {{ local_results_subdir }}"
