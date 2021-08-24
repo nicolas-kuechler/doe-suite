@@ -138,6 +138,7 @@ def read_df(results_dir, suites, regex_error_file = [re.compile(r".*_stderr\.log
                                 files = _list_files_only(host_dir)
 
                                 job_info = {
+                                    "suite_name": suite,
                                     "suite_id": suite_id,
                                     "exp_name": exp,
                                     "run": run,
@@ -148,7 +149,6 @@ def read_df(results_dir, suites, regex_error_file = [re.compile(r".*_stderr\.log
 
                                 for file in files:
                                     d_lst = _parse_file(host_dir, file, regex_error_file, regex_ignore_file, regex_csv_result_file, regex_json_result_file, regex_yaml_result_file)
-
                                     for d in d_lst:
                                         d_flat = _flatten_d(d)
                                         res = {**job_info, **config_flat, **d_flat}

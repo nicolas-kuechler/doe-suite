@@ -13,7 +13,7 @@ Description=Single Service
 [Service]
 Type=simple
 WorkingDirectory={{ exp_working_dir }}
-ExecStart=/usr/bin/echo "seed: {{ exp_run_config.seed }}, payload_size_mb: {{ exp_run_config.payload_size_mb }}, opt: {{ exp_run_config.opt }}"
+ExecStart=/usr/bin/echo "{ \"rt_mean\": $((1 + $RANDOM % 100)).$(($RANDOM % 10)), \"rt_std\": $((1 + $RANDOM % 10)).$(($RANDOM % 10)) }" > client.json
 User=ubuntu
 
 StandardOutput=file:{{ exp_working_dir }}/results/client_stdout.log
