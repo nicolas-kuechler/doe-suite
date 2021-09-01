@@ -7,18 +7,34 @@
       - id is defined
       - expstate == 'load' or expstate == 'save'
       - id == 'new' or id == 'last' or id|int > 0
+      - suite_id is defined or expstate == 'load' # only on first load the suite id is not set
 
-- set_fact:
-    is_init: False
-    suite_init: "{{ suite_init | default(False) }}"
+- name:
+  set_fact:
+    init_state: "{{ id == 'new' }}" # experiment design needs to be expanded + commands replaced for a new suite
 
-- block:
+##########################################################################
+#   Resolve suite_id                                                     #
+##########################################################################
+
+- name: Resolve the suite_id from the playbook cmd arguments
+  block:
+
+    # case 1: suite_id is given as playbook arg
     - name: Set suite id from command argument
       set_fact:
         suite_id: "{{ id | int }}"
       when: id != 'new' and id != 'last' # continue the last experiment suite run
 
-    - block:
+    # case 2: initialize a new suite_id
+    - name: set the new suite_id as the epoch timestamp
+      set_fact:
+        suite_id: "{{ ansible_date_time.epoch | int }}"
+      when: id == 'new'
+
+    # case 3: load suite_id based on last running experiment suite
+    - name: Set suite_id by creating a new one or reading the last
+      block:
         - name: Find all experiments state of the experiment with '`suite`_\d+' as name
           find:
             paths: "{{ local.exp_state_dir }}"
@@ -27,32 +43,37 @@
             use_regex: yes
           register: suite_dirs_found
 
+        - fail:
+            msg="There is no suite={{suite }} to continue with last (use 'new' to create a new one)"
+          when: suite_dirs_found.matched == 0
+
         - name: Find the highest `suite_id`
           set_fact:
-            max_suite_id: "{{ ansible_date_time.epoch if suite_dirs_found.matched == 0
-                                  else (suite_dirs_found
+            max_suite_id: "{{ suite_dirs_found
                                   | json_query('files[*].path')
                                   | sort
                                   | last
                                   | split('_')
-                                  | last ) }}"
-
-        - name: Create new suite id + mark as init
-          set_fact:
-            is_init: True
-            suite_id: "{{ (max_suite_id | int) + 1 }}"
-          when: id == 'new' and expstate == 'load'  # init experiment
+                                  | last }}"
 
         - name: Set suite ID to the highest one that was found
           set_fact:
             suite_id: "{{ max_suite_id | int }}"
-          when: id == 'last' and expstate == 'load'  # init experiment
+      when: id == 'last'
 
-      when: id == 'new' or id == 'last'
   when: suite_id is not defined
+
+
+- assert:
+    that:
+    - suite is defined
+    - suite_id is defined
+    - exp_name is defined
+    - expstate == 'load' or expstate == 'save'
 
 - debug:
     msg: "suite_id={{ suite_id }}, exp_name={{ exp_name }}"
+
 
 - name: Reset experiment state to []
   set_fact:
@@ -61,38 +82,128 @@
     exp_job_ids_unfinished: []
     exp_job_ids_pending: []
     exp_job_ids_running: []
-  when: (is_init or suite_init) and expstate == 'load'
+  when: expstate == 'load'
 
-- name: Init the experiment state by expanding the `experiment.base_experiment` with the varying params in the experiments
-  set_fact:
-    exp_runs_ext: "{{ exp_runs_ext
-                      | union([
-                          experiment.base_experiment
-                          | combine( exp_item, recursive=True )
-                          | combine({ '~FACTORS_LEVEL': { 'args': exp_item } })
-                      ])}}"
-  loop: "{{ experiment.factor_levels }}"
-  when: is_init or suite_init
-  loop_control:
-    loop_var: exp_item
 
-- assert:
-    that:
-    - not '$FACTOR$' in (exp_runs_ext | string)
-    fail_msg: "missing level for at least one factor in the experiment config (i.e., not all '$FACTOR$' are replaced)"
-  when: is_init or suite_init
+##########################################################################
+#   Init Experiment State    (when state does not exist)                 #
+##########################################################################
+
 
 - name: Set experiment directory
   set_fact:
     exp_state_dir: "{{ local.exp_state_dir }}/{{ suite }}_{{ suite_id }}/{{ exp_name }}"
 
-- name: Create exp directory if it does not exist
-  delegate_to: localhost
-  file:
+- name: Check if experiment state already exists
+  stat:
     path: "{{ exp_state_dir }}"
-    state: directory
-    mode:  0755
-  when: is_init or suite_init
+  delegate_to: localhost
+  register: exp_state_dir_stat
+
+- name: If experiment state already exists -> do not need to init
+  set_fact:
+    init_state: "{{ not exp_state_dir_stat.stat.exists }}"
+
+- name: Initialize a new state by expanding the experiment runs + building commands
+  block:
+
+  - assert: # init a new state should not happen otherwise
+      that:
+      - expstate == 'load'
+      - id == 'new'
+
+  ################################
+  # Create extended list of experiment runs by applying factors
+  - name: Init the experiment state by expanding the `experiment.base_experiment` with the varying params in the experiments
+    set_fact:
+      exp_runs_ext: "{{ exp_runs_ext
+                        | union([
+                            experiment.base_experiment
+                            | combine( exp_item, recursive=True )
+                            | combine({ '~FACTORS_LEVEL': { 'args': exp_item } })
+                        ])}}"
+    loop: "{{ experiment.factor_levels }}"
+    loop_control:
+      loop_var: exp_item
+
+  - assert:
+      that:
+      - not '$FACTOR$' in (exp_runs_ext | string)
+      fail_msg: "missing level for at least one factor in the experiment config (i.e., not all '$FACTOR$' are replaced)"
+
+  ################################
+  # Replace $CMD$ in exp_runs_ext
+
+  - name: Clear variables used for $CMD$ replacement
+    set_fact:
+      exp_runs_ext_wo_cmd: []
+      cmds: []
+      exp_runs_ext_tmp: []
+
+  - name: create var that contains all run config without the $CMD$ 
+    set_fact:
+      exp_runs_ext_wo_cmd: "{{ exp_runs_ext_wo_cmd  + [my_run | combine({'$CMD$': '-', '~FACTORS_LEVEL': '-'})] | list}}"
+    loop: "{{ exp_runs_ext }}"
+    loop_control:
+      loop_var: my_run
+
+  - name: Create a tmp directory if it does not exist (used for cmd extension)
+    ansible.builtin.file:
+      path: "{{ exp_state_dir }}/tmp"
+      state: directory
+      mode: '0755'
+
+  - name: Create tmp command files (each file just contains the command)
+    copy:
+      dest: "{{ exp_state_dir }}/tmp/cmd{{ idx }}.yml.j2"
+      content: "{{ my_run['$CMD$'] }}"
+    loop: "{{ exp_runs_ext }}"
+    loop_control:
+      index_var: idx
+      loop_var: my_run
+
+  - name: Apply templating on commands (for this we require that the template is stored in a file) -> create a list of commands
+    set_fact:
+      cmds: "{{ cmds + [lookup('template', '{{ exp_state_dir }}/tmp/cmd{{ idx }}.yml.j2', variable_start_string='[%', variable_end_string='%]')] }}"
+    loop: "{{ exp_runs_ext_wo_cmd }}"
+    loop_control:
+      index_var: idx
+      loop_var: run # this variable is used within the $CMD$s to refer to variables
+
+  - name: set experiments with replaced command
+    set_fact:
+      exp_runs_ext_tmp: "{{ exp_runs_ext_tmp + [my_run | combine({'$CMD$': cmds[idx]})] | list}}"
+    loop: "{{ exp_runs_ext }}"
+    loop_control:
+      index_var: idx
+      loop_var: my_run
+
+  - name: update experiments ext variable with replaced cmds
+    set_fact:
+      exp_runs_ext: "{{ exp_runs_ext_tmp }}"
+      exp_runs_ext_tmp: []
+
+  - name: Delete tmp content & directory used for replacement
+    file:
+      state: absent
+      path: "{{ exp_state_dir }}/tmp/"
+  
+
+  ################################
+  # Create the directory for the experiment state
+
+  - name: Create exp directory if it does not exist
+    delegate_to: localhost
+    file:
+      path: "{{ exp_state_dir }}"
+      state: directory
+      mode:  0755
+
+  when: init_state
+
+##########################################################################
+#   Store Experiment State                                               #
+##########################################################################
 
 - name: Use previous values for undefined new state values in a state update
   block:
@@ -115,13 +226,18 @@
     common_roles_templ: "{{ experiment.common_roles }}"
   when: experiment is defined
 
-- name: Save the Experiment State in the Run Directory
+- name: Save the Experiment State (using state template file)
   delegate_to: localhost
   template:
     src: state.yml.j2
     dest: "{{ exp_state_dir }}/state.yml"
     mode:  0755
-  when: expstate == 'save' or is_init or suite_init
+  when: expstate == 'save' or init_state # also store when a new experiment was initialized
+
+
+##########################################################################
+#   Load Experiment State                                                #
+##########################################################################
 
 - name: Load Experiment State
   # Be careful: any variables you set with set_fact will not be overwritten with
@@ -174,3 +290,5 @@
   loop_control:
     loop_var: host
   when: exp_hosts is defined
+
+

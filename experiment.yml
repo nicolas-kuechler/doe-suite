@@ -11,10 +11,6 @@
       include_role:
         name: experiment-parse-config
 
-    - name:
-      set_fact:
-        suite_init: True
-
     - name: Do load and setup for all experiments
       include_role:
         name: experiment-load
@@ -24,10 +20,6 @@
       loop: "{{ experiments | dict2items }}"
       loop_control:
         loop_var: experiment_item
-
-    - name:
-      set_fact:
-        suite_init: False
 
     - name: Accumulate hosts in the same group among all host types
       set_fact:

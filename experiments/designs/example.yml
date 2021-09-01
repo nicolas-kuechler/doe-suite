@@ -22,6 +22,9 @@ experiment_1:       # the experiment configuration (unique name of experiment)
       server:
         arg3: $FACTOR$
         arg4: "test1"
+    $CMD$: 
+      client: "{{ exp_code_dir }}/.venv/bin/python {{ exp_code_dir }}/demo/client.py -config config.json -a1 [% run.host_vars.client.arg1 %] -a2 [% run.host_vars.client.arg2 %]"
+      server: "{{ exp_code_dir }}/.venv/bin/python {{ exp_code_dir }}/demo/server.py -config config.json -a3 [% run.host_vars.server.arg3 %] -a4 [% run.host_vars.server.arg4 %]"
 
   # in the experiments object you have a list for the different experiments
   # with the values for the fields marked as $FACTOR$ in the base config object.
@@ -44,6 +47,7 @@ experiment_1:       # the experiment configuration (unique name of experiment)
           arg2: 3
         server:
           arg3: 3
+
 experiment_2:       # the experiment configuration (unique name of experiment)
   n_repetitions: 1  # how often to repeat each run (i.e. each level config)
   common_roles:     # roles that are run for all hosts during the initial setup
@@ -65,6 +69,11 @@ experiment_2:       # the experiment configuration (unique name of experiment)
       server:
         arg3: $FACTOR$
         arg4: "test1"
+    
+    $CMD$: 
+      client: "{{ exp_code_dir }}/.venv/bin/python {{ exp_code_dir }}/demo/client.py -config config.json -a1 [% run.host_vars.client.arg1 %] -a2 [% run.host_vars.client.arg2 %]"
+      server: "{{ exp_code_dir }}/.venv/bin/python {{ exp_code_dir }}/demo/server.py -config config.json -a3 [% run.host_vars.server.arg3 %] -a4 [% run.host_vars.server.arg4 %]"
+
 
   # in the experiments object you have a list for the different experiments
   # with the values for the fields marked as $FACTOR$ in the base config object.

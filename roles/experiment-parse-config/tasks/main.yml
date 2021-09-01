@@ -11,3 +11,21 @@
 - name: Add default for check_status if not set
   set_fact:
     experiments: "{{ experiments | dict_default('*.host_types.*', 'check_status', True) }}"
+
+
+- name: Validate experiment design structure
+  assert:
+    that:
+    - "'n_repetitions' in experiment"
+    - "'common_roles' in experiment"
+    - "'host_types' in experiment"
+    - "'base_experiment' in experiment"
+    - "'factor_levels' in experiment"
+    - "'$CMD$' in experiment.base_experiment"
+    fail_msg: illegal format of experiment design {{ exp_name }}  (missing) - {{ experiment }}
+  vars:
+    exp_name: "{{ experiment_item.key }}"
+    experiment: "{{ experiment_item.value }}"
+  loop: "{{ experiments | dict2items }}"
+  loop_control:
+    loop_var: experiment_item
