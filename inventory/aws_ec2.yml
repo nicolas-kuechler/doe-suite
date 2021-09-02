@@ -6,8 +6,28 @@ filters:
   instance-state-name: ["running"]
 
 # keyed_groups may be used to create custom groups
+#leading_separator: False
 strict: False
 keyed_groups:
-# Add hosts to tag_Name_value groups for each Name/Value tag pair
-  - prefix: tag
-    key: tags
+  - prefix: ""
+    separator: ""
+    key: tags.prj_id
+    
+  - prefix: ""
+    separator: ""
+    key: tags.suite
+
+  - prefix: ""
+    separator: ""
+    key: tags.exp_name
+  
+  - prefix: ""
+    separator: ""
+    key: tags.host_type
+  
+  - prefix: ""
+    separator: ""
+    key: tags.exp_role
+
+
+# TODO [nku] ensure that: exp_name, suite, prj_id, host_type, exp_roles (controller) are all unique based on experiment file

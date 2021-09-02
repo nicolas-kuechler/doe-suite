@@ -1,21 +1,56 @@
 ---
 
-- assert:
-    that:
-    - ec2config is defined
+- name: "Manually load variables for host in group '{{ host_group_name }}'"
+  include_vars:
+    file: "group_vars/{{ host_type }}/main.yml"
+    name: host_type_specific_vars
+  when: host_type != 'all' # TODO [nku] can we eliminate host type all?
+  loop: "{{ host_types.keys() }}"
+  loop_control:
+    loop_var:
+      host_type
+  register: my_results
 
-- name: Launching ec2 instances
+- set_fact:
+    host_type_specific_vars: {}
+
+- set_fact:
+    host_type_specific_vars: "{{ host_type_specific_vars | combine({ res.host_type: res.ansible_facts.host_type_specific_vars }) }}"
+  when: res.host_type != 'all'  # TODO [nku] can we eliminate host type all?
+  loop: "{{ my_results.results }}"
+  loop_control:
+    loop_var:
+      res
+
+#- debug:
+#    msg: "-> creating EC2 instance for group '{{ host_group_name }}'..."
+#  tags: [print_action]
+#  when: (host_n_tot | int) > 0
+#
+#- debug:
+#    msg: "-> terminating EC2 instances for group '{{ host_group_name }}'..."
+#  tags: [print_action]
+#  when: (host_n_tot | int) == 0
+#
+
+#######################################################################
+# Create EC2 Instances for all host_types 
+######################################################################
+
+- name: Create EC2 Instances
   ec2:
     instance_type: '{{ ec2config.instance_type }}'
     key_name: '{{ ec2config.key_name }}'
     image: '{{ ec2config.ec2_image }}'
     region: '{{ ec2config.aws_region }}'
     group: '{{ ec2config.sg_name }}'
-    exact_count: '{{ instance_values.n }}'
+    exact_count: '{{ n_sum }}'
     count_tag:
-      Name: '{{ ec2config.instance_tag }}'
+      prj_id: "{{ prj_id }}"
+      suite: "{{ suite }}"
+      host_type: "{{ host_type }}"
     vpc_subnet_id: '{{ ec2config.vpc_subnet_id }}'
-    wait: yes
+    wait: no
     assign_public_ip: yes
     volumes:
       - device_name: /dev/sda1
@@ -24,19 +59,94 @@
         volume_size: '{{ ec2config.ec2_volume_size }}'
         delete_on_termination: True
     instance_tags:
-      Name: "{{ ec2config.instance_tag }}"
-      Prj: "{{ prj_id }}"
-      Exp: "{{ instance_exp }}"
-  register: ec2_launch
+      prj_id: "{{ prj_id }}"
+      suite: "{{ suite }}"
+      host_type: "{{ host_type }}"
+  vars:
+    ec2config: "{{ host_type_specific_vars[host_type] | combine( exp_base ) }}"
+    n_sum: "{{ host_types[host_type] | json_query('*.n') | sum }}"
+  loop: "{{ host_types.keys() }}"
+  when: host_type != 'all' # TODO [nku] can we eliminate host type all?
+  loop_control:
+    loop_var:
+      host_type
 
-# Optimization: we first start all ec2 instances and then wait for SSH, refresh
-# the inventory, and start/stop other instances afterwards.
-- name: Register public dns name for postponed inventory update
+
+#######################################################################
+# Assign instances to experiments and define role in experiments 
+# (e.g., instance is controller)
+# -> done by assigning tags to ec2 instances
+######################################################################
+
+- community.aws.ec2_instance_info:
+      region: "{{ exp_base.aws_region }}" 
+      filters:
+        instance-state-name: [ "pending", "running" ]
+        "tag:prj_id": "{{ prj_id }}"
+        "tag:suite": "{{ suite }}"
+  register: ec2_instance_info
+
+- name: 
   set_fact:
-    public_dns_names: "{{ public_dns_names | default({}) \
-                          | combine({ ec2config.instance_tag: ( ec2_launch.instances
-                                                                | map(attribute='public_dns_name')
-                                                                | list )
-                                    }, recursive=True) \
-                       }}"
-  when: ec2_launch.instances is defined
+    tag_assignment_lst: "{{ instance_infos | to_tag_assignment(host_types)}}"
+  vars:
+    instance_infos: "{{ ec2_instance_info | json_query('instances[*].{instance_id: instance_id, tags: tags}') }}"
+
+#- debug:
+#    var: tag_assignment_lst
+
+- name: Assign exp_name and exp_role tag to ec2 instances
+  amazon.aws.ec2_tag:
+    region: "{{ exp_base.aws_region }}" 
+    resource: "{{ tag_assignment.instance_id }}"
+    tags:
+      exp_name: "{{ tag_assignment.exp_name }}"
+      exp_role: "{{ tag_assignment.exp_role }}"
+      Name: "{'prj_id': {{ prj_id }}, 'suite': {{ suite }}, 'exp_name': {{ tag_assignment.exp_name }}, 'host_type': {{ tag_assignment.host_type }}, 'exp_role': {{ tag_assignment.exp_role }} }"
+  loop: "{{ tag_assignment_lst }}"
+  loop_control:
+    loop_var: tag_assignment
+
+
+######################################################
+# Wait until all ec2 instances have state 'running'
+######################################################
+
+- community.aws.ec2_instance_info:
+      region: "{{ exp_base.aws_region }}" 
+      filters:
+        instance-state-name: [ "pending", "running" ]
+        "tag:prj_id": "{{ prj_id }}"
+        "tag:suite": "{{ suite }}"
+  register: ec2_instance_info
+  until: ec2_instance_info | json_query(query) | length == 0
+  retries: 120
+  delay: 5
+  vars:
+    query: instances[?state.name !='running']
+
+
+######################################################
+# Wait until we can reach all ec2 instances via ssh
+######################################################
+- set_fact:
+    public_dns_names: "{{ ec2_instance_info | json_query('instances[*].public_dns_name') }}"
+
+- name: Wait for SSH of the created EC2 instances to come up
+  delegate_to: "{{ public_dns_name }}"
+  wait_for_connection:
+    connect_timeout: 3
+    timeout: 320
+  loop: "{{ public_dns_names }}"
+  loop_control:
+    loop_var: public_dns_name
+
+######################################################
+# Refresh Dynamic Inventory
+######################################################
+
+- name: Refresh dynamic ec2 inventory
+  meta: refresh_inventory
+
+- pause:
+    seconds: 5

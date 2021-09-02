@@ -1,34 +1,28 @@
 ---
 
-# Multiple set_fact tasks are necessary, since you cannot access variables set in the same task
-- name: Set experiment variables on all hosts
+
+- name: Collect metadata infos about instance (e.g., instance id)   from within EC2 instance
+  amazon.aws.ec2_metadata_facts:
+  register: metadata_res
+
+- name: Transfer variables from localhost to host + add info about own experiment, exp_role, etc.
   set_fact:
-    # Get variables that were defined for the localhost
+    exp_name: "{{ tag_assignment[my_instance_id].exp_name }}"
+    host_type: "{{ tag_assignment[my_instance_id].host_type }}"
+    exp_role: "{{ tag_assignment[my_instance_id].exp_role }}"
+    exp_host_type_idx: "{{ tag_assignment[my_instance_id].exp_host_type_idx }}"
+
     host_types: "{{ hostvars['localhost'].host_types }}"
-    exp_facts: "{{ hostvars['localhost'].exp_facts }}"
-    host_type_names: "{{ hostvars['localhost'].host_type_names }}"
+    exp_facts: "{{ hostvars['localhost'].exp_facts }}" # TODO [nku] maybe we could get rid of this and only use exp_fact
 
-    # Hacky way to recover variables from the hostname, since they were not
-    # necessarily set if id != 'new'.
-    host_group_name_long: "{{ group_names
-                              | select('match', ec2_tag_name_prefix + '*')
-                              | first }}"
+  vars: 
+    my_instance_id: "{{ metadata_res.ansible_facts.ansible_ec2_instance_id }}"
+    tag_assignment: "{{ hostvars['localhost'].tag_assignment_lst | collect_items2dict(key_name='instance_id') }}"
 
-- set_fact:
-    host_unique_id: "{{ host_group_name_long
-                        | split(ec2_tag_name_prefix + prj_id + '_')
-                        | last }}"
-    exp_host_type_host_idx: "{{ groups[host_group_name_long].index(inventory_hostname) }}"
-
-- set_fact:
-    host_group_name: "{{ host_unique_id
-                         | split(separator)
-                         | first }}"
-    exp_name: "{{ host_unique_id
-                  | split(separator)
-                  | last }}"
-
-- set_fact:
-    suite_id: "{{ exp_facts[exp_name].suite_id }}"
-    host_facts: "{{ host_types[host_group_name][exp_name] }}"
+- name: Transfer remaining variables
+  set_fact:
+    host_facts: "{{ host_types[host_type][exp_name] }}"
     exp_fact: "{{ exp_facts[exp_name] }}"
+
+
+# TODO [nku] potentially set for each host an overview of the hosts, their role and how to reach them (public dns)
