@@ -7,14 +7,14 @@
 
 - name: Transfer variables from localhost to host + add info about own experiment, exp_role, etc.
   set_fact:
+    suite_id: "{{ hostvars['localhost'].suite_id }}"
     exp_name: "{{ tag_assignment[my_instance_id].exp_name }}"
     host_type: "{{ tag_assignment[my_instance_id].host_type }}"
     exp_role: "{{ tag_assignment[my_instance_id].exp_role }}"
     exp_host_type_idx: "{{ tag_assignment[my_instance_id].exp_host_type_idx }}"
-
+    exp_host_type_n: "{{ tag_assignment[my_instance_id].exp_host_type_n }}"
     host_types: "{{ hostvars['localhost'].host_types }}"
     exp_facts: "{{ hostvars['localhost'].exp_facts }}" # TODO [nku] maybe we could get rid of this and only use exp_fact
-
   vars: 
     my_instance_id: "{{ metadata_res.ansible_facts.ansible_ec2_instance_id }}"
     tag_assignment: "{{ hostvars['localhost'].tag_assignment_lst | collect_items2dict(key_name='instance_id') }}"
@@ -23,6 +23,35 @@
   set_fact:
     host_facts: "{{ host_types[host_type][exp_name] }}"
     exp_fact: "{{ exp_facts[exp_name] }}"
+
+
+- set_fact:
+    exp_host_lst: []
+
+- name: Build a list of all hosts in the experiment
+  set_fact:
+    exp_host_lst: "{{ exp_host_lst +  [{'host_type': my_host_type,  
+                                        'exp_host_type_idx': my_exp_host_type_idx,
+                                        'exp_host_type_n': my_exp_host_type_n,
+                                        'exp_role': my_exp_role,
+                                        'private_ip_address': my_private_ip_address,
+                                        'public_dns_name': my_host                                  
+                                        }] }}"
+  vars:
+    my_host_type: "{{ hostvars[my_host].host_type }}"
+    my_exp_host_type_idx: "{{ hostvars[my_host].exp_host_type_idx }}"
+    my_exp_host_type_n: "{{ hostvars[my_host].exp_host_type_n }}"
+    my_exp_role: "{{ hostvars[my_host].exp_role }}"
+    my_private_ip_address: "{{ hostvars[my_host].private_ip_address }}"
+
+  loop: "{{ groups[prj_id] | intersect(groups[suite]) | intersect(groups[exp_name]) }}" # hosts of experiment
+  loop_control:
+    loop_var: my_host
+  
+
+- debug:
+    var: exp_host_lst
+#[{"host_type": x, "exp_host_type_idx": x, "exp_host_type_n": x, "exp_role": x, "public_dns_name": x, "private_ip_address": x}]
 
 
 # TODO [nku] potentially set for each host an overview of the hosts, their role and how to reach them (public dns)

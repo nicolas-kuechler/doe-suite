@@ -37,7 +37,7 @@ def to_tag_assignment(ec2_instances_info, host_types):
                     exps_with_controller.add(exp_name)
                     exp_role = "controller"
 
-                d = {"instance_id": instance_id, "exp_name": exp_name, "exp_role": exp_role, "host_type": host_type, "exp_host_type_idx": i}
+                d = {"instance_id": instance_id, "exp_name": exp_name, "exp_role": exp_role, "host_type": host_type, "exp_host_type_idx": i, "exp_host_type_n": info["n"]}
                 lst.append(d)
 
     

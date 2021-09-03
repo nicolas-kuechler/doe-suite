@@ -45,7 +45,7 @@
       include_role:
         name: experiment-aws-vpc
       vars:
-        do_create_vpc: "{{ (host_types['all'] | json_query('*.n') | sum) > 0 }}"
+        do_create_vpc: "{{ (host_types['all'] | json_query('*.n') | sum) > 0 }}" # TODO [nku] here need to simplify to remove host_type all
 
     - name: Setup AWS EC2 instances
       include_role:
@@ -55,23 +55,23 @@
         msg: "Setup Host Machines..."
       tags: [print_action]
     
-    - debug: 
-        msg:
-        - "hostvars={{ hostvars }}"
 
 ##########################################################################
 #   Setup Machines                                                       #
 ##########################################################################
 
-- name: Setup registered host types
+- name: Setup registered host types (part 1)
   hosts: "{{ hostvars['localhost'].prj_id }}:&{{ hostvars['localhost'].suite }}" # intersection of hosts in project and in suite name
-  strategy: free
   tasks:
-
+  # cannot be strategy free, because some tasks in the role require that earlier tasks on other hosts already executed
   - name: Set variables on all hosts (transfer variables from localhost to host)
     include_role:
       name: experiment-set-vars
 
+- name: Setup registered host types (part 2) -> apply 
+  hosts: "{{ hostvars['localhost'].prj_id }}:&{{ hostvars['localhost'].suite }}" # intersection of hosts in project and in suite name
+  strategy: free
+  tasks:
 
   - name: Execute init roles (incl. common roles for all hosts)
     include_role:
@@ -87,56 +87,17 @@
 #   Run Experiment Jobs                                                  #
 ##########################################################################
 
-#
-# Start experiments
-#
 - name: Start different experiments in parallel (but each experiment itself synchronized)
-  hosts: "{{ hostvars['localhost'].prj_id }}:&{{ hostvars['localhost'].suite }}:&controller"
+  hosts: "{{ hostvars['localhost'].prj_id }}:&{{ hostvars['localhost'].suite }}:&{{ hostvars['localhost'].suite }}:&controller"
   strategy: free
   tasks:
     - debug:
         msg: "Running experiment jobs for experiment {{ exp_name }}"
       tags: [print_action]
 
-    # TODO [nku] try to get rid of exp_hosts and exp_other_hosts with the tag idea.
-    #- name: Set variable with all hosts of this experiment
-    #  set_fact:
-    #    exp_hosts: "{{ groups[ec2_tag_exp_prefix + exp_name] }}"
-#
-    #- name: Set variable with other hosts than the controller for this experiment
-    #  set_fact:
-    #    exp_other_hosts: "{{ exp_hosts
-    #                     | reject('equalto', inventory_hostname)
-    #                     | list }}"
-
     - name: "Start jobs for experiment {{ exp_name }}"
       include_role:
-        name: experiment-jobs-new
-      vars:
-        do_init_job: True
-
-
-# TODO [nku] remove
-- hosts: localhost
-  tasks:
-    - fail:
-        msg="blocker"
-
-
-##########################################################################
-#   Experiment status checking                                           #
-##########################################################################
-
-# the variables 'job_n_tries', 'job_check_wait_time', and 'check_status' control how
-# long this runs
-- name: Check the experiment status on all hosts and fetch intermediate results
-  hosts: "{{ hostvars['localhost'].controller_hosts }}"
-  strategy: free
-
-  tasks:
-    - name: "Run status and result fetching for experiment {{ exp_name }}"
-      include_role:
-        name: experiment-job-status
+        name: experiment-job
       loop: "{{ range(0, (exp_fact.exp_job_ids_unfinished | length), 1) | list }}"
       loop_control:
         loop_var: unfinished_job_idx
@@ -144,6 +105,7 @@
     - debug:
         msg: "Finishing experiment {{ exp_name }}"
       tags: [print_action]
+
 
 
 ##########################################################################

@@ -14,7 +14,9 @@ host_types:
 exp_job_ids: {{ exp_job_ids | default([]) }}
 exp_job_ids_unfinished: {{ exp_job_ids_unfinished | default([]) }} # pending + running
 exp_job_ids_pending: {{ exp_job_ids_pending | default([]) }}
+exp_job_ids_queued: {{ exp_job_ids_queued | default([]) }}
 exp_job_ids_running: {{ exp_job_ids_running | default([]) }}
+exp_job_ids_finished: {{ exp_job_ids_finished | default([]) }}
 
 exp_runs_ext:
 {{ exp_runs_ext | to_nice_yaml(indent=2) }}

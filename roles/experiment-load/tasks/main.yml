@@ -1,5 +1,7 @@
 ---
 
+# runs on localhost
+
 - name: Load an Experiment Run (init a new run if it does not exist yet)
   include_role:
     name: experiment-state
@@ -8,13 +10,15 @@
 
 - name: Schedule the experiments (job ids are unique per experiment)
   set_fact:
-    exp_job_ids: "{{ [exp_name]
-                    | product(range(0, (exp_facts[exp_name].exp_runs_ext | length), 1)) \
-                    | map('join', '-') \
-                    | product(range(0, (exp_facts[exp_name].n_repetitions | int), 1)) \
-                    | map('join', '_') \
+    exp_job_ids: "{{ [suite]
+                    | product([suite_id]) 
+                    | product([exp_name])
+                    | product(range(0, (exp_facts[exp_name].exp_runs_ext | length), 1))
+                    | product(range(0, (exp_facts[exp_name].n_repetitions | int), 1))
+                    | map('tuple2flat2dict', ['suite', 'suite_id', 'exp_name', 'exp_run', 'exp_run_rep'])
                     | list }}"
   when: id == 'new' # only schedule if it is a new experiment
+
 
 - name: Set all jobs to unfinished and pending
   set_fact:
