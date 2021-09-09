@@ -170,7 +170,7 @@
     loop: "{{ exp_runs_ext_wo_cmd }}"
     loop_control:
       index_var: idx
-      loop_var: run # this variable is used within the $CMD$s to refer to variables
+      loop_var: my_run # this variable is used within the $CMD$s to refer to variables
 
   - name: set experiments with replaced command
     set_fact:

@@ -14,7 +14,6 @@
     exp_host_type_idx: "{{ tag_assignment[my_instance_id].exp_host_type_idx }}"
     exp_host_type_n: "{{ tag_assignment[my_instance_id].exp_host_type_n }}"
     host_types: "{{ hostvars['localhost'].host_types }}"
-    exp_facts: "{{ hostvars['localhost'].exp_facts }}" # TODO [nku] maybe we could get rid of this and only use exp_fact
   vars: 
     my_instance_id: "{{ metadata_res.ansible_facts.ansible_ec2_instance_id }}"
     tag_assignment: "{{ hostvars['localhost'].tag_assignment_lst | collect_items2dict(key_name='instance_id') }}"

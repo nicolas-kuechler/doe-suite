@@ -23,8 +23,8 @@ experiment_1:       # the experiment configuration (unique name of experiment)
         arg3: $FACTOR$
         arg4: "test1"
     $CMD$: 
-      client: "{{ exp_code_dir }}/.venv/bin/python {{ exp_code_dir }}/demo/client.py -config config.json -a1 [% run.host_vars.client.arg1 %] -a2 [% run.host_vars.client.arg2 %]"
-      server: "{{ exp_code_dir }}/.venv/bin/python {{ exp_code_dir }}/demo/server.py -config config.json -a3 [% run.host_vars.server.arg3 %] -a4 [% run.host_vars.server.arg4 %]"
+      client: "{{ exp_code_dir }}/.venv/bin/python {{ exp_code_dir }}/demo/client.py -config config.json -a1 [% my_run.host_vars.client.arg1 %] -a2 [% my_run.host_vars.client.arg2 %]"
+      server: "{{ exp_code_dir }}/.venv/bin/python {{ exp_code_dir }}/demo/server.py -config config.json -a3 [% my_run.host_vars.server.arg3 %] -a4 [% my_run.host_vars.server.arg4 %]"
 
   # in the experiments object you have a list for the different experiments
   # with the values for the fields marked as $FACTOR$ in the base config object.
@@ -71,8 +71,8 @@ experiment_2:       # the experiment configuration (unique name of experiment)
         arg4: "test1"
     
     $CMD$: 
-      client: "{{ exp_code_dir }}/.venv/bin/python {{ exp_code_dir }}/demo/client.py -config config.json -a1 [% run.host_vars.client.arg1 %] -a2 [% run.host_vars.client.arg2 %]"
-      server: "{{ exp_code_dir }}/.venv/bin/python {{ exp_code_dir }}/demo/server.py -config config.json -a3 [% run.host_vars.server.arg3 %] -a4 [% run.host_vars.server.arg4 %]"
+      client: "{{ exp_code_dir }}/.venv/bin/python {{ exp_code_dir }}/demo/client.py -config config.json -a1 [% my_run.host_vars.client.arg1 %] -a2 [% my_run.host_vars.client.arg2 %]"
+      server: "{{ exp_code_dir }}/.venv/bin/python {{ exp_code_dir }}/demo/server.py -config config.json -a3 [% my_run.host_vars.server.arg3 %] -a4 [% my_run.host_vars.server.arg4 %]"
 
 
   # in the experiments object you have a list for the different experiments
@@ -84,3 +84,25 @@ experiment_2:       # the experiment configuration (unique name of experiment)
           arg2: 2
         server:
           arg3: 2
+
+experiment_3:       # the experiment configuration (unique name of experiment)
+  n_repetitions: 2  # how often to repeat each run (i.e. each level config)
+  common_roles:     # roles that are run for all hosts during the initial setup
+    - setup-common
+  host_types:
+    single:
+      n: 1                    # number of current instances
+  base_experiment:
+    info: $FACTOR$  # Common variable for all host types
+    
+    $CMD$: 
+      single: "{{ exp_code_dir }}/.venv/bin/python {{ exp_code_dir }}/demo/client.py -config config.json -a1 [% my_run.info %] -a2 [% my_run.info %]"
+
+  # in the experiments object you have a list for the different experiments
+  # with the values for the fields marked as $FACTOR$ in the base config object.
+  factor_levels:
+    - info: "run1"
+
+    - info: "run2"
+
+    - info: "run3" 

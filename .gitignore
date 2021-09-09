@@ -3,6 +3,8 @@ experiments/state/
 
 .ipynb_checkpoints
 
+inventory/aws_ec2.yml
+
 ### Ansible ###
 *.retry
 .boto
