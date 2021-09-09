@@ -1,0 +1,37 @@
+
+- name: Install required packages
+  apt:
+    name:
+      - git
+      - python3
+      - python3-pip
+      - gnupg # for verifying the signature of awscli
+    state: present
+
+  become: yes
+  become_method: sudo
+
+- name: "Add user and group {{ ansible_controller_user }}:{{ ansible_controller_group }}"
+  block:
+  - group:
+      name: "{{ ansible_controller_group }}"
+      state: present
+
+  - user:
+      name: "{{ ansible_controller_user }}"
+      group: "{{ ansible_controller_group }}"
+      create_home: yes
+      state: present
+
+  become: yes
+  become_method: sudo
+
+- name: Install pipenv
+  pip:
+    name: pipenv
+    executable: pip3
+
+- name: Install pipenv package dependencies
+  command:
+    cmd: pipenv install
+    chdir: "{{ ansible_controller_aes_dir }}"

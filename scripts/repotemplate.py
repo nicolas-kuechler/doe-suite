@@ -11,7 +11,7 @@ DEFAULT_HOST_TYPE = "host_type"
 
 vars_base_path = "group_vars"
 templates_base_path = "resources/repotemplate/group_vars"
-groups = ["all", "server", "client"]
+groups = ["all", "server", "client", "ansible_controller"]
 template_name = "main.yml.j2"
 # The template path is assumed to be: f"{templates_base_path}/<<NAME>>", where
 # <<NAME>> is 'all' for the group 'all' and the string 'DEFAULT_HOST_TYPE' for all other host types.
@@ -77,6 +77,13 @@ defaults = {
         'volume_size': 16,
         'ec2_image': ubuntu_ami,
         'snapshot_id': None
+    },
+    "ansible_controller": {
+        'instance_type': 't2.small',
+        'volume_size': 64,
+        'ec2_image': ubuntu_ami,
+        'snapshot_id': None,
+        'ansible_exp_suite_git_repo': 'git@github.com:pps-lab/aws-simple-ansible.git'
     },
     # General default values
     DEFAULT_HOST_TYPE: {
@@ -152,6 +159,8 @@ def prompt_user(d, variables, host):
 
         input_str(d, "snapshot_id", "> Snapshot ID for this instance")
 
+        if host == "ansible_controller":
+            input_str(d, "ansible_exp_suite_git_repo", "> URL to AWS Ansible Experiment Suite git repository")
 
     remaining_variables = list(filter(lambda x: not (x in d), variables))
     if len(remaining_variables) > 0:
@@ -236,9 +245,8 @@ while True:
     configured_groups = groups[:]
 
     for group in groups:
-        if group == "all":
-            template_path = f"{templates_base_path}/all"
-        else:
+        template_path = f"{templates_base_path}/{group}"
+        if not os.path.isdir(template_path):
             template_path = f"{templates_base_path}/{DEFAULT_HOST_TYPE}"
 
         output_path = f"{vars_base_path}/{group}/{template_name.rstrip('.j2')}"
@@ -251,7 +259,8 @@ while True:
         env, template = get_env_and_template(template_path, template_name)
 
         # find all variables in the template file
-        with open(os.path.join(template_path, template_name), "r") as file:
+        template_full_path = os.path.join(template_path, template_name)
+        with open(template_full_path, "r") as file:
             ast = env.parse(file.read())
 
         variables = meta.find_undeclared_variables(ast)
@@ -260,7 +269,7 @@ while True:
         group_defaults = defaults.get(group, defaults[DEFAULT_HOST_TYPE])
         for k in group_defaults.keys():
             if k not in variables:
-                raise ValueError(f"Variable {k} with default is missing in {template_name}")
+                raise ValueError(f"Variable {k} with default is missing in {template_full_path}")
 
         # prompt the user to select the configuration
         d[group] = prompt_user(group_defaults, variables, group)

@@ -1,0 +1,30 @@
+---
+
+##################################################################################
+# This playbook sets up an ansible controller on AWS. This instance is able to   #
+# run the experiment playbook and gather the results. It is intended to be used  #
+# as a long-running instance where GitHub actions can send commands to, to       #
+# trigger experiment runs.                                                       #
+##################################################################################
+
+
+##########################################################################
+#   Setup Ansible Controller                                             #
+##########################################################################
+- name: Create ansible controller
+  hosts: localhost
+  tasks:
+
+    - name: Create AWS EC2 instance for ansible controller
+      include_role:
+        name: ansible-controller-ec2
+      vars:
+        ec2config: "{{ exp_base }}"
+
+- name: Setup ansible controller
+  hosts: 'ec2_tag_name_prefix' + ansible_controller
+
+  tasks:
+    - name: Configure the EC2 instance for running the AWS Ansible Experiment Suite
+      include_role:
+        name: ansible-controller-setup

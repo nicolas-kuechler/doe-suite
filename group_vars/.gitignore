@@ -2,3 +2,4 @@
 all/
 client/
 server/
+ansible_controller/

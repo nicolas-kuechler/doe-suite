@@ -1,0 +1,48 @@
+---
+
+- assert:
+    that:
+      - ssh_key_dir is defined
+      - ssh_key_owner is defined
+      - ssh_key_group is defined
+      - ssh_key_path is defined
+
+- name: Create folder for SSH keys
+  file:
+    path: "{{ ssh_key_dir }}"
+    owner: "{{ ssh_key_owner }}"
+    group: "{{ ssh_key_group }}"
+    mode: '0750'
+    state: present
+
+  become: yes
+  become_method: sudo
+
+- name: Generate SSH key
+  openssh_keypair:
+    path: "{{ ssh_key_path }}"
+    type: "{{ ssh_key_type }}"
+    size: "{{ ssh_key_size }}"
+    mode: '0640'
+
+  become: yes
+  become_user: "{{ ssh_key_owner }}"
+  register: keygen
+
+- block:
+
+  - name: Read public key
+    set_fact:
+      new_pub_key: "{{ lookup('file', ssh_key_path + '.pub') }}"
+
+    become: yes
+    become_user: "{{ ssh_key_owner }}"
+
+  - pause:
+      prompt: "ACTION REQUIRED: If your repository is private, you need to register \
+              the following public key to allow the ansible controller to access it:
+                {{ new_pub_key }}
+
+              Acknowledge once you added this key to continue the playbook."
+
+  when: keygen.changed

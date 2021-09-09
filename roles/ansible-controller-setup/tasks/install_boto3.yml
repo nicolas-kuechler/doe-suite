@@ -1,0 +1,6 @@
+
+- name: Install boto3 Python package
+  pip:
+    name: boto3
+
+- 

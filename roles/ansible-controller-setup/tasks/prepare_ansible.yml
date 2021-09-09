@@ -1,0 +1,5 @@
+
+- name: Install the required Ansible collections
+  command:
+    cmd: pipenv run ansible-galaxy install -r requirements-collections.yml
+    chdir: "{{ ansible_controller_aes_dir }}"
