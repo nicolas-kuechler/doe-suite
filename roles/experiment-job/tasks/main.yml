@@ -182,16 +182,23 @@
   vars:
     expstate: save
 
-- name: Get status of job
-  tsp_info:
-  register: tsp_result
-  until: (tsp_result.tasks | tsp_job_finished(job_id_to_wait_for)) | bool
-  retries: 30 # TODO [nku] add as variables
-  delay: 5 # TODO [nku] add as variables
-  delegate_to: "{{ host }}"
-  loop: "{{ groups[exp_name] }}" # TODO [nku] need to adjust to respect status check flag (could also ignore later on)
-  loop_control:
-    loop_var: host
+- block:
+
+  - name: Get status of job
+    tsp_info:
+    register: tsp_result
+    until: (tsp_result.tasks | tsp_job_finished(job_id_to_wait_for)) | bool
+    retries: "{{ job_n_tries }}"
+    delay: "{{ job_check_wait_time }}"
+    delegate_to: "{{ host }}"
+    loop: "{{ groups[exp_name] | intersect(groups['check_status']) }}" # only check status of jobs for host_types with 'check_status' == true
+    loop_control:
+      loop_var: host
+  
+  rescue:
+  - name: fail nicely with a msg if number of tries exceeded
+    fail:
+      msg: "Number of tries exceeded: job_id={{ job_id_to_wait_for }}"
 
 
 ###################################################################

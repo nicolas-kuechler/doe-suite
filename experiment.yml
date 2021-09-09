@@ -7,6 +7,14 @@
   hosts: localhost
 
   tasks:
+    - name: Template dynamic inventory config file
+      template:
+        src: inventory/aws_ec2.yml.j2
+        dest: inventory/aws_ec2.yml
+        mode: 0755
+      vars:
+        prj_clear: False
+
     - name: Read the experiment configuration
       include_role:
         name: experiment-parse-config
@@ -21,21 +29,6 @@
       loop_control:
         loop_var: experiment_item
 
-    - name: Accumulate hosts in the same group among all host types
-      set_fact:
-      # TODO [nku] think of whether all is really required
-        host_types: "{{ host_types
-                       | default({})
-                       | combine({ 'all':
-                           {
-                             host_group: { 'n': (host_types | json_query(host_group + '.*.n') | sum) }
-                           }
-                        }, recursive=True)
-                     }}"
-      loop: "{{ host_type_names }}"
-      loop_control:
-        loop_var: host_group
-
     - debug:
         msg: "Setup AWS..."
       tags: [print_action]
@@ -43,10 +36,8 @@
 
     - name: Setup AWS VPC
       include_role:
-        name: experiment-aws-vpc
-      vars:
-        do_create_vpc: "{{ (host_types['all'] | json_query('*.n') | sum) > 0 }}" # TODO [nku] here need to simplify to remove host_type all
-
+        name: experiment-aws-vpc-create
+     
     - name: Setup AWS EC2 instances
       include_role:
         name: experiment-aws-ec2
@@ -61,15 +52,17 @@
 ##########################################################################
 
 - name: Setup registered host types (part 1)
-  hosts: "{{ hostvars['localhost'].prj_id }}:&{{ hostvars['localhost'].suite }}" # intersection of hosts in project and in suite name
+  hosts: all # would be instances with prj_id and from the suite (i.e., hosts"{{ hostvars['localhost'].prj_id }}:&{{ hostvars['localhost'].suite }}") 
+  # but since the filter in the aws_ec2 dynamic inventory plugin ignores other instances, it is 'all'
   tasks:
   # cannot be strategy free, because some tasks in the role require that earlier tasks on other hosts already executed
   - name: Set variables on all hosts (transfer variables from localhost to host)
     include_role:
       name: experiment-set-vars
 
+
 - name: Setup registered host types (part 2) -> apply 
-  hosts: "{{ hostvars['localhost'].prj_id }}:&{{ hostvars['localhost'].suite }}" # intersection of hosts in project and in suite name
+  hosts: all  # intersection of hosts in project and in suite (via aws_ec2 dynamic inventory plugin)
   strategy: free
   tasks:
 
@@ -88,7 +81,7 @@
 ##########################################################################
 
 - name: Start different experiments in parallel (but each experiment itself synchronized)
-  hosts: "{{ hostvars['localhost'].prj_id }}:&{{ hostvars['localhost'].suite }}:&{{ hostvars['localhost'].suite }}:&controller"
+  hosts: controller # (filter prj_id and suite via aws_ec2 dynamic inventory plugin)
   strategy: free
   tasks:
     - debug:
@@ -146,10 +139,15 @@
 
     - name: Cleanup AWS
       include_role:
-        name: experiment-clear
+        name: experiment-aws-ec2-clear
 
+    - name: Remove AWS VPC
+      include_role:
+        name: experiment-aws-vpc-clear
+    
     when: awsclean | default(true) | bool and all_exp_jobs_finished
 
+    
   - name: Output the experiment suite id for convenience
     debug:
       var: suite_id

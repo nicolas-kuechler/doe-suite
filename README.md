@@ -194,7 +194,7 @@ After completing the getting started section, it should be possible to run the [
 8. Try running the example experiment design (see [experiments/designs/example.yml](experiments/designs/example.yml))
 
     ```sh
-    pipenv run ansible-playbook experiment.yml -e "exp=example id=new"
+    pipenv run ansible-playbook experiment.yml -e "suite=example id=new"
     ```
 
 <!-- USAGE EXAMPLES -->

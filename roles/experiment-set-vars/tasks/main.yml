@@ -22,8 +22,7 @@
 - name: Transfer remaining variables
   set_fact:
     host_facts: "{{ host_types[host_type][exp_name] }}"
-    exp_fact: "{{ exp_facts[exp_name] }}"
-
+    exp_fact: "{{ hostvars['localhost'].exp_facts[exp_name] }}"
 
 - set_fact:
     exp_host_lst: []
@@ -35,7 +34,8 @@
                                         'exp_host_type_n': my_exp_host_type_n,
                                         'exp_role': my_exp_role,
                                         'private_ip_address': my_private_ip_address,
-                                        'public_dns_name': my_host                                  
+                                        'public_dns_name': my_host,
+                                        'check_status': host_types[my_host_type][exp_name]['check_status']                                  
                                         }] }}"
   vars:
     my_host_type: "{{ hostvars[my_host].host_type }}"
@@ -44,14 +44,13 @@
     my_exp_role: "{{ hostvars[my_host].exp_role }}"
     my_private_ip_address: "{{ hostvars[my_host].private_ip_address }}"
 
-  loop: "{{ groups[prj_id] | intersect(groups[suite]) | intersect(groups[exp_name]) }}" # hosts of experiment
+
+  loop: "{{ groups[exp_name] }}" # hosts of experiment
   loop_control:
     loop_var: my_host
   
 
 - debug:
-    var: exp_host_lst
-#[{"host_type": x, "exp_host_type_idx": x, "exp_host_type_n": x, "exp_role": x, "public_dns_name": x, "private_ip_address": x}]
+    var: exp_host_lst 
+#[{"host_type": x, "exp_host_type_idx": x, "exp_host_type_n": x, "exp_role": x, "public_dns_name": x, "private_ip_address": x, "check_status": x}]
 
-
-# TODO [nku] potentially set for each host an overview of the hosts, their role and how to reach them (public dns)

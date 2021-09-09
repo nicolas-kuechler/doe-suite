@@ -3,7 +3,12 @@ plugin: aws_ec2
 regions:
   - eu-central-1
 filters:
+  tag:prj_id: {{ prj_id }}
+{% if not prj_clear %}
   instance-state-name: ["running"]
+  tag:suite: {{ suite }}
+{% endif %}
+   
 
 # keyed_groups may be used to create custom groups
 #leading_separator: False
@@ -29,5 +34,8 @@ keyed_groups:
     separator: ""
     key: tags.exp_role
 
+  - prefix: ""
+    separator: ""
+    key: tags.check_status
 
-# TODO [nku] ensure that: exp_name, suite, prj_id, host_type, exp_roles (controller) are all unique based on experiment file
+

@@ -4,6 +4,8 @@
   include_vars:
     file: experiments/designs/{{ suite }}.yml
     name: experiments
+  failed_when: not 'experiments/designs/example.yml' | validate_yaml # check for duplicate exp_name in suite
+
 
 #
 # Add default values
@@ -29,3 +31,18 @@
   loop: "{{ experiments | dict2items }}"
   loop_control:
     loop_var: experiment_item
+
+
+- name: build list of identifiers from exp names, host types, prj id suite, and keywords
+  set_fact:
+    identifiers: "{{ exp_names + host_type_names + [prj_id, suite, 'controller', 'no_controller', 'check_status', 'no_check_status'] }}" 
+  vars:
+    exp_names: "{{ experiments.keys() }}"
+    host_type_names: "{{ experiments | json_query('*.host_types.keys(@)') | flatten | unique }}"
+
+
+- name: check uniqueness of identifiers ()
+  assert:
+    that: 
+    - (identifiers | unique | length) == (identifiers | length)
+    fail_msg: found duplicates in identifiers -> adjust prj_id, suite, host_type, or exp_name to avoid them (identifiers={{ identifiers }})

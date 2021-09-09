@@ -2,5 +2,21 @@
 
 - name: Cleanup and Utility
   hosts: localhost
-  roles:
-    - experiment-clear
+
+  tasks:
+  - name: Template dynamic inventory config file
+    template:
+      src: inventory/aws_ec2.yml.j2
+      dest: inventory/aws_ec2.yml
+      mode: 0755
+    vars:
+      prj_clear: True
+
+  - name: Clear EC2 instances
+    include_role:
+      name: experiment-aws-ec2-clear
+  
+  - name: Clear VPC
+    include_role:
+      name: experiment-aws-vpc-clear
+

@@ -4,7 +4,6 @@
   include_vars:
     file: "group_vars/{{ host_type }}/main.yml"
     name: host_type_specific_vars
-  when: host_type != 'all' # TODO [nku] can we eliminate host type all?
   loop: "{{ host_types.keys() }}"
   loop_control:
     loop_var:
@@ -16,7 +15,6 @@
 
 - set_fact:
     host_type_specific_vars: "{{ host_type_specific_vars | combine({ res.host_type: res.ansible_facts.host_type_specific_vars }) }}"
-  when: res.host_type != 'all'  # TODO [nku] can we eliminate host type all?
   loop: "{{ my_results.results }}"
   loop_control:
     loop_var:
@@ -66,7 +64,6 @@
     ec2config: "{{ host_type_specific_vars[host_type] | combine( exp_base ) }}"
     n_sum: "{{ host_types[host_type] | json_query('*.n') | sum }}"
   loop: "{{ host_types.keys() }}"
-  when: host_type != 'all' # TODO [nku] can we eliminate host type all?
   loop_control:
     loop_var:
       host_type
@@ -102,11 +99,11 @@
     tags:
       exp_name: "{{ tag_assignment.exp_name }}"
       exp_role: "{{ tag_assignment.exp_role }}"
-      Name: "{'prj_id': {{ prj_id }}, 'suite': {{ suite }}, 'exp_name': {{ tag_assignment.exp_name }}, 'host_type': {{ tag_assignment.host_type }}, 'exp_role': {{ tag_assignment.exp_role }} }"
+      check_status: "{{ tag_assignment.check_status }}"
+      Name: "{'prj_id': {{ prj_id }}, 'suite': {{ suite }}, 'exp_name': {{ tag_assignment.exp_name }}, 'host_type': {{ tag_assignment.host_type }}, 'exp_role': {{ tag_assignment.exp_role }}, 'check_status': {{ tag_assignment.check_status }} }"
   loop: "{{ tag_assignment_lst }}"
   loop_control:
     loop_var: tag_assignment
-
 
 ######################################################
 # Wait until all ec2 instances have state 'running'

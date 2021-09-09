@@ -1,3 +1,5 @@
+import yaml
+
 def _add_default(d, keys, attr, default):
     """
     Recursive function to add { attr: default } (if not present) to the dictionary
@@ -93,10 +95,37 @@ def dict_default(d, query, attr, default):
 
     return d
 
+
+
+def validate_yaml(file):
+    class UniqueKeyLoader(yaml.SafeLoader):
+        def construct_mapping(self, node, deep=False):
+            mapping = []
+            for key_node, value_node in node.value:
+                key = self.construct_object(key_node, deep=deep)
+                if key in mapping:
+                    raise AssertionError(f"duplicate key={key}")
+                mapping.append(key)
+
+            return super().construct_mapping(node, deep)
+
+    try:
+        with open(file) as f:
+            x = yaml.load(f, Loader=UniqueKeyLoader)
+    except AssertionError as e:
+        return False
+
+    
+    return True
+
+
+
+
 class FilterModule(object):
     ''' jinja2 filters '''
 
     def filters(self):
         return {
             'dict_default': dict_default,
+            'validate_yaml': validate_yaml,
         }

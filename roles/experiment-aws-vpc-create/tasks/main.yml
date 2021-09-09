@@ -4,6 +4,10 @@
     that:
     - exp_base is defined
 
+- debug:
+    msg: "-> creating VPC..."
+  tags: [print_action]
+
 - name: Create VPC
   ec2_vpc_net:
     name: "{{ exp_base.vpc_name }}"

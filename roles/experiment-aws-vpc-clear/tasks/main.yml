@@ -1,5 +1,9 @@
 ---
 
+- debug:
+    msg: "-> deleting VPC.."
+  tags: [print_action]
+
 - name: Get VPC ID
   amazon.aws.ec2_vpc_net_info:
     filters:

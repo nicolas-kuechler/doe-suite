@@ -26,6 +26,14 @@ def to_tag_assignment(ec2_instances_info, host_types):
             continue
 
         for exp_name, info in experiments.items():
+
+
+            if "init_role" in host_types[host_type][exp_name]:
+                init_role = host_types[host_type][exp_name]["init_role"]
+            else: init_role = "-"
+
+
+            check_status = "check_status" if  bool(host_types[host_type][exp_name]["check_status"]) else "no_check_status"
             
             # take n instances and assign to this experiment
             for i in range(info["n"]):
@@ -37,7 +45,7 @@ def to_tag_assignment(ec2_instances_info, host_types):
                     exps_with_controller.add(exp_name)
                     exp_role = "controller"
 
-                d = {"instance_id": instance_id, "exp_name": exp_name, "exp_role": exp_role, "host_type": host_type, "exp_host_type_idx": i, "exp_host_type_n": info["n"]}
+                d = {"instance_id": instance_id, "exp_name": exp_name, "exp_role": exp_role, "host_type": host_type, "exp_host_type_idx": i, "exp_host_type_n": info["n"], "init_role": init_role, "check_status": check_status}
                 lst.append(d)
 
     

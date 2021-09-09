@@ -28,9 +28,3 @@
     instance_ids: "{{ ec2_instance_ids }}"
     state: absent
   when: (ec2_instance_ids | length) > 0
-
-- name: Remove AWS VPC
-  include_role:
-    name: experiment-aws-vpc
-  vars:
-    do_create_vpc: False
