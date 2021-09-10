@@ -6,6 +6,7 @@
       - python3
       - python3-pip
       - gnupg # for verifying the signature of awscli
+    update_cache: yes
     state: present
 
   become: yes
@@ -30,8 +31,3 @@
   pip:
     name: pipenv
     executable: pip3
-
-- name: Install pipenv package dependencies
-  command:
-    cmd: pipenv install
-    chdir: "{{ ansible_controller_aes_dir }}"

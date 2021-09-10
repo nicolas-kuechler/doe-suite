@@ -7,7 +7,6 @@
 # trigger experiment runs.                                                       #
 ##################################################################################
 
-
 ##########################################################################
 #   Setup Ansible Controller                                             #
 ##########################################################################
@@ -15,16 +14,40 @@
   hosts: localhost
   tasks:
 
+    # Load variables
+    - name: Load group variables
+      include_role:
+        name: load-group-vars
+      vars:
+        groups_to_load:
+          - all
+
+    - name: Manually load variables for ansible_controller
+      include_vars:
+        file: "{{ external_group_vars_dir }}/ansible_controller/main.yml"
+
+    - name: Setup AWS VPC
+      include_role:
+        name: experiment-aws-vpc
+      vars:
+        do_create_vpc: true
+
     - name: Create AWS EC2 instance for ansible controller
       include_role:
         name: ansible-controller-ec2
-      vars:
-        ec2config: "{{ exp_base }}"
 
 - name: Setup ansible controller
-  hosts: 'ec2_tag_name_prefix' + ansible_controller
+  hosts: ~.*_ansible_controller
 
   tasks:
+    - name: Load group variables
+      include_role:
+        name: load-group-vars
+      vars:
+        groups_to_load:
+          - all
+          - ansible_controller
+
     - name: Configure the EC2 instance for running the AWS Ansible Experiment Suite
       include_role:
         name: ansible-controller-setup

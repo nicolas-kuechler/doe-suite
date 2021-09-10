@@ -1,23 +1,23 @@
 ---
 
-- assert:
-    that:
-    - ec2config is defined
-
 - name: Launching ansible controller EC2 instance
   ec2:
-    instance_type: '{{ ec2config.instance_type }}'
-    key_name: '{{ ec2config.key_name }}'
-    image: '{{ ec2config.ec2_image }}'
-    region: '{{ ec2config.aws_region }}'
-    group: '{{ ec2config.sg_name }}'
+    instance_type: '{{ instance_type }}'
+    key_name: '{{ exp_base.key_name }}'
+    image: '{{ ec2_image }}'
+    region: '{{ exp_base.aws_region }}'
+    group: '{{ exp_base.sg_name }}'
+    exact_count: 1
+    count_tag:
+      Name: ansible_controller
+    vpc_subnet_id: '{{ exp_base.vpc_subnet_id }}'
     wait: yes
     assign_public_ip: yes
     volumes:
       - device_name: /dev/sda1
         volume_type: gp2
-        snapshot: '{{ ec2config.ec2_volume_snapshot }}'
-        volume_size: '{{ ec2config.ec2_volume_size }}'
+        snapshot: '{{ ec2_volume_snapshot }}'
+        volume_size: '{{ ec2_volume_size }}'
         delete_on_termination: True
     instance_tags:
       Name: ansible_controller

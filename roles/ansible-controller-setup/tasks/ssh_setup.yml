@@ -1,6 +1,6 @@
 
 - name: Set shared SSH variables
-  set_facts:
+  set_fact:
     ssh_key_dir: "{{ ansible_controller_ssh_key_dir }}"
     ssh_key_owner: "{{ ansible_controller_user }}"
     ssh_key_group: "{{ ansible_controller_group }}"
@@ -9,16 +9,16 @@
 
 - name: Generate SSH key for Git
   include_role:
-    name: setup_ssh.yml
-    vars:
-      ssh_key_path: "{{ ansible_controller_git_ssh_key_path }}"
+    name: setup-ssh
+  vars:
+    ssh_key_path: "{{ ansible_controller_git_ssh_key_path }}"
   when: ansible_exp_suite_private_repo
 
 - name: Generate SSH key for AWS
   include_role:
-    name: setup_ssh.yml
-    vars:
-      ssh_key_path: "{{ ansible_controller_aws_ssh_key_path }}"
+    name: setup-ssh
+  vars:
+    ssh_key_path: "{{ ansible_controller_aws_ssh_key_path }}"
 
 - name: Add entry for EC2 hosts to ~/.ssh/config
   blockinfile:
@@ -28,8 +28,10 @@
       IdentityFile {{ ansible_controller_aws_ssh_key_path }}
       User ubuntu
       ForwardAgent yes
+    owner: "{{ ansible_controller_user }}"
+    group: "{{ ansible_controller_group }}"
     create: yes
     state: present
 
   become: yes
-  become_user: "{{ ssh_key_owner }}"
+  become_method: sudo

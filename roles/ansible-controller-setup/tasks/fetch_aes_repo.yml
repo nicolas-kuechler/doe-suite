@@ -3,7 +3,7 @@
   git:
     repo: "{{ ansible_exp_suite_git_repo }}"
     dest: "{{ ansible_controller_aes_dir }}"
-    key_file: "{{ ansible_controller_ssh_key_path }}"
+    key_file: "{{ ansible_controller_git_ssh_key_path }}"
 
 - name: Set permissions on cloned repo
   file:
@@ -12,3 +12,10 @@
     group: "{{ ansible_controller_group }}"
     mode: '0750'
     recurse: yes
+  become: yes
+  become_method: sudo
+
+- name: Install pipenv package dependencies
+  command:
+    cmd: pipenv install
+    chdir: "{{ ansible_controller_aes_dir }}"

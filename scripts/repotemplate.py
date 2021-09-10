@@ -229,6 +229,9 @@ d = defaults
 # Catch CTRL+C, exit gracefully
 signal.signal(signal.SIGINT, signal_handler)
 
+if not os.path.isdir(templates_base_path):
+    raise Exception("Invalid template path given. Change templates_base_path.")
+
 while True:
     if not ask_confirmation(f"Create default host types ({', '.join(groups[1:])})?"):
         groups = pyip.inputCustom(
