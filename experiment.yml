@@ -9,25 +9,22 @@
   tasks:
     - name: Template dynamic inventory config file
       template:
-        src: inventory/aws_ec2.yml.j2
+        src: resources/inventory/aws_ec2.yml.j2
         dest: inventory/aws_ec2.yml
         mode: 0755
       vars:
         prj_clear: False
 
-    - name: Read the experiment configuration
+    - name: resolve suite_id, load and validate suite design, fill default values, and prepare variables
       include_role:
-        name: experiment-parse-config
+        name: suite-load-pre-aws
 
-    - name: Do load and setup for all experiments
-      include_role:
-        name: experiment-load
-      vars:
-        exp_name: "{{ experiment_item.key }}"
-        experiment: "{{ experiment_item.value }}"
-      loop: "{{ experiments | dict2items }}"
-      loop_control:
-        loop_var: experiment_item
+    - assert:
+        that:
+        - suite_id is defined
+        - my_suite_design is defined
+        - host_types is defined
+        - common_roles is defined
 
     - debug:
         msg: "Setup AWS..."
@@ -36,29 +33,23 @@
 
     - name: Setup AWS VPC
       include_role:
-        name: experiment-aws-vpc-create
+        name: suite-aws-vpc-create
      
     - name: Setup AWS EC2 instances
       include_role:
-        name: experiment-aws-ec2
-    
+        name: suite-aws-ec2-create
+
+    - name: above
+      assert:
+        that:
+        - suite_hosts_lst is defined
+        - my_suite_design is defined
+
+
+
     - debug:
         msg: "Setup Host Machines..."
       tags: [print_action]
-    
-
-##########################################################################
-#   Setup Machines                                                       #
-##########################################################################
-
-- name: Setup registered host types (part 1)
-  hosts: all # would be instances with prj_id and from the suite (i.e., hosts"{{ hostvars['localhost'].prj_id }}:&{{ hostvars['localhost'].suite }}") 
-  # but since the filter in the aws_ec2 dynamic inventory plugin ignores other instances, it is 'all'
-  tasks:
-  # cannot be strategy free, because some tasks in the role require that earlier tasks on other hosts already executed
-  - name: Set variables on all hosts (transfer variables from localhost to host)
-    include_role:
-      name: experiment-set-vars
 
 
 - name: Setup registered host types (part 2) -> apply 
@@ -69,11 +60,12 @@
   - name: Execute init roles (incl. common roles for all hosts)
     include_role:
       name: "{{ role_name }}"
-    loop: "{{ ( ( [ host_facts.init_role | default([]) ] | flatten | list) )
-                + ( [ exp_fact.common_roles | default([]) ] | flatten ) }}"
+    loop: "{{ setup_roles }}"
     loop_control:
       loop_var: role_name
     when: id == 'new' # only setup if it is a new experiment
+
+
 
 
 ##########################################################################
@@ -81,23 +73,34 @@
 ##########################################################################
 
 - name: Start different experiments in parallel (but each experiment itself synchronized)
-  hosts: controller # (filter prj_id and suite via aws_ec2 dynamic inventory plugin)
+  hosts: is_controller_yes # (filter prj_id and suite via aws_ec2 dynamic inventory plugin)
   strategy: free
   tasks:
-    - debug:
-        msg: "Running experiment jobs for experiment {{ exp_name }}"
-      tags: [print_action]
-
-    - name: "Start jobs for experiment {{ exp_name }}"
+    - name: # TODO [nku] describe
       include_role:
-        name: experiment-job
-      loop: "{{ range(0, (exp_fact.exp_job_ids_unfinished | length), 1) | list }}"
-      loop_control:
-        loop_var: unfinished_job_idx
+        name: suite-load-post-aws
 
     - debug:
-        msg: "Finishing experiment {{ exp_name }}"
+        msg: "running experiment jobs for experiment {{ exp_name }}"
       tags: [print_action]
+
+    - block:
+      - name: start jobs for experiment {{ exp_name }}
+        include_role:
+          name: experiment-job
+        loop: "{{ range(0, (exp_job_ids_unfinished | length), 1) | list }}"
+        loop_control:
+          loop_var: unfinished_job_idx
+      
+      rescue:
+      - name: handle unexpected error
+        fail:
+          msg: unexpected error occured in experiment = {{ exp_name }}
+        when: tsp_result is undefined or not tsp_result.failed  
+
+      - name: handle expected error if number of tries exceeded
+        ansible.builtin.debug:
+          msg: number of tries exceeded -> experiment = {{ exp_name }}
 
 
 
@@ -109,60 +112,46 @@
   hosts: localhost
   tasks:
 
-  - block:
-    - name: Reset exp_facts
-      set_fact:
-          exp_facts_keys: "{{ exp_facts.keys() }}"
-          exp_facts: {}
-
-    - name: Load current experiment state (exp_facts) on localhost
-      include_role:
-        name: experiment-state
-      vars:
-        expstate: load
-      loop: "{{ exp_facts_keys }}"
-      loop_control:
-        loop_var: exp_name
-
-    - name: Check if all jobs are finished
-      set_fact:
-        all_exp_jobs_finished: "{{ (all_exp_jobs_finished | default(True))
-                                   and (exp_facts_val.exp_job_ids_unfinished | length == 0)}}"
-      loop: "{{ exp_facts.values() }}"
-      loop_control:
-        loop_var: exp_facts_val
+  - name: compute overview of progress in different experiments in suite
+    set_fact: 
+      suite_progress_info: "{{ suite_progress_info | default({}) | combine({my_exp_name: {'require_suite_to_finish': my_require_suite ,'n_finished': my_n_finished | int, 'n_unfinished': my_n_unfinished | int, 'progress':  (my_n_finished | int / (my_n_finished | int + my_n_unfinished | int) * 100) | round(2) | string + ' %' }})}}"
+    vars:
+      my_exp_name: "{{ hostvars[my_controller_host].exp_name }}"
+      my_n_unfinished: "{{ hostvars[my_controller_host].exp_job_ids_unfinished | length }}"
+      my_require_suite: "{{ hostvars[my_controller_host].exp_job_ids_pending | length > 0 }}"
+      my_n_finished: "{{ hostvars[my_controller_host].exp_job_ids_finished | length }}"
+    loop: "{{ groups['is_controller_yes'] }}"
+    loop_control:
+      loop_var: my_controller_host
+  
+  - set_fact:
+      is_suite_finished: "{{ suite_progress_info | json_query('*.n_unfinished') | sum  == 0 }}"
 
   - block:
     - debug:
-        msg: "Cleanup AWS..."
+        msg: "cleanup AWS..."
       tags: [print_action]
 
     - name: Cleanup AWS
       include_role:
-        name: experiment-aws-ec2-clear
+        name: suite-aws-ec2-delete
 
     - name: Remove AWS VPC
       include_role:
-        name: experiment-aws-vpc-clear
+        name: suite-aws-vpc-delete
     
-    when: awsclean | default(true) | bool and all_exp_jobs_finished
+    # cleanup aws if suite is finished (unless the explicit flag is set to keep the aws environment)
+    when: awsclean | default(true) | bool and is_suite_finished
 
-    
-  - name: Output the experiment suite id for convenience
+  - name: output suite id (for convenience)
     debug:
-      var: suite_id
-    when: id == 'new'
-
-  - debug:
-      msg: "Finished Experiment: {{ exp_name_loc }} (suite id={{ suite_id }})
-            #runs={{ exp_fact_loc.exp_runs_ext | length }}
-            #reps={{ exp_fact_loc.n_repetitions }}
-            => #jobs={{ exp_fact_loc.exp_job_ids | length }}"
-    vars:
-      exp_name_loc: "{{ exp_facts_item.key }}"
-      exp_fact_loc: "{{ exp_facts_item.value }}"
-    loop: "{{ exp_facts | dict2items }}"
-    loop_control:
-      loop_var: exp_facts_item
-    when: all_exp_jobs_finished
+      msg: "suite={{ suite }}    suite_id={{ suite_id }}    finished={{ is_suite_finished }}"
     tags: [print_action]
+  
+  - name: output progress information of experiments
+    debug:
+      msg: "{{ suite_progress_info[item] }}"
+    loop: "{{ suite_progress_info.keys() | sort }}"
+    tags: [print_action]
+
+

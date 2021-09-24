@@ -1,41 +1,17 @@
 ---
 
+
 - assert:
     that:
-    - exp_role == 'controller' # this role is running on a controller host (one per experiment is controller)
+    - is_controller # this role is running on a controller host (one per experiment is controller)
     - exp_name is defined
-    - exp_fact is defined
-
-    - exp_host_lst is defined # list of hosts involved in experiment
-        #[{"host_type": x, "exp_host_type_idx": x, "exp_host_type_n": x, "exp_role": x, "public_dns_name": x, "private_ip_address": x}]
-
-  
-# Set those variables to be able to conveniently update them. We update exp_fact in the end.
-- name: Set local experiment variables
-  set_fact:
-    # Only use the values from exp_fact if it there has not been an updated version set locally.
-    exp_runs_ext: "{{ exp_runs_ext | default(exp_fact.exp_runs_ext) }}"
-    exp_job_ids: "{{ exp_job_ids | default(exp_fact.exp_job_ids) }}"
-    exp_job_ids_unfinished: "{{ exp_job_ids_unfinished | default(exp_fact.exp_job_ids_unfinished) }}"
-    exp_job_ids_pending: "{{ exp_job_ids_pending | default(exp_fact.exp_job_ids_pending) }}"
-    exp_job_ids_queued: "{{ exp_job_ids_queued | default(exp_fact.exp_job_ids_queued) }}"
-    exp_job_ids_running: "{{ exp_job_ids_running | default(exp_fact.exp_job_ids_running) }}"
-    exp_job_ids_finished: "{{ exp_job_ids_finished | default(exp_fact.exp_job_ids_finished) }}"
-    n_repetitions: "{{ exp_fact.n_repetitions }}"
-    do_init_job: "{{ do_init_job | default(False) }}"
-
-- assert:
-    that:
-    - exp_runs_ext is defined
-    - exp_job_ids is defined
-    - exp_job_ids_unfinished is defined
-    - exp_job_ids_pending is defined
-    - exp_job_ids_queued is defined
-    - exp_job_ids_running is defined
-    - exp_job_ids_finished is defined
-    - n_repetitions is defined
+    #- exp_fact is defined
     - suite_id is defined
     - job_check_wait_time is defined
+    - exp_runs_ext is defined
+
+    - exp_host_lst is defined # list of hosts involved in experiment
+        #[{"host_type": x, "exp_host_type_idx": x, "exp_host_type_n": x, "is_controller": x, "public_dns_name": x, "private_ip_address": x}]
 
 ###################################################################
 #  Start: Schedule new Jobs (enqueue task in task spooler)        #
@@ -64,32 +40,15 @@
       that:
       - exp_job_ids_queued | length == 0
 
-  - set_fact:
-      exp_jobs_to_enqueue: []
-
-  - name: Build list of jobs used to schedule
+  - name: build job schedule list (for each host of experiment, information about job and what is required to run)
     set_fact:
-        exp_jobs_to_enqueue: "{{ exp_jobs_to_enqueue  + [
-            {
-                'host_info': my_job_host.host_info,
-                'job_info': my_job_host.job_info,
-                'exp_run_config': exp_runs_ext[my_exp_run|int],
-                'exp_run_cmd': exp_runs_ext[my_exp_run|int]['$CMD$'][my_host_type],
-                'exp_working_dir': my_job_host.job_info | jobid2workingdir(remote.dir),
-            }
-            ] | list}}"
-    vars:
-        my_exp_run: "{{ my_job_host.job_info.exp_run }}"
-        my_host_type: "{{ my_job_host.host_info.host_type }}"
-    loop: "{{ exp_job_ids_to_enqueue | product(exp_host_lst) | map('tuple2dict', ['job_info', 'host_info']) | list }}"
-    loop_control:
-        loop_var: my_job_host
+      exp_jobs_to_enqueue: "{{ exp_job_ids_to_enqueue | to_job_schedule_lst(exp_host_lst, exp_runs_ext, remote.dir) }}"
+
 
     ###################################################################
     #  Prepare Experiment Environment (directories, files, ...)       #
     ###################################################################
 
-    # TODO [nku] possible to run async?
   - name: Create results directory
     ansible.builtin.file:
         path: "{{ job.exp_working_dir }}/results"
@@ -141,7 +100,7 @@
         cmd: "{{ job.exp_run_cmd }}"
         cmd_label: "{{ job.job_info | to_json | string }}"
         cmd_working_dir: "{{ job.exp_working_dir }}"
-        cmd_stdout_file: results/stdout.log
+        cmd_stdout_file: results/stdout.log # TODO [nku] need to change?
         cmd_stderr_file: results/stderr.log
     delegate_to: "{{ job.host_info.public_dns_name }}"
     loop: "{{ exp_jobs_to_enqueue }}"
@@ -182,23 +141,19 @@
   vars:
     expstate: save
 
-- block:
 
-  - name: Get status of job
-    tsp_info:
-    register: tsp_result
-    until: (tsp_result.tasks | tsp_job_finished(job_id_to_wait_for)) | bool
-    retries: "{{ job_n_tries }}"
-    delay: "{{ job_check_wait_time }}"
-    delegate_to: "{{ host }}"
-    loop: "{{ groups[exp_name] | intersect(groups['check_status']) }}" # only check status of jobs for host_types with 'check_status' == true
-    loop_control:
-      loop_var: host
-  
-  rescue:
-  - name: fail nicely with a msg if number of tries exceeded
-    fail:
-      msg: "Number of tries exceeded: job_id={{ job_id_to_wait_for }}"
+
+- name: Get status of job
+  # Note: if the number of tries are exceeded, the task raises an error which stops this role and is caught in the parent
+  tsp_info:
+  register: tsp_result
+  until: (tsp_result.tasks | tsp_job_finished(job_id_to_wait_for)) | bool
+  retries: "{{ job_n_tries }}"
+  delay: "{{ job_check_wait_time }}"
+  delegate_to: "{{ host }}"
+  loop: "{{ groups[exp_name] | intersect(groups['check_status_yes']) }}" # only check status of jobs for host_types with 'check_status' == true
+  loop_control:
+    loop_var: host
 
 
 ###################################################################
@@ -271,3 +226,27 @@
     name: experiment-state
   vars:
     expstate: save
+
+
+###################################################################
+#  Compute suite progress info and output                         #
+###################################################################
+
+- name: compute overview of progress in different experiments in suite
+  set_fact: 
+    suite_progress_info: "{{ suite_progress_info | default({}) | combine({my_exp_name: {'require_suite_to_finish': my_require_suite ,'n_finished': my_n_finished | int, 'n_unfinished': my_n_unfinished | int, 'progress':  (my_n_finished | int / (my_n_finished | int + my_n_unfinished | int) * 100) | round(2) | string + ' %' }})}}"
+  vars:
+    my_exp_name: "{{ hostvars[my_controller_host].exp_name }}"
+    my_n_unfinished: "{{ hostvars[my_controller_host].exp_job_ids_unfinished | length }}"
+    my_require_suite: "{{ hostvars[my_controller_host].exp_job_ids_pending | length > 0 }}"
+    my_n_finished: "{{ hostvars[my_controller_host].exp_job_ids_finished | length }}"
+  loop: "{{ groups['is_controller_yes'] }}"
+  loop_control:
+    loop_var: my_controller_host
+  
+- name: output progress information of experiments
+  debug:
+    msg: "{{ suite_progress_info[item] }}"
+  loop: "{{ suite_progress_info.keys() | sort }}"
+  tags: [print_action]
+# TEMPORARY END

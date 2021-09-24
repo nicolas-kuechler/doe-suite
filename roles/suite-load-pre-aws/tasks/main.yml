@@ -1,0 +1,99 @@
+---
+
+# TODO [nku] describe high level role of this role
+
+- name: check pre-conditions
+  assert:
+    that:
+    - inventory_hostname == 'localhost' # this role is intended to run on localhost
+    
+    - suite is defined  # from the command line
+    - id is defined     # from the command line
+    - id == 'new' or id == 'last' or id|int > 0
+
+
+#########################
+# Resolve suite_id
+#########################
+
+- name: Resolve the suite_id from the playbook cmd arguments
+  block:
+
+    # case 1: suite_id is given as playbook arg
+    - name: Set suite id from command argument
+      set_fact:
+        suite_id: "{{ id | int }}"
+      when: id != 'new' and id != 'last' # continue the last experiment suite run
+
+    # case 2: initialize a new suite_id
+    - name: set the new suite_id as the epoch timestamp
+      set_fact:
+        suite_id: "{{ ansible_date_time.epoch | int }}"
+      when: id == 'new'
+
+    # case 3: load suite_id based on last running experiment suite
+    - name: Set suite_id by creating a new one or reading the last
+      block:
+        - name: Find all experiments state of the experiment with '`suite`_\d+' as name
+          find:
+            paths: "{{ local.results_dir }}"
+            patterns: "^{{suite}}_\\d+$"
+            file_type: directory
+            use_regex: yes
+          register: suite_dirs_found
+
+        - fail:
+            msg="There is no suite={{suite }} to continue with last (use 'new' to create a new one)"
+          when: suite_dirs_found.matched == 0
+
+        - name: Find the highest `suite_id`
+          set_fact:
+            max_suite_id: "{{ suite_dirs_found
+                                  | json_query('files[*].path')
+                                  | sort
+                                  | last
+                                  | split('_')
+                                  | last }}"
+
+        - name: Set suite ID to the highest one that was found
+          set_fact:
+            suite_id: "{{ max_suite_id | int }}"
+      when: id == 'last'
+
+# from here on suite_id is set
+
+
+###########################################################
+# Read and Validate the suite design file (only if new)
+###########################################################
+
+- name: set the directory of where to place the (default) resolved suite design
+  set_fact:
+    suite_design_dir: "{{ local.results_dir }}/{{ suite }}_{{ suite_id }}"
+
+- name: create directory for suite design  (if it does not exist)
+  file:
+    path: "{{ suite_design_dir }}"
+    state: directory
+    mode:  0755
+
+- name: validate the suite design and set default values
+  suite_design_validate:
+    src: experiments/designs/example.yml
+    dest: "{{ suite_design_dir }}/suite_design.yml"
+  when: id == 'new' # only validate and resolve defaults for new (otherwise load the old already checked version)
+
+- name: read the suite design (with default values resolved)
+  include_vars:
+    file: "{{ suite_design_dir }}/suite_design.yml"
+    name: my_suite_design
+
+- name: extract host_type dict and common roles from suite design
+  set_fact:
+    # host_types =  {host_type_name1: {exp_name: {init role, n, check_status}}}
+    host_types: "{{ my_suite_design | suite2hosttypes }}"
+
+    # common_roles = {exp_name1: [role1, ...], exp_name2: [role1, ...]}
+    common_roles: "{{ my_suite_design | suite2commonroles }}"
+
+

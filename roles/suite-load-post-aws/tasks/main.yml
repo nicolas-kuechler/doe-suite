@@ -1,0 +1,90 @@
+---
+
+
+- assert:
+    that:
+    - inventory_hostname in groups['is_controller_yes']
+    - hostvars['localhost'].my_suite_design is defined
+    - hostvars['localhost'].suite_hosts_lst is defined
+    - exp_name is defined
+
+
+##########################################
+# Extend the suite design
+##########################################
+
+- set_fact:
+    exp_specific_vars: []
+
+- name: build specific vars for experiment  
+  set_fact:
+    exp_specific_vars: "{{ exp_specific_vars | combine({my_exp_name: {'exp_host_lst': suite_hosts_d[my_exp_name] | json_query(query_exp_host_lst)}}, recursive=True) }}"
+  loop: "{{ hostvars['localhost'].my_suite_design.keys() }}"
+  loop_control:
+    loop_var: my_exp_name
+  vars:
+    # suite_hosts_lst -> group by exp_name
+    # {<exp_name1>: [{"instance_id": X, "exp_name": <exp_name1>, "is_controller": X, "host_type": X, "exp_host_type_idx": X, "exp_host_type_n": X, "init_role": X, "check_status": X, "public_dns_name": X, "private_dns_name": X}, ...], ...}
+    suite_hosts_d: "{{ hostvars['localhost'].suite_hosts_lst | collect_items2dict(key_name='exp_name', multiset=True) }}"
+    query_exp_host_lst: "[*].{host_type: host_type, host_type_idx: exp_host_type_idx, host_type_n: exp_host_type_n, public_dns_name: public_dns_name, private_dns_name: private_dns_name}"
+
+
+- name: expand experiment suite design + replace variables
+
+  # TODO [nku] in design we would need to refer to the variables differently I think
+
+  suite_design_extend:
+    suite_design: "{{ hostvars['localhost'].my_suite_design }}"
+    exp_specific_vars: "{{ exp_specific_vars }}" # dict {exp_name: {k:v}}
+  register: my_suite_design_ext
+  # my_suite_design_ext.design: {<exp_name1>: [{<run_config1>}, {<run_config2>}, ...], }
+  delegate_to: localhost
+  # run_once: True -> would like to do this but for strategy free not supported and it's not an relevant overhead
+
+
+##########################################
+# Setup Job Ids
+##########################################
+
+- name: Setup job ids for `new` on each controller host
+  set_fact:
+    exp_job_ids: "{{ my_job_ids }}"
+    exp_job_ids_unfinished: "{{ my_job_ids }}"
+    exp_job_ids_pending: "{{ my_job_ids }}"
+    exp_job_ids_queued: []
+    exp_job_ids_running: []
+    exp_job_ids_finished: []
+  vars:
+    # produces a list of jobs (each entry contains info on suite, experiment, run, and repetition) 
+    # exp_job_ids = [{"suite": X, "suite_id": X, "exp_name": X, "exp_run": X, "exp_run_rep": X, }, ...]
+    my_job_ids: "{{ [suite]
+                    | product([suite_id]) 
+                    | product([exp_name])
+                    | product(range(0, (my_suite_design_ext['designs'][exp_name] | length), 1))
+                    | product(range(0, (hostvars['localhost'].my_suite_design[exp_name].n_repetitions | int), 1))
+                    | map('tuple2flat2dict', ['suite', 'suite_id', 'exp_name', 'exp_run', 'exp_run_rep'])
+                    | list }}"
+  when: id == 'new'
+
+
+- name: cleanup variables
+  set_fact:
+    my_suite_design_ext: ''
+    exp_runs_ext: "{{ my_suite_design_ext['designs'][exp_name] }}"
+    exp_host_lst: "{{ suite_hosts_d[exp_name] }}"
+  vars:
+    suite_hosts_d: "{{ hostvars['localhost'].suite_hosts_lst | collect_items2dict(key_name='exp_name', multiset=True) }}"
+
+- name: Setup job ids (state) for existing suites
+  include_role:
+    name: experiment-state
+  vars:
+    expstate: 'load'
+  when: id != 'new'
+
+- name: Save job_ids (state) on each controller
+  include_role:
+    name: experiment-state
+  vars:
+    expstate: 'save'
+  when: id == 'new'

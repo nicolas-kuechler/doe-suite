@@ -1,5 +1,7 @@
 ---
 
+# TODO [nku] see if attaching tags to vpc makes sense
+
 - assert:
     that:
     - exp_base is defined

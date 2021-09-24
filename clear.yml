@@ -6,7 +6,7 @@
   tasks:
   - name: Template dynamic inventory config file
     template:
-      src: inventory/aws_ec2.yml.j2
+      src: resources/inventory/aws_ec2.yml.j2
       dest: inventory/aws_ec2.yml
       mode: 0755
     vars:
@@ -14,9 +14,9 @@
 
   - name: Clear EC2 instances
     include_role:
-      name: experiment-aws-ec2-clear
+      name: suite-aws-ec2-delete
   
   - name: Clear VPC
     include_role:
-      name: experiment-aws-vpc-clear
+      name: suite-aws-vpc-delete
 
