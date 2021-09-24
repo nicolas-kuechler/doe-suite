@@ -1,15 +1,35 @@
 ---
 
+"""
+This role, 
+
+First, it determines if it needs to enqueue (i.e., start) a new job.
+The result of this is a variable: `exp_jobs_to_enqueue` that contains 
+a list with all required information to enqueue a new job in the task spooler.
+(if if is a single instance experiment -> enqueue all pending jobs
+else + there is no job currently running -> enqueue the first pending job )
+
+Second, for all jobs to enqueue it prepares the environment on the host 
+(e.g., creates directories + writes config.json file)
+
+After giving the jobs to the task spooler, we wait for the highest prio job to finish.
+(we do this in a loop until loop with `job_n_tries` retries and a delay of `job_check_wait_time` in between)
+
+When the job finishes, then we download the results and update the state.
+-> When the role ends, either the number of tries is exceeded and the playbook ends, or then ONE job is finished 
+    and we downloaded the results. Since this role is called in a loop for each job, as long as the number of tries never exceeds,
+    we finish all jobs of an experiment.
+"""
+
 
 - assert:
     that:
+    - inventory_hostname in groups['is_controller_yes']
     - is_controller # this role is running on a controller host (one per experiment is controller)
     - exp_name is defined
-    #- exp_fact is defined
     - suite_id is defined
     - job_check_wait_time is defined
     - exp_runs_ext is defined
-
     - exp_host_lst is defined # list of hosts involved in experiment
         #[{"host_type": x, "exp_host_type_idx": x, "exp_host_type_n": x, "is_controller": x, "public_dns_name": x, "private_ip_address": x}]
 
@@ -100,7 +120,7 @@
         cmd: "{{ job.exp_run_cmd }}"
         cmd_label: "{{ job.job_info | to_json | string }}"
         cmd_working_dir: "{{ job.exp_working_dir }}"
-        cmd_stdout_file: results/stdout.log # TODO [nku] need to change?
+        cmd_stdout_file: results/stdout.log # relative path compared to working dir
         cmd_stderr_file: results/stderr.log
     delegate_to: "{{ job.host_info.public_dns_name }}"
     loop: "{{ exp_jobs_to_enqueue }}"

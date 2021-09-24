@@ -142,7 +142,7 @@ class ActionModule(ActionBase):
         # set default values for not required keywords (common_roles, factor_levels)
         if "common_roles" not in exp_raw:
             exp_raw["common_roles"] = []
-        # TODO [nku] could check that the common roles actually exists
+        # TODO [nku] could check that the common roles actually exists -> need to know the folder
         
         if "factor_levels" not in exp_raw:
             exp_raw["factor_levels"] = [{}]
@@ -163,7 +163,7 @@ class ActionModule(ActionBase):
 
         # TODO [nku] many of these checks could probably be replaced by json schema
 
-        # TODO [nku] could check that the init role actually exists + could check that for this host_type the group vars exist (etc.)
+        # TODO [nku] could check that the init role actually exists + could check that for this host_type the group vars exist (etc.) -> need to know folder
 
         host_type_keywords = self.keywords["host_type"]
 

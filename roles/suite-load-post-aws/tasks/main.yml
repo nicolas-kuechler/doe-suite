@@ -1,5 +1,27 @@
 ---
 
+"""
+This role finalizes the loading of the suite.
+After creating the AWS environment, now we also have connection information
+for the different hosts in a multi-instance experiment.
+
+As a first step, we extend the suite design (we create a list of run configurations).
+In each entry, the factors receive their level and we also resolve the start commands in $CMD$.
+
+Afterward, for a new suite, we initialize the job id lists:
+All jobs of the experiment are placed in the `exp_job_ids` list. 
+
+Further variables that are important:
+- `exp_runs_ext` contains the runs of an experiment (is set on all controller hosts for an experiment)
+- `exp_host_lst` lists all instances belonging to an experiment (e.g., clients and servers). 
+  This variable can be used to pass the ip address (private_dns_name) of an instance on the command line 
+  for an experiment starting command in $CMD$.
+
+
+Finally, we store the experiment state on the localhost in the corresponding results directory.
+
+"""
+
 
 - assert:
     that:
@@ -30,16 +52,13 @@
 
 
 - name: expand experiment suite design + replace variables
-
-  # TODO [nku] in design we would need to refer to the variables differently I think
-
   suite_design_extend:
     suite_design: "{{ hostvars['localhost'].my_suite_design }}"
     exp_specific_vars: "{{ exp_specific_vars }}" # dict {exp_name: {k:v}}
   register: my_suite_design_ext
   # my_suite_design_ext.design: {<exp_name1>: [{<run_config1>}, {<run_config2>}, ...], }
   delegate_to: localhost
-  # run_once: True -> would like to do this but for strategy free not supported and it's not an relevant overhead
+  # run_once: True -> would like to do this but for strategy free not supported and it's not a relevant overhead
 
 
 ##########################################
@@ -67,7 +86,7 @@
   when: id == 'new'
 
 
-- name: cleanup variables
+- name: cleanup variables and set variables for experiment
   set_fact:
     my_suite_design_ext: ''
     exp_runs_ext: "{{ my_suite_design_ext['designs'][exp_name] }}"

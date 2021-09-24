@@ -8,12 +8,13 @@
 
   tasks:
     - name: Template dynamic inventory config file
+      # we do this because we want to have the project id as an inventory filter (such that only ec2 instances with a corresponding tag are visible)
       template:
         src: resources/inventory/aws_ec2.yml.j2
         dest: inventory/aws_ec2.yml
         mode: 0755
       vars:
-        prj_clear: False
+        prj_clear: False # controls whether to also filter for the suite or not (for a clear we want to include all instances of the project independent of the suite)
 
     - name: resolve suite_id, load and validate suite design, fill default values, and prepare variables
       include_role:
@@ -76,7 +77,7 @@
   hosts: is_controller_yes # (filter prj_id and suite via aws_ec2 dynamic inventory plugin)
   strategy: free
   tasks:
-    - name: # TODO [nku] describe
+    - name: extending the experiment config + for new suite create the job lists
       include_role:
         name: suite-load-post-aws
 
@@ -98,6 +99,8 @@
           msg: unexpected error occured in experiment = {{ exp_name }}
         when: tsp_result is undefined or not tsp_result.failed  
 
+      # the loop until task in `experiment-job` throws an error if the number of tries are exceeded.
+      # here we catch this error and handle this gracefully. (every other error is handled by the previous task)
       - name: handle expected error if number of tries exceeded
         ansible.builtin.debug:
           msg: number of tries exceeded -> experiment = {{ exp_name }}

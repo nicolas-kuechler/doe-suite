@@ -1,6 +1,11 @@
 ---
 
-# TODO [nku] describe high level role of this role
+"""
+This role considers the cmd arguments and resolves the suite id (either by creating a new one or finding the most recent for this suite).
+Afterward, for a new suite (i.e., id=='new'), the role reads and validates the suite design file. At the same time, default values are inserted for missing optional parameters.
+The validated suite design including the set default values is written into the suite folder.
+Finally, the `my_suite_design`, `host_types` and `common_roles` variables are set on localhost. The `host_types` variable shows what kind of hosts (e.g., ec2 instances) are required. 
+"""
 
 - name: check pre-conditions
   assert:

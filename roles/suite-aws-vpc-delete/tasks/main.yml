@@ -1,5 +1,11 @@
 ---
 
+"""
+This role deletes the VPC of the suite.
+
+TODO [nku] since we don't have a VPC per suite and instead have one per project it could be problematic to delete it here. (it will just fail because there are other instances attached, so not a big deal)
+"""
+
 - debug:
     msg: "-> deleting VPC.."
   tags: [print_action]

@@ -1,5 +1,18 @@
 ---
 
+"""
+This role uses the `host_types` variable to create the ec2 instances 
+described in the suite design.
+We use instance tags to assign instances to experiments.
+
+The assignment is stored in the variable `suite_hosts_lst` which is a list
+of all hosts and contains the information on the assignment to experiments.
+
+In the end, we set the assignment information also as variables on the respective host.
+(e.g., `exp_name` on the host shows the experiment)
+
+After this role, all instances are ready to use for the suite to run experiments.
+"""
 
 - name: Load the host specific vars from their groups_vars files
   # builds a dictionary `host_type: vars`, where `vars` are the variables defined for that host type in `group_vars/host_type/main.yml`
@@ -180,7 +193,7 @@
     is_controller: "{{ host_info.is_controller }}"
     exp_host_type_idx: "{{ host_info.exp_host_type_idx }}"
     exp_host_type_n: "{{ host_info.exp_host_type_n }}"
-    setup_roles: "{{ hostvars['localhost'].common_roles[host_info.exp_name] + host_info.init_roles }}"
+    setup_roles: "{{ ['setup-suite'] + hostvars['localhost'].common_roles[host_info.exp_name] + host_info.init_roles }}"
   delegate_facts: True
   delegate_to: "{{ host_info.public_dns_name }}"
   loop: "{{ suite_hosts_lst }}"

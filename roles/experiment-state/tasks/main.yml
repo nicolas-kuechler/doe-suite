@@ -1,11 +1,21 @@
 ---
 
-# run by controller
+"""
 
-# TODO [nku] connect new state
+The experiment state consists only of the different job_ids list in different states:
+
+- exp_job_ids: all job ids of the experiment
+- exp_job_ids_unfinished: all jobs that are not finished (i.e., pending + queued + running )
+- exp_job_ids_pending: all jobs waiting and IN CONTROL OF THE SUITE PLAYBOOK. The playbook is required to dispatch these jobs. 
+        (for multi-instance experiments, the playbook needs to synchronize and control when the next job is executed)
+- exp_job_ids_queued: all jobs waiting in control of the `CONTROLLER`. The playbook does not need to run to start them when a previous job finished.
+- exp_job_ids_running: the job currently running
+- exp_job_ids_finished: all jobs that were previously running and we already downloaded the results
 
 
-# the new state is only for the job id lists => the remaining stuff is loaded from design file
+The role can either load the experiment state from a file or it can save it in a file.
+
+"""
 
 - assert:
     that:
@@ -51,7 +61,7 @@
   # Be careful: any variables you set with set_fact will not be overwritten with
   # include_vars due to the variable precedence of different sources in Ansible.
   include_vars:
-    file: "{{ exp_state_dir }}/state.yml" # TODO [nku] replace exp_state_dir
+    file: "{{ exp_state_dir }}/state.yml"
     name: state
 
 - name: Logical check that semantics of job id lists are ok
