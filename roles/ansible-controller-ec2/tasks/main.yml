@@ -23,9 +23,6 @@
       Name: ansible_controller
   register: ec2_launch
 
-- name: Refresh dynamic ec2 inventory
-  meta: refresh_inventory
-
 - name: Wait for SSH to come up
   delegate_to: "{{ public_dns_name }}"
   wait_for_connection:
@@ -36,3 +33,6 @@
               | list }}"
   loop_control:
     loop_var: public_dns_name
+
+- name: Refresh dynamic ec2 inventory
+  ansible.builtin.meta: refresh_inventory

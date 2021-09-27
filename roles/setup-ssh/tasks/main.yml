@@ -24,7 +24,7 @@
         size: "{{ ssh_key_size }}"
         owner: "{{ ssh_key_owner }}"
         group: "{{ ssh_key_group }}"
-        mode: '0640'
+        mode: '0600'
       register: keygen
 
   become: yes

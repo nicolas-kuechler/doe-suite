@@ -20,8 +20,13 @@ ansible_controller_aes_dir: "{{ ansible_controller_home }}/aws_ansible_experimen
 
 # SSH options
 ansible_controller_ssh_key_dir: "{{ ansible_controller_home }}/.ssh"
-ansible_controller_ssh_key_type: ecdsa
-ansible_controller_ssh_key_size: 512
+ansible_controller_ssh_key_types:
+  git: ecdsa
+  aws: rsa
+ansible_controller_ssh_key_sizes:
+  git: 521
+  aws: 4096
 
-ansible_controller_git_ssh_key_path: "{{ ansible_controller_ssh_key_dir }}/id_ssh_git"
-ansible_controller_aws_ssh_key_path: "{{ ansible_controller_ssh_key_dir }}/{{ exp_base.key_name }}"
+ansible_controller_ssh_key_paths:
+  git: "{{ ansible_controller_ssh_key_dir }}/id_ssh_git"
+  aws: "{{ ansible_controller_ssh_key_dir }}/{{ exp_base.key_name }}"

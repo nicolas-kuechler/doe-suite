@@ -179,7 +179,6 @@ def get_env_and_template(template_path, template_name):
             variable_end_string=r'>>'
     )
 
-    # print(env.list_templates())
     template = env.get_template(template_name)
 
     return env, template

@@ -4,21 +4,37 @@
     ssh_key_dir: "{{ ansible_controller_ssh_key_dir }}"
     ssh_key_owner: "{{ ansible_controller_user }}"
     ssh_key_group: "{{ ansible_controller_group }}"
-    ssh_key_type: "{{ ansible_controller_ssh_key_type }}"
-    ssh_key_size: "{{ ansible_controller_ssh_key_size }}"
 
 - name: Generate SSH key for Git
   include_role:
     name: setup-ssh
   vars:
-    ssh_key_path: "{{ ansible_controller_git_ssh_key_path }}"
+    ssh_key_path: "{{ ansible_controller_ssh_key_paths['git'] }}"
+    ssh_key_type: "{{ ansible_controller_ssh_key_types['git'] }}"
+    ssh_key_size: "{{ ansible_controller_ssh_key_sizes['git'] }}"
   when: ansible_exp_suite_private_repo
+
+- name: Add entry for git to ~/.ssh/config
+  blockinfile:
+    path: "{{ ansible_controller_ssh_key_dir }}/config"
+    block: |
+      Host github.com
+      Hostname github.com
+      PreferredAuthentications publickey
+      User {{ ansible_controller_git_username }}
+      IdentityFile ~/.ssh/id_ecdsa_git
+    owner: "{{ ansible_controller_user }}"
+    group: "{{ ansible_controller_group }}"
+    create: yes
+    state: present
 
 - name: Generate SSH key for AWS
   include_role:
     name: setup-ssh
   vars:
-    ssh_key_path: "{{ ansible_controller_aws_ssh_key_path }}"
+    ssh_key_path: "{{ ansible_controller_ssh_key_paths['aws'] }}"
+    ssh_key_type: "{{ ansible_controller_ssh_key_types['aws'] }}"
+    ssh_key_size: "{{ ansible_controller_ssh_key_sizes['aws'] }}"
 
 - name: Add entry for EC2 hosts to ~/.ssh/config
   blockinfile:
