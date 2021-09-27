@@ -69,19 +69,19 @@ defaults = {
     "server": {
         'instance_type': 't2.medium',
         'volume_size': 16,
-        'ec2_image': ubuntu_ami,
+        'ec2_image_id': ubuntu_ami,
         'snapshot_id': None
     },
     "client": {
         'instance_type': 't2.medium',
         'volume_size': 16,
-        'ec2_image': ubuntu_ami,
+        'ec2_image_id': ubuntu_ami,
         'snapshot_id': None
     },
     "ansible_controller": {
         'instance_type': 't2.small',
         'volume_size': 64,
-        'ec2_image': ubuntu_ami,
+        'ec2_image_id': ubuntu_ami,
         'snapshot_id': None,
         'ansible_exp_suite_git_repo': 'git@github.com:pps-lab/aws-simple-ansible.git'
     },
@@ -89,7 +89,7 @@ defaults = {
     DEFAULT_HOST_TYPE: {
         'instance_type': 't2.medium',
         'volume_size': 16,
-        'ec2_image': ubuntu_ami,
+        'ec2_image_id': ubuntu_ami,
         'snapshot_id': None
     }
 }
@@ -137,7 +137,7 @@ def prompt_user(d, variables, host):
 
         input_num(d, "volume_size", "> EC2 volume size in GB", min=8, max=512)
 
-        input_str(d, "ec2_image", "> EC2 image AMI")
+        input_str(d, "ec2_image_id", "> EC2 image AMI")
 
         # Find the SnapshotId for this instance
         if "snapshot_id" not in d or d["snapshot_id"] == None:
@@ -147,14 +147,14 @@ def prompt_user(d, variables, host):
                     "ec2",
                     "describe-images",
                     "--image-ids",
-                    d["ec2_image"],
+                    d["ec2_image_id"],
                     "--query",
                     "Images[0].BlockDeviceMappings[*].Ebs.SnapshotId"
                 ]).decode())[0]
 
                 d["snapshot_id"] = snapshot_id
             except:
-                print(f"WARNING: could not fetch snapshot id for {d['ec2_image']}")
+                print(f"WARNING: could not fetch snapshot id for {d['ec2_image_id']}")
                 pass
 
         input_str(d, "snapshot_id", "> Snapshot ID for this instance")

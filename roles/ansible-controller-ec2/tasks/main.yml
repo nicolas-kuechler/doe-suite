@@ -4,7 +4,7 @@
   ec2:
     instance_type: '{{ instance_type }}'
     key_name: '{{ exp_base.key_name }}'
-    image: '{{ ec2_image }}'
+    image: '{{ ec2_image_id }}'
     region: '{{ exp_base.aws_region }}'
     group: '{{ exp_base.sg_name }}'
     exact_count: 1

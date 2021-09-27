@@ -7,7 +7,7 @@ This document contains some errors that may occur and possible reasons for them.
 >
 
 ### Possible reason
-Note that every host type defines `ec2_image` in the [group_vars](../group_vars). This instance ID is different in different AWS regions. It will also change with image updates (e.g., when Amazon updates the Ubuntu version of their standard image).
+Note that every host type defines `ec2_image_id` in the [group_vars](../group_vars). This instance ID is different in different AWS regions. It will also change with image updates (e.g., when Amazon updates the Ubuntu version of their standard image).
 
 Amazon descibes [here](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/finding-an-ami.html#finding-an-ami-console) how to find the AMI ID for your desired region, OS, architecture, etc.
 
