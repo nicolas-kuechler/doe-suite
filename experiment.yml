@@ -7,6 +7,14 @@
   hosts: localhost
 
   tasks:
+
+    - name: Load group variables
+      include_role:
+        name: load-group-vars
+      vars:
+        groups_to_load:
+          - all
+
     - name: Read the experiment configuration
       include_role:
         name: experiment-parse-config
@@ -98,6 +106,13 @@
   hosts: "{{ hostvars['localhost'].suite_all }}"
   strategy: free
   tasks:
+
+  - name: Load group variables
+    include_role:
+      name: load-group-vars
+    vars:
+      groups_to_load:
+        - all
 
   #
   # Set variables on all hosts
