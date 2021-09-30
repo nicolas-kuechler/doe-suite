@@ -1,5 +1,7 @@
 import os, sys, time, json, random
 
+# TODO [mh] for the template repository structure, this file should be moved
+
 print(f"cwd = {os.getcwd()}")
 
 import numpy as np

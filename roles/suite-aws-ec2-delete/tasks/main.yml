@@ -1,0 +1,38 @@
+---
+
+
+# This role terminates all ec2 instances of the suite.
+# (there is a sanity check (delay) that allows the user to abort)
+
+- assert:
+    that:
+    - inventory_hostname == 'localhost'
+
+
+- community.aws.ec2_instance_info:
+      region: "{{ exp_base.aws_region }}"
+      filters:
+        "tag:prj_id": "{{ prj_id }}"
+  register: ec2_instance_info
+
+- name: Extract instance ids of ec2 instances to remove
+  set_fact:
+    ec2_instance_ids: "{{ ec2_instance_info | json_query(query) | list }}"
+  vars:
+    query: instances[?state.name !='terminated'].instance_id
+
+- pause:
+    seconds: 10
+    prompt: |
+      "Removing instances with the following ids:
+       {{ ec2_instance_ids }}
+
+       If the above instance IDs are wrong, abort now! (CTRL+C followed by 'A')"
+  tags: [print_action]
+
+- name: Cleanup AWS
+  ec2:
+    region: "{{ exp_base.aws_region }}"
+    instance_ids: "{{ ec2_instance_ids }}"
+    state: absent
+  when: (ec2_instance_ids | length) > 0

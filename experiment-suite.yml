@@ -1,0 +1,160 @@
+---
+
+##########################################################################
+#   Load Experiment State and Setup AWS                                  #
+##########################################################################
+- name: Load Experiment State and Setup AWS
+  hosts: localhost
+
+  tasks:
+    - name: Template dynamic inventory config file
+      # we do this because we want to have the project id as an inventory filter (such that only ec2 instances with a corresponding tag are visible)
+      template:
+        src: resources/inventory/aws_ec2.yml.j2
+        dest: inventory/aws_ec2.yml
+        mode: 0755
+      vars:
+        prj_clear: False # controls whether to also filter for the suite or not (for a clear we want to include all instances of the project independent of the suite)
+
+    - name: resolve suite_id, load and validate suite design, fill default values, and prepare variables
+      include_role:
+        name: suite-load-pre-aws
+
+    - assert:
+        that:
+        - suite_id is defined
+        - my_suite_design is defined
+        - host_types is defined
+        - common_roles is defined
+
+    - debug:
+        msg: "Setup AWS..."
+      tags: [print_action]
+      when: id == 'new'
+
+    - name: Setup AWS VPC
+      include_role:
+        name: suite-aws-vpc-create
+     
+    - name: Setup AWS EC2 instances
+      include_role:
+        name: suite-aws-ec2-create
+
+    - name: above
+      assert:
+        that:
+        - suite_hosts_lst is defined
+        - my_suite_design is defined
+
+
+
+    - debug:
+        msg: "Setup Host Machines..."
+      tags: [print_action]
+
+
+- name: Setup registered host types (part 2) -> apply 
+  hosts: all  # intersection of hosts in project and in suite (via aws_ec2 dynamic inventory plugin)
+  strategy: free
+  tasks:
+
+  - name: Execute init roles (incl. common roles for all hosts)
+    include_role:
+      name: "{{ role_name }}"
+    loop: "{{ setup_roles }}"
+    loop_control:
+      loop_var: role_name
+    when: id == 'new' # only setup if it is a new experiment
+
+
+
+
+##########################################################################
+#   Run Experiment Jobs                                                  #
+##########################################################################
+
+- name: Start different experiments in parallel (but each experiment itself synchronized)
+  hosts: is_controller_yes # (filter prj_id and suite via aws_ec2 dynamic inventory plugin)
+  strategy: free
+  tasks:
+    - name: extending the experiment config + for new suite create the job lists
+      include_role:
+        name: suite-load-post-aws
+
+    - debug:
+        msg: "running experiment jobs for experiment {{ exp_name }}"
+      tags: [print_action]
+
+    - block:
+      - name: start jobs for experiment {{ exp_name }}
+        include_role:
+          name: experiment-job
+        loop: "{{ range(0, (exp_job_ids_unfinished | length), 1) | list }}"
+        loop_control:
+          loop_var: unfinished_job_idx
+      
+      rescue:
+      - name: handle unexpected error
+        fail:
+          msg: unexpected error occured in experiment = {{ exp_name }}
+        when: tsp_result is undefined or not tsp_result.failed  
+
+      # the loop until task in `experiment-job` throws an error if the number of tries are exceeded.
+      # here we catch this error and handle this gracefully. (every other error is handled by the previous task)
+      - name: handle expected error if number of tries exceeded
+        ansible.builtin.debug:
+          msg: number of tries exceeded -> experiment = {{ exp_name }}
+
+
+
+##########################################################################
+#   Cleanup AWS (terminate instances, remove vpc)                        #
+##########################################################################
+
+- name: Cleanup and Utility
+  hosts: localhost
+  tasks:
+
+  - name: compute overview of progress in different experiments in suite
+    set_fact: 
+      suite_progress_info: "{{ suite_progress_info | default({}) | combine({my_exp_name: {'require_suite_to_finish': my_require_suite ,'n_finished': my_n_finished | int, 'n_unfinished': my_n_unfinished | int, 'progress':  (my_n_finished | int / (my_n_finished | int + my_n_unfinished | int) * 100) | round(2) | string + ' %' }})}}"
+    vars:
+      my_exp_name: "{{ hostvars[my_controller_host].exp_name }}"
+      my_n_unfinished: "{{ hostvars[my_controller_host].exp_job_ids_unfinished | length }}"
+      my_require_suite: "{{ hostvars[my_controller_host].exp_job_ids_pending | length > 0 }}"
+      my_n_finished: "{{ hostvars[my_controller_host].exp_job_ids_finished | length }}"
+    loop: "{{ groups['is_controller_yes'] }}"
+    loop_control:
+      loop_var: my_controller_host
+  
+  - set_fact:
+      is_suite_finished: "{{ suite_progress_info | json_query('*.n_unfinished') | sum  == 0 }}"
+
+  - block:
+    - debug:
+        msg: "cleanup AWS..."
+      tags: [print_action]
+
+    - name: Cleanup AWS
+      include_role:
+        name: suite-aws-ec2-delete
+
+    - name: Remove AWS VPC
+      include_role:
+        name: suite-aws-vpc-delete
+    
+    # cleanup aws if suite is finished (unless the explicit flag is set to keep the aws environment)
+    when: awsclean | default(true) | bool and is_suite_finished
+
+  - name: output suite id (for convenience)
+    debug:
+      msg: "suite={{ suite }}    suite_id={{ suite_id }}    finished={{ is_suite_finished }}"
+    tags: [print_action]
+  
+  - name: output progress information of experiments
+    debug:
+      msg: "{{ suite_progress_info[item] }}"
+    loop: "{{ suite_progress_info.keys() | sort }}"
+    tags: [print_action]
+
+

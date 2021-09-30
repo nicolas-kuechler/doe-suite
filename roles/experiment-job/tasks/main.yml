@@ -1,150 +1,269 @@
 ---
 
+# This role, is responsible for running jobs.
+#
+# First, it determines if it needs to enqueue (i.e., start) a new job.
+# The result of this is a variable: `exp_jobs_to_enqueue` that contains
+# a list with all required information to enqueue a new job in the task spooler.
+# (if if is a single instance experiment -> enqueue all pending jobs
+# else + there is no job currently running -> enqueue the first pending job )
+#
+# Second, for all jobs to enqueue it prepares the environment on the host
+# (e.g., creates directories + writes config.json file)
+#
+# After giving the jobs to the task spooler, we wait for the highest prio job to finish.
+# (we do this in a loop until loop with `job_n_tries` retries and a delay of `job_check_wait_time` in between)
+#
+# When the job finishes, then we download the results and update the state.
+# -> When the role ends, either the number of tries is exceeded and the playbook ends, or then ONE job is finished
+#     and we downloaded the results. Since this role is called in a loop for each job, as long as the number of tries never exceeds,
+#     we finish all jobs of an experiment.
+
 - assert:
     that:
+    - inventory_hostname in groups['is_controller_yes']
+    - is_controller # this role is running on a controller host (one per experiment is controller)
     - exp_name is defined
-    - exp_fact is defined
-
-# Set those variables to be able to conveniently update them. We update exp_fact in the end.
-- name: Set local experiment variables
-  set_fact:
-    # Only use the values from exp_fact if it there has not been an updated version set locally.
-    exp_runs_ext: "{{ exp_runs_ext | default(exp_fact.exp_runs_ext) }}"
-    exp_job_ids: "{{ exp_job_ids | default(exp_fact.exp_job_ids) }}"
-    exp_job_ids_unfinished: "{{ exp_job_ids_unfinished | default(exp_fact.exp_job_ids_unfinished) }}"
-    exp_job_ids_pending: "{{ exp_job_ids_pending | default(exp_fact.exp_job_ids_pending) }}"
-    exp_job_ids_running: "{{ exp_job_ids_running | default(exp_fact.exp_job_ids_running) }}"
-    n_repetitions: "{{ exp_fact.n_repetitions }}"
-
-    do_init_job: "{{ do_init_job | default(False) }}"
-
-- assert:
-    that:
-    - exp_runs_ext is defined
-    - exp_job_ids is defined
-    - exp_job_ids_unfinished is defined
-    - exp_job_ids_pending is defined
-    - exp_job_ids_running is defined
-    - n_repetitions is defined
     - suite_id is defined
     - job_check_wait_time is defined
+    - exp_runs_ext is defined
+    - exp_host_lst is defined # list of hosts involved in experiment
+        #[{"host_type": x, "exp_host_type_idx": x, "exp_host_type_n": x, "is_controller": x, "public_dns_name": x, "private_ip_address": x}]
 
-# Skip all tasks if there are no unfinshed jobs left.
-- block:
-  - debug:
-      msg:
-        - "exp_job_ids_pending: {{ exp_job_ids_pending }}"
-        - "exp_job_ids_running: {{ exp_job_ids_running }}"
-        - "exp_runs_ext: {{ exp_runs_ext }}"
-        - "suite_id: {{ suite_id }}"
-        - "job_check_wait_time: {{ job_check_wait_time }}"
+###################################################################
+#  Start: Schedule new Jobs (enqueue task in task spooler)        #
+###################################################################
 
+- name: Schedule new Jobs
+  # only schedule new jobs when there are no jobs queued or running atm
+  when: exp_job_ids_pending | length > 0 and exp_job_ids_queued | length == 0 and exp_job_ids_running | length == 0
+  block:
 
-  ##########################################################################
-  #   Setup next (new) experiment run                                      #
-  ##########################################################################
+  - set_fact:
+      is_single_instance_exp: "{{ exp_host_lst | length == 1}}"
 
-  - name:
+  - name: Enqueue all jobs from pending because it is a single instance experiment (no synchronization required)
     set_fact:
-      new_running_job_id: null
+      exp_job_ids_to_enqueue: "{{ exp_job_ids_pending }}"
+    when: is_single_instance_exp
 
-  - name: Find new running job ID
+  - name: Enqueue only one job from pending because it is a multi instance experiment (synchronization required)
     set_fact:
-      new_running_job_id: "{{ exp_job_ids_pending | first }}"
-    when: (exp_job_ids_running | length) == 0
+        exp_job_ids_to_enqueue: "{{ [exp_job_ids_pending[0]] }}"
+    when: not is_single_instance_exp
 
-  - name:
-    set_fact:
-      exp_job_ids_pending: "{{ exp_job_ids_pending | reject('equalto', new_running_job_id) | list }}"
-      exp_job_ids_running: "{{ [ new_running_job_id ] }}"
-    when: new_running_job_id is not none
 
-  - name: Set the running job id
-    set_fact:
-      running_job_id: "{{ exp_job_ids_running[0] | string }}"
+  - assert:
+      that:
+      - exp_job_ids_queued | length == 0
 
-  - name: Extract `exp_run` (run) and `exp_run_rep` (repetition) from `running_job_id`
+  - name: build job schedule list (for each host of experiment, information about job and what is required to run)
     set_fact:
-      # Job ID structure: <experiment_name>-<run_id>_<rep_id>
-      exp_run: "{{ running_job_id | string | split('-') | last | split('_') | first | int }}"
-      exp_run_rep: "{{ running_job_id | string | split('_') | last | int }}"
+      exp_jobs_to_enqueue: "{{ exp_job_ids_to_enqueue | to_job_schedule_lst(exp_host_lst, exp_runs_ext, remote.dir) }}"
 
-  - name: Set the exp run config
-    set_fact:
-      exp_run_config: "{{ exp_runs_ext[exp_run | int] }}"
 
-  - name: Set the experiment working directory
-    set_fact:
-      exp_working_dir: "{{ remote.dir }}/results/{{ suite }}_{{ suite_id }}/{{ exp_name }}/\
-                        run_{{ exp_run }}/rep_{{ exp_run_rep }}"
-      exp_code_dir: "{{ remote.dir }}/code"
+    ###################################################################
+    #  Prepare Experiment Environment (directories, files, ...)       #
+    ###################################################################
 
-  - name: Update run facts on other hosts of the same experiment
-    set_fact:
-      exp_working_dir: "{{ exp_working_dir }}"
-      exp_run: "{{ exp_run }}"
-      exp_run_rep: "{{ exp_run_rep }}"
-      exp_run_config: "{{ exp_run_config }}"
+  - name: Create results directory
+    ansible.builtin.file:
+        path: "{{ job.exp_working_dir }}/results"
+        state: directory
+        mode: 0755
+        group: ubuntu
+        owner: ubuntu
+    delegate_to: "{{ job.host_info.public_dns_name }}"
+    loop: "{{ exp_jobs_to_enqueue }}"
+    loop_control:
+        loop_var: job
+
+  - name: Create scratch directory
+    ansible.builtin.file:
+        path: "{{ job.exp_working_dir }}/scratch"
+        state: directory
+        mode: 0755
+        group: ubuntu
+        owner: ubuntu
+    delegate_to: "{{ job.host_info.public_dns_name }}"
+    loop: "{{ exp_jobs_to_enqueue }}"
+    loop_control:
+        loop_var: job
+
+  - name: Create run config file in working directory
+    template:
+        src: config.json.j2
+        dest: "{{ job.exp_working_dir }}/config.json"
+        mode: 0755
+    delegate_to: "{{ job.host_info.public_dns_name }}"
+    loop: "{{ exp_jobs_to_enqueue }}"
+    loop_control:
+        loop_var: job
+
+    ###################################################################
+    #  Enqueue all Jobs                                               #
+    ###################################################################
+
+  - name: Clear task spooler queue on each host (+ stop all running jobs)
+    tsp:
+        clear_tasks: True
     delegate_to: "{{ host }}"
-    delegate_facts: true
-    loop: "{{ exp_other_hosts }}"
+    loop: "{{ groups[exp_name] }}"
     loop_control:
       loop_var: host
 
-  - block:
-    - name: Create results directory
-      file:
-        path: "{{ exp_working_dir }}/results"
-        state: directory
-        mode: 0755
-        group: ubuntu
-        owner: ubuntu
-      delegate_to: "{{ host }}"
-      loop: "{{ exp_hosts }}"
-      loop_control:
-        loop_var: host
+  - name: Enqueue all jobs on the task spooler
+    tsp:
+        cmd: "{{ job.exp_run_cmd }}"
+        cmd_label: "{{ job.job_info | to_json | string }}"
+        cmd_working_dir: "{{ job.exp_working_dir }}"
+        cmd_stdout_file: results/stdout.log # relative path compared to working dir
+        cmd_stderr_file: results/stderr.log
+    delegate_to: "{{ job.host_info.public_dns_name }}"
+    loop: "{{ exp_jobs_to_enqueue }}"
+    loop_control:
+        loop_var: job
 
-    - name: Create scratch directory
-      file:
-        path: "{{ exp_working_dir }}/scratch"
-        state: directory
-        mode: 0755
-        group: ubuntu
-        owner: ubuntu
-      delegate_to: "{{ host }}"
-      loop: "{{ exp_hosts }}"
-      loop_control:
-        loop_var: host
-    when: do_init_job
+  - name: Update experiment state
+    set_fact:
+      exp_job_ids_queued: "{{ exp_job_ids_to_enqueue }}"
+      exp_job_ids_pending: "{{  exp_job_ids_pending | difference(exp_job_ids_to_enqueue) }}"
+      exp_job_ids_to_enqueue: []
 
-  ##########################################################################
-  #   Start a new experiment (as a service -> does not block)              #
-  ##########################################################################
-  - block:
-    - debug:
-        msg: "Starting new job... suite={{ suite_id }} exp={{ exp_name }} run={{ exp_run }} repetition={{ exp_run_rep }}     \
-              |     Experiment Progress {{ progress_percent }}%  (overall)"
-      vars:
-        progress_percent: "{{ (100 * (exp_job_ids|length - exp_job_ids_unfinished|length) / exp_job_ids|length)|round }}"
-      tags: [print_action]
+###################################################################
+#  End: Schedule new Jobs (enqueue task in task spooler)        #
+###################################################################
 
-    - name: Start new experiment on all hosts (if there is none running atm)
-      include_role:
-        name: experiment-job-start
 
-    when: new_running_job_id is not none
 
-  ##########################################################################
-  #   Update experiment state                                              #
-  ##########################################################################
 
-  - name: Save the updated state of the experiment run (save job ids)
-    include_role:
-      name: experiment-state
-    vars:
-      expstate: save
+###################################################################
+#  Wait and the Get Status of All Job                             #
+###################################################################
+
+
+- name: Set the job id to wait until finished + update state
+  set_fact:
+    job_id_to_wait_for: "{{ cur_job_id }}"
+    exp_job_ids_queued: "{{ exp_job_ids_queued | difference([cur_job_id]) }}"
+    exp_job_ids_running: "{{ [cur_job_id] }}"
+  vars:
+    # if there is still a running_job_id then take this one, else take the first of the queued jobs
+    cur_job_id:  "{{ (exp_job_ids_running | list + exp_job_ids_queued | list) | first }}"
+
+
+- name: Save the updated state of the experiment run (save job ids)
+  include_role:
+    name: experiment-state
+  vars:
+    expstate: save
+
+
+
+- name: Get status of job
+  # Note: if the number of tries are exceeded, the task raises an error which stops this role and is caught in the parent
+  tsp_info:
+  register: tsp_result
+  until: (tsp_result.tasks | tsp_job_finished(job_id_to_wait_for)) | bool
+  retries: "{{ job_n_tries }}"
+  delay: "{{ job_check_wait_time }}"
+  delegate_to: "{{ host }}"
+  loop: "{{ groups[exp_name] | intersect(groups['check_status_yes']) }}" # only check status of jobs for host_types with 'check_status' == true
+  loop_control:
+    loop_var: host
+
+
+###################################################################
+#  Download Results for newly finished job                        #
+###################################################################
+
+- name: Download Results
+  block:
 
   - debug:
-      msg="new_running_job_id={{ new_running_job_id | default('-') }}    pending={{ exp_job_ids_pending }} running={{ exp_job_ids_running }}"
+      msg:
+      - "remote_results_dir={{ remote_results_dir }}"
+      - "local_results_dir_base={{ local_results_dir_base }}"
+      - "remote_config_file= {{ remote_config_file }}"
 
-  when: (exp_job_ids_unfinished | length) != 0
+  - name: Create local folder (for results)
+    delegate_to: localhost
+    file:
+      path: "{{ local_results_dir_base }}/{{ my_host.host_type }}/host_{{ my_host.exp_host_type_idx }}"
+      state: directory
+      mode: 0755
+    loop: "{{ exp_host_lst }}"
+    loop_control:
+      loop_var: my_host
+
+  - name: Fetch Results (if experiment done)
+    delegate_to: localhost
+    local_action: command rsync -az "{{ my_host.public_dns_name }}:{{ remote_results_dir }}/*" "{{ local_results_dir_base }}/{{ my_host.host_type }}/host_{{ my_host.exp_host_type_idx }}"
+    loop: "{{ exp_host_lst }}"
+    loop_control:
+      loop_var: my_host
+
+  - name: Save the config of the job
+    delegate_to: localhost
+    local_action: "command rsync -az '{{ inventory_hostname }}:{{ remote_config_file }}' '{{ local_results_dir_base }}'"
+
+
+  vars:
+  - remote_results_dir: "{{ job_id_to_wait_for | jobid2workingdir(remote.dir) + '/results' }}"
+  - local_results_dir_base: "{{ job_id_to_wait_for | jobid2workingdir('') }}"
+  - remote_config_file: "{{ job_id_to_wait_for | jobid2workingdir(remote.dir) + '/config.json' }}"
+
+###################################################################
+#  Cleanup task spooler queue                                     #
+###################################################################
+
+- name: Remove finished job with downloaded results from queue
+  tsp:
+    remove_task_label: "{{ job_id_to_wait_for | to_json | string }}"
+  delegate_to: "{{ host }}"
+  loop: "{{ groups[exp_name] }}"
+  loop_control:
+    loop_var: host
+
+###################################################################
+#  Update experiment state                                        #
+###################################################################
+
+- name:
+  set_fact:
+    exp_job_ids_running: []
+    exp_job_ids_finished: "{{ exp_job_ids_finished | list + [job_id_to_wait_for] }}"
+
+- name:
+  set_fact:
+    exp_job_ids_unfinished: "{{ exp_job_ids_pending | list + exp_job_ids_queued | list + exp_job_ids_running | list}}"
+
+- name: Save the updated state of the experiment run (save job ids)
+  include_role:
+    name: experiment-state
+  vars:
+    expstate: save
+
+
+###################################################################
+#  Compute suite progress info and output                         #
+###################################################################
+
+- name: compute overview of progress in different experiments in suite
+  set_fact:
+    suite_progress_info: "{{ suite_progress_info | default({}) | combine({my_exp_name: {'require_suite_to_finish': my_require_suite ,'n_finished': my_n_finished | int, 'n_unfinished': my_n_unfinished | int, 'progress':  (my_n_finished | int / (my_n_finished | int + my_n_unfinished | int) * 100) | round(2) | string + ' %' }})}}"
+  vars:
+    my_exp_name: "{{ hostvars[my_controller_host].exp_name }}"
+    my_n_unfinished: "{{ hostvars[my_controller_host].exp_job_ids_unfinished | length }}"
+    my_require_suite: "{{ hostvars[my_controller_host].exp_job_ids_pending | length > 0 }}"
+    my_n_finished: "{{ hostvars[my_controller_host].exp_job_ids_finished | length }}"
+  loop: "{{ groups['is_controller_yes'] }}"
+  loop_control:
+    loop_var: my_controller_host
+
+- name: output progress information of experiments
+  debug:
+    msg: "{{ suite_progress_info[item] }}"
+  loop: "{{ suite_progress_info.keys() | sort }}"
+  tags: [print_action]
+# TEMPORARY END

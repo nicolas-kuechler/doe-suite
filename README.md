@@ -12,6 +12,8 @@
   </p>
 </p>
 
+TODO [nku] update documentation
+
 In a nutshell, the suite automatically runs experiments where multiple factors are varied based on simple `YAML` files:
 ```YAML
 n_repetitions: 2  # how often each run is repeated (i.e. each level config)
@@ -194,7 +196,7 @@ After completing the getting started section, it should be possible to run the [
 8. Try running the example experiment design (see [experiments/designs/example.yml](experiments/designs/example.yml))
 
     ```sh
-    pipenv run ansible-playbook experiment.yml -e "exp=example id=new"
+    pipenv run ansible-playbook experiment.yml -e "suite=example id=new"
     ```
 
 <!-- USAGE EXAMPLES -->
@@ -226,6 +228,8 @@ pipenv run python scripts/repotemplate.py
 ```
 
 #### Writing Systemd Services
+
+TODO [nku] remove this section
 Jobs are started as systemd services. You need to define there, how host service should be started and with which arguments.
 
 In those service files, the following variables are available:
@@ -259,7 +263,7 @@ An experiment design `YAML` file consists of one or more experiments. Each exper
 
 3. **Base experiment**: The `base_experiment` consists of all the configuration options. All configuration options that vary between runs (i.e., the factors of the experiment) are marked with the placeholder `$FACTOR$`. The remaining configuration options are filled with a constant.
 
-4. **Factor levels**: The list of `factor_levels` specifies the levels that the factors take in a particular experiment run. For example, in the first run of the experiment, the framework replaces the `$FACTOR$` placeholder with the first entry values in the `factors_levels`list.  
+4. **Factor levels**: The list of `factor_levels` specifies the levels that the factors take in a particular experiment run. For example, in the first run of the experiment, the framework replaces the `$FACTOR$` placeholder with the first entry values in the `factors_levels`list.
 
 
 Example experiment design:
@@ -359,7 +363,7 @@ Multiple experiment table files can be translated and combined into a single exp
 ### Running an Experiment Suite
 
 We run an experiment suite by starting the Ansible playbook.
-We provide the name of an experiment design from `experiments/designs` (e.g., `example`), and we use `id=new` to run a new complete experiment.  
+We provide the name of an experiment design from `experiments/designs` (e.g., `example`), and we use `id=new` to run a new complete experiment.
 
 ```sh
 pipenv run ansible-playbook experiment.yml -e "suite=example id=new"

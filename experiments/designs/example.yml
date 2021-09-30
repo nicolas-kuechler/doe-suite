@@ -6,12 +6,20 @@ experiment_1:       # the experiment configuration (unique name of experiment)
     - setup-common
   host_types:
     client:
-      n: 1                    # number of current instances
+      n: 2                    # number of current instances
       check_status: True      # check the service status of this host type when evaluating whether a job finished (optional, default: True)
       init_role: setup-client # role run on the initial instance setup
+      $CMD$:
+        # cmd is list with two entries because there are two instances of the host type
+        - main: "{{ exp_code_dir }}/.venv/bin/python {{ exp_code_dir }}/demo/client.py -config config.json -a1 [% my_run.host_vars.client.arg1 %] -a2 [% my_run.host_vars.client.arg2 %]"
+
+          monitor: "{{ exp_code_dir }}/.venv/bin/python {{ exp_code_dir }}/demo/client.py -config config.json -hosts [% exp_host_lst %]" # uses list of environment (connection info such as public_dns_name or private_dns_name))
+          # for each host type instance, can launch potentially multiple commands, the main command will be used to determine whether program completed
+        - main: "{{ exp_code_dir }}/.venv/bin/python {{ exp_code_dir }}/demo/client.py -config config.json -a1 [% my_run.host_vars.client.arg1 %] -a2 [% my_run.host_vars.client.arg2 %]"
     server:
       n: 1                    # number of current instances
       init_role: setup-server # role run on the initial instance setup
+      $CMD$: "{{ exp_code_dir }}/.venv/bin/python {{ exp_code_dir }}/demo/server.py -config config.json -a3 [% my_run.host_vars.server.arg3 %] -a4 [% my_run.host_vars.server.arg4 %]"
   base_experiment:
     info: $FACTOR$  # Common variable for all host types
     host_vars:      # Define variables for the different host types here.
@@ -44,6 +52,7 @@ experiment_1:       # the experiment configuration (unique name of experiment)
           arg2: 3
         server:
           arg3: 3
+
 experiment_2:       # the experiment configuration (unique name of experiment)
   n_repetitions: 1  # how often to repeat each run (i.e. each level config)
   common_roles:     # roles that are run for all hosts during the initial setup
@@ -52,9 +61,11 @@ experiment_2:       # the experiment configuration (unique name of experiment)
     client:
       n: 1                    # number of current instances
       init_role: setup-client # role run on the initial instance setup
+      $CMD$: "{{ exp_code_dir }}/.venv/bin/python {{ exp_code_dir }}/demo/client.py -config config.json -a1 [% my_run.host_vars.client.arg1 %] -a2 [% my_run.host_vars.client.arg2 %]"
     server:
       n: 1                    # number of current instances
       init_role: setup-server # role run on the initial instance setup
+      $CMD$: "{{ exp_code_dir }}/.venv/bin/python {{ exp_code_dir }}/demo/server.py -config config.json -a3 [% my_run.host_vars.server.arg3 %] -a4 [% my_run.host_vars.server.arg4 %]"
   base_experiment:
     info: $FACTOR$  # Common variable for all host types
     host_vars:      # Define variables for the different host types here
@@ -75,3 +86,24 @@ experiment_2:       # the experiment configuration (unique name of experiment)
           arg2: 2
         server:
           arg3: 2
+
+experiment_3:       # the experiment configuration (unique name of experiment)
+  n_repetitions: 2  # how often to repeat each run (i.e. each level config)
+  common_roles:     # roles that are run for all hosts during the initial setup
+    - setup-common
+  host_types:
+    single:
+      n: 1                    # number of current instances
+      $CMD$: "{{ exp_code_dir }}/.venv/bin/python {{ exp_code_dir }}/demo/client.py -config config.json -a1 [% my_run.info %] -a2 [% my_run.info %]"
+  base_experiment:
+    info: $FACTOR$  # Common variable for all host types
+
+  # in the experiments object you have a list for the different experiments
+  # with the values for the fields marked as $FACTOR$ in the base config object.
+  factor_levels:
+    - info: "run1"
+
+    - info: "run2"
+
+
+    - info: "run3"

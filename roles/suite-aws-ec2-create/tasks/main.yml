@@ -1,0 +1,199 @@
+---
+
+# This role uses the `host_types` variable to create the ec2 instances
+# described in the suite design.
+# We use instance tags to assign instances to experiments.
+#
+# The assignment is stored in the variable `suite_hosts_lst` which is a list
+# of all hosts and contains the information on the assignment to experiments.
+#
+# In the end, we set the assignment information also as variables on the respective host.
+# (e.g., `exp_name` on the host shows the experiment)
+#
+# After this role, all instances are ready to use for the suite to run experiments.
+
+- name: Load the host specific vars from their groups_vars files
+  # builds a dictionary `host_type: vars`, where `vars` are the variables defined for that host type in `group_vars/host_type/main.yml`
+  block:
+  - name: Loop over different host types and load group vars from file.
+    include_vars:
+      file: "group_vars/{{ host_type }}/main.yml"
+      name: host_type_specific_vars
+    loop: "{{ host_types.keys() }}"
+    loop_control:
+      loop_var:
+        host_type
+    register: my_results
+
+    # note: At this point, host_type_specific_vars contains only the variables from the last host (of the previous loop).
+    #       However, the registered variable `my_results` contains a list with the variables from all hosts.
+    #       The following two tasks build a dictionary <HOST_TYPE>:<host type specific vars>
+
+  - name: clear host_type_specific_vars
+    set_fact:
+      host_type_specific_vars: {}
+
+  - name: use `my_results` to build host_type_specific_vars dictionary
+    set_fact:
+      host_type_specific_vars: "{{ host_type_specific_vars | combine({ res.host_type: res.ansible_facts.host_type_specific_vars }) }}"
+    loop: "{{ my_results.results }}"
+    loop_control:
+      loop_var:
+        res
+
+
+#######################################################################
+# Create EC2 Instances for all host_types
+######################################################################
+
+- name: Create EC2 Instances (only assign subset of tags yet)
+  ec2:
+    instance_type: '{{ ec2config.instance_type }}'
+    key_name: '{{ ec2config.key_name }}'
+    image: '{{ ec2config.ec2_image }}'
+    region: '{{ ec2config.aws_region }}'
+    group: '{{ ec2config.sg_name }}'
+    exact_count: '{{ n_sum }}'
+    count_tag:
+      prj_id: "{{ prj_id }}"
+      suite: "{{ suite }}"
+      host_type: "{{ host_type }}"
+    vpc_subnet_id: '{{ ec2config.vpc_subnet_id }}'
+    wait: no
+    assign_public_ip: yes
+    volumes:
+      - device_name: /dev/sda1
+        volume_type: gp2
+        snapshot: '{{ ec2config.ec2_volume_snapshot }}'
+        volume_size: '{{ ec2config.ec2_volume_size }}'
+        delete_on_termination: True
+    instance_tags:
+      prj_id: "{{ prj_id }}"
+      suite: "{{ suite }}"
+      host_type: "{{ host_type }}"
+  vars:
+    ec2config: "{{ host_type_specific_vars[host_type] | combine( exp_base ) }}"
+    n_sum: "{{ host_types[host_type] | json_query('*.n') | sum }}"
+  loop: "{{ host_types.keys() }}"
+  loop_control:
+    loop_var:
+      host_type
+
+
+#######################################################################
+# Assign instances to experiments and define role in experiments
+# (e.g., instance is controller)
+# -> done by assigning tags to ec2 instances
+######################################################################
+
+- name: Collect infos on ec2 instances (filter by prj_id and suite tags)
+  community.aws.ec2_instance_info:
+      region: "{{ exp_base.aws_region }}"
+      filters:
+        instance-state-name: [ "pending", "running" ]
+        "tag:prj_id": "{{ prj_id }}"
+        "tag:suite": "{{ suite }}"
+  register: ec2_instance_info
+
+- name: Convert collected infos on ec2 instances into list with relevant infos of hosts
+  set_fact:
+    tag_assignment_lst: "{{ instance_infos | to_tag_assignment(host_types)}}"
+    # list of all instances with their id and other relevant infos
+    # [{"instance_id": X, "exp_name": X, "is_controller": X, "host_type": X, "exp_host_type_idx": X, "exp_host_type_n": X, "init_role": X, "check_status": X}, ...]
+  vars:
+    instance_infos: "{{ ec2_instance_info | json_query('instances[*].{instance_id: instance_id, tags: tags}') }}"
+
+
+- name: Assign exp_name and is_controller tag to ec2 instances
+  amazon.aws.ec2_tag:
+    region: "{{ exp_base.aws_region }}"
+    resource: "{{ tag_assignment.instance_id }}"
+    tags:
+      exp_name: "{{ tag_assignment.exp_name }}"
+      is_controller: "{{ tag_assignment.is_controller }}"
+      check_status: "{{ tag_assignment.check_status }}"
+      Name: "{{ name_tag | truncate(252, killwords=True, end='...', leeway=3) }}" # truncate because aws has a limit of 255 chars for a tag
+  vars:
+    name_tag: "{'prj_id': {{ prj_id }}, 'suite': {{ suite }}, 'exp_name': {{ tag_assignment.exp_name }}, 'host_type': {{ tag_assignment.host_type }}, 'is_controller': {{ tag_assignment.is_controller }}, 'check_status': {{ tag_assignment.check_status }} }"
+  loop: "{{ tag_assignment_lst }}"
+  loop_control:
+    loop_var: tag_assignment
+
+######################################################
+# Wait until all ec2 instances have state 'running'
+######################################################
+
+- name: Wait until all ec2 instances have state `running`
+  community.aws.ec2_instance_info:
+      region: "{{ exp_base.aws_region }}"
+      filters:
+        instance-state-name: [ "pending", "running" ]
+        "tag:prj_id": "{{ prj_id }}"
+        "tag:suite": "{{ suite }}"
+  register: ec2_instance_info
+  until: ec2_instance_info | json_query(query) | length == 0
+  retries: 120
+  delay: 5
+  vars:
+    query: instances[?state.name !='running']
+
+
+######################################################
+# Wait until we can reach all ec2 instances via ssh
+######################################################
+- set_fact:
+    public_dns_names: "{{ ec2_instance_info | json_query('instances[*].public_dns_name') }}"
+    suite_hosts_lst: []
+
+- name: enrich host list with public_dns_name and private_dns_name
+  set_fact:
+    suite_hosts_lst: "{{ suite_hosts_lst + [tag_assignment | combine({'public_dns_name': public_dns_lookup[tag_assignment.instance_id], 'private_dns_name': private_dns_lookup[tag_assignment.instance_id]})] }}"
+    # list of all instances with their id and other relevant infos (+ public and private dns names)
+    # [{"instance_id": X, "exp_name": X, "is_controller": X, "host_type": X, "exp_host_type_idx": X, "exp_host_type_n": X, "init_role": X, "check_status": X, "public_dns_name": X, "private_dns_name": X}, ...]
+
+  loop: "{{ tag_assignment_lst }}"
+  loop_control:
+    loop_var: tag_assignment
+  vars:
+    public_dns_lookup: "{{ ec2_instance_info | json_query('instances[*].{key: instance_id, value: public_dns_name}') | items2dict }}"
+    private_dns_lookup: "{{ ec2_instance_info | json_query('instances[*].{key: instance_id, value: private_dns_name}') | items2dict }}"
+
+
+- name: Wait for SSH of the created EC2 instances to come up
+  delegate_to: "{{ public_dns_name }}"
+  wait_for_connection:
+    connect_timeout: 3
+    timeout: 320
+  loop: "{{ public_dns_names }}"
+  loop_control:
+    loop_var: public_dns_name
+
+######################################################
+# Refresh Dynamic Inventory
+######################################################
+
+- name: Refresh dynamic ec2 inventory
+  meta: refresh_inventory
+
+- pause:
+    seconds: 5
+
+
+######################################################
+# Set facts on individual hosts
+#####################################################
+
+- name: set variables on different hosts
+  set_fact:
+    suite_id: "{{ hostvars['localhost'].suite_id }}"
+    exp_name: "{{ host_info.exp_name }}"
+    host_type: "{{ host_info.host_type }}"
+    is_controller: "{{ host_info.is_controller }}"
+    exp_host_type_idx: "{{ host_info.exp_host_type_idx }}"
+    exp_host_type_n: "{{ host_info.exp_host_type_n }}"
+    setup_roles: "{{ ['setup-suite'] + hostvars['localhost'].common_roles[host_info.exp_name] + host_info.init_roles }}"
+  delegate_facts: True
+  delegate_to: "{{ host_info.public_dns_name }}"
+  loop: "{{ suite_hosts_lst }}"
+  loop_control:
+    loop_var: host_info

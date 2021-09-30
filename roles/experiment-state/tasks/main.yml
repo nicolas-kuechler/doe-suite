@@ -1,176 +1,90 @@
 ---
 
+
+# The experiment state consists only of the different job_ids list in different states:
+#
+# - exp_job_ids: all job ids of the experiment
+# - exp_job_ids_unfinished: all jobs that are not finished (i.e., pending + queued + running )
+# - exp_job_ids_pending: all jobs waiting and IN CONTROL OF THE SUITE PLAYBOOK. The playbook is required to dispatch these jobs.
+#         (for multi-instance experiments, the playbook needs to synchronize and control when the next job is executed)
+# - exp_job_ids_queued: all jobs waiting in control of the `CONTROLLER`. The playbook does not need to run to start them when a previous job finished.
+# - exp_job_ids_running: the job currently running
+# - exp_job_ids_finished: all jobs that were previously running and we already downloaded the results
+#
+#
+# The role can either load the experiment state from a file or it can save it in a file.
+
 - assert:
     that:
       - suite is defined
+      - suite_id is defined
       - exp_name is defined
-      - id is defined
       - expstate == 'load' or expstate == 'save'
-      - id == 'new' or id == 'last' or id|int > 0
+      # ensure that inventory_hostname is a controller
+      - inventory_hostname in groups['is_controller_yes']
 
-- set_fact:
-    is_init: False
-    suite_init: "{{ suite_init | default(False) }}"
 
-- block:
-    - name: Set suite id from command argument
-      set_fact:
-        suite_id: "{{ id | int }}"
-      when: id != 'new' and id != 'last' # continue the last experiment suite run
-
-    - block:
-        - name: Find all experiments state of the experiment with '`suite`_\d+' as name
-          find:
-            paths: "{{ local.exp_state_dir }}"
-            patterns: "^{{suite}}_\\d+$"
-            file_type: directory
-            use_regex: yes
-          register: suite_dirs_found
-
-        - name: Find the highest `suite_id`
-          set_fact:
-            max_suite_id: "{{ ansible_date_time.epoch if suite_dirs_found.matched == 0
-                                  else (suite_dirs_found
-                                  | json_query('files[*].path')
-                                  | sort
-                                  | last
-                                  | split('_')
-                                  | last ) }}"
-
-        - name: Create new suite id + mark as init
-          set_fact:
-            is_init: True
-            suite_id: "{{ (max_suite_id | int) + 1 }}"
-          when: id == 'new' and expstate == 'load'  # init experiment
-
-        - name: Set suite ID to the highest one that was found
-          set_fact:
-            suite_id: "{{ max_suite_id | int }}"
-          when: id == 'last' and expstate == 'load'  # init experiment
-
-      when: id == 'new' or id == 'last'
-  when: suite_id is not defined
-
-- debug:
-    msg: "suite_id={{ suite_id }}, exp_name={{ exp_name }}"
-
-- name: Reset experiment state to []
+- name: set the experiment state dir
   set_fact:
-    exp_runs_ext: []
-    exp_job_ids: []
-    exp_job_ids_unfinished: []
-    exp_job_ids_pending: []
-    exp_job_ids_running: []
-  when: (is_init or suite_init) and expstate == 'load'
+    exp_state_dir: "{{ local.results_dir }}/{{ suite }}_{{ suite_id }}/{{ exp_name }}"
 
-- name: Init the experiment state by expanding the `experiment.base_experiment` with the varying params in the experiments
-  set_fact:
-    exp_runs_ext: "{{ exp_runs_ext
-                      | union([
-                          experiment.base_experiment
-                          | combine( exp_item, recursive=True )
-                          | combine({ '~FACTORS_LEVEL': { 'args': exp_item } })
-                      ])}}"
-  loop: "{{ experiment.factor_levels }}"
-  when: is_init or suite_init
-  loop_control:
-    loop_var: exp_item
-
-- assert:
-    that:
-    - not '$FACTOR$' in (exp_runs_ext | string)
-    fail_msg: "missing level for at least one factor in the experiment config (i.e., not all '$FACTOR$' are replaced)"
-  when: is_init or suite_init
-
-- name: Set experiment directory
-  set_fact:
-    exp_state_dir: "{{ local.exp_state_dir }}/{{ suite }}_{{ suite_id }}/{{ exp_name }}"
-
-- name: Create exp directory if it does not exist
-  delegate_to: localhost
-  file:
+- name: create state directory (if not present)
+  ansible.builtin.file:
     path: "{{ exp_state_dir }}"
     state: directory
-    mode:  0755
-  when: is_init or suite_init
+    mode: 0755
+  delegate_to: localhost
 
-- name: Use previous values for undefined new state values in a state update
-  block:
-    - name: Load previous state
-      include_vars:
-        file: "{{ exp_state_dir }}/state.yml"
-        name: prev_state
 
-    - name: Set variables to previous value if undefined
-      set_fact:
-        n_repetitions_templ: "{{ n_repetitions_templ | default(prev_state.n_repetitions) }}"
-        host_types_templ: "{{ host_types_templ | default(prev_state.host_types) }}"
-        common_roles_templ: "{{ common_roles_templ | default(prev_state.common_roles) }}"
-  when: experiment is not defined
+##########################################
+# Save Experiment State
+##########################################
 
-- name: Set variables to prepare for saving the state
-  set_fact:
-    n_repetitions_templ: "{{ experiment.n_repetitions }}"
-    host_types_templ: "{{ experiment.host_types }}"
-    common_roles_templ: "{{ experiment.common_roles }}"
-  when: experiment is defined
-
-- name: Save the Experiment State in the Run Directory
+- name: Save the Experiment State (using state template file)
   delegate_to: localhost
   template:
     src: state.yml.j2
     dest: "{{ exp_state_dir }}/state.yml"
     mode:  0755
-  when: expstate == 'save' or is_init or suite_init
+  when: expstate == 'save'
+
+
+##########################################################################
+#   Load Experiment State (-> always load)                                               #
+##########################################################################
 
 - name: Load Experiment State
+  delegate_to: localhost
   # Be careful: any variables you set with set_fact will not be overwritten with
   # include_vars due to the variable precedence of different sources in Ansible.
   include_vars:
     file: "{{ exp_state_dir }}/state.yml"
     name: state
 
-- name: Set experiment variables (facts) based on loaded state
-  set_fact:
-    exp_facts: "{{ exp_facts | default({}) | combine({ exp_name: { fact_item.key : fact_item.value } }, recursive=True) }}"
-  loop:
-    - { 'key': 'suite_id', 'value': "{{ suite_id }}" }
-    - { 'key': 'exp_runs_ext', 'value': "{{ state.exp_runs_ext }}" }
-    - { 'key': 'exp_job_ids', 'value': "{{ state.exp_job_ids }}" }
-    - { 'key': 'exp_job_ids_unfinished', 'value': "{{ state.exp_job_ids_unfinished }}" }
-    - { 'key': 'exp_job_ids_pending', 'value': "{{ state.exp_job_ids_pending }}" }
-    - { 'key': 'exp_job_ids_running', 'value': "{{ state.exp_job_ids_running }}" }
-    - { 'key': 'n_repetitions', 'value': "{{ state.n_repetitions }}" }
-    - { 'key': 'common_roles', 'value': "{{ state.common_roles }}" }
-  loop_control:
-    loop_var: fact_item
+- name: Logical check that semantics of job id lists are ok
+  assert:
+    that:
+    # check that exp_job_ids is equal to unfinished + finished
+    - state.exp_job_ids | difference(test_exp_job_ids) | length == 0
+    - test_exp_job_ids | difference(state.exp_job_ids) | length == 0
 
-- name: Set host types based on loaded state
-  set_fact:
-    host_types: "{{ host_types
-                    | default({})
-                    | combine({
-                        host_type_item.key: {
-                          exp_name: host_type_item.value
-                        }
-                      }, recursive=True)
-                }}"
-  loop: "{{ state.host_types | dict2items }}"
-  loop_control:
-    loop_var: host_type_item
+    # check that exp_jobs_unfinished is correct
+    - state.exp_job_ids_unfinished | difference(test_exp_job_ids_unfinished) | length == 0
+    - test_exp_job_ids_unfinished | difference(state.exp_job_ids_unfinished) | length == 0
 
-- name: Set host type names (without the special type 'all')
-  set_fact:
-    host_type_names: "{{ state.host_types.keys() | list }}"
+    # check that no job_id is in pending, queued, running at the same time
+    - test_exp_job_ids_unfinished | unique | length == test_exp_job_ids_unfinished | length
 
-- name: Update experiment facts on all involved hosts
+  vars:
+    test_exp_job_ids: "{{ state.exp_job_ids_unfinished|list + state.exp_job_ids_finished|list }}"
+    test_exp_job_ids_unfinished: "{{ state.exp_job_ids_pending | list + state.exp_job_ids_queued | list + state.exp_job_ids_running | list }}"
+
+
+- name: Set facts from state
   set_fact:
-    exp_fact: "{{ hostvars[inventory_hostname].exp_facts[exp_name] }}"
-    exp_facts: "{{ hostvars['localhost'].exp_facts
-                   | combine({ exp_name: hostvars[inventory_hostname].exp_facts[exp_name] }) }}"
-  delegate_to: "{{ host }}"
-  delegate_facts: true
-  loop: "{{ exp_hosts }}"
-  loop_control:
-    loop_var: host
-  when: exp_hosts is defined
+    exp_job_ids: "{{ state.exp_job_ids }}"
+    exp_job_ids_unfinished: "{{ state.exp_job_ids_unfinished }}"
+    exp_job_ids_pending: "{{ state.exp_job_ids_pending }}"
+    exp_job_ids_queued: "{{ state.exp_job_ids_queued }}"
+    exp_job_ids_running: "{{ state.exp_job_ids_running }}"
+    exp_job_ids_finished: "{{ state.exp_job_ids_finished }}"
