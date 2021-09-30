@@ -2,6 +2,8 @@ import yaml, itertools, os, collections, argparse
 
 def main():
 
+    # TODO [nku] adapt for new structure with CMDs
+
     parser = argparse.ArgumentParser(description='Transform experiment definition in table form into design form required by the experiment suite')
 
     parser.add_argument('--suite', help='experiment suite name', type=str)

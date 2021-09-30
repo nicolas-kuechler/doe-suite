@@ -1,5 +1,11 @@
 # Developer Ansible Guide
 
+TODO [nku] update documentation for developers -> can delete a lot and refer to the documentation within the role.
+
+TODO [nku] mention the logic of the ec2 dynamic inventory with the prf_id and suite filter => can use all, exp_name, check_status_yes, check_status_no, is_controller_yes, is_controller_no  
+
+TODO [nku] remove mention of host_type `all`
+
 This document contains some useful information on the internals of this Ansible project. E.g., how to update/extend certain parts.
 
 ## Adding A Variable to the Experiment State
@@ -89,9 +95,11 @@ To add a variable to the experiment state, do:
 
 An (incomplete) list of roles and their purpose:
 
+
+# TODO [nku] adjust 
 - `experiment-aws`: General role to handle creating AWS EC2 instances.
 
-- `experiment-aws-ec2`: Create EC2 instances for a specific host type and experiment.
+- `experiment-aws-ec2-create`: Create EC2 instances for a specific host type and experiment.
 
 - `experiment-aws-ec2-manage`: This is an optimization. `experiment-aws` first launches all instances using `experiment-aws-ec2` and only then waits for SSH to come up. Thus, instances can boot up concurrently and the next one is not only started after the current one is completely initialized.
 

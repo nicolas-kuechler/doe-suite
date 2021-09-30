@@ -1,21 +1,18 @@
 ---
 
-"""
 
-The experiment state consists only of the different job_ids list in different states:
-
-- exp_job_ids: all job ids of the experiment
-- exp_job_ids_unfinished: all jobs that are not finished (i.e., pending + queued + running )
-- exp_job_ids_pending: all jobs waiting and IN CONTROL OF THE SUITE PLAYBOOK. The playbook is required to dispatch these jobs. 
-        (for multi-instance experiments, the playbook needs to synchronize and control when the next job is executed)
-- exp_job_ids_queued: all jobs waiting in control of the `CONTROLLER`. The playbook does not need to run to start them when a previous job finished.
-- exp_job_ids_running: the job currently running
-- exp_job_ids_finished: all jobs that were previously running and we already downloaded the results
-
-
-The role can either load the experiment state from a file or it can save it in a file.
-
-"""
+# The experiment state consists only of the different job_ids list in different states:
+#
+# - exp_job_ids: all job ids of the experiment
+# - exp_job_ids_unfinished: all jobs that are not finished (i.e., pending + queued + running )
+# - exp_job_ids_pending: all jobs waiting and IN CONTROL OF THE SUITE PLAYBOOK. The playbook is required to dispatch these jobs.
+#         (for multi-instance experiments, the playbook needs to synchronize and control when the next job is executed)
+# - exp_job_ids_queued: all jobs waiting in control of the `CONTROLLER`. The playbook does not need to run to start them when a previous job finished.
+# - exp_job_ids_running: the job currently running
+# - exp_job_ids_finished: all jobs that were previously running and we already downloaded the results
+#
+#
+# The role can either load the experiment state from a file or it can save it in a file.
 
 - assert:
     that:
@@ -37,7 +34,7 @@ The role can either load the experiment state from a file or it can save it in a
     state: directory
     mode: 0755
   delegate_to: localhost
-  
+
 
 ##########################################
 # Save Experiment State
@@ -76,11 +73,11 @@ The role can either load the experiment state from a file or it can save it in a
     - test_exp_job_ids_unfinished | difference(state.exp_job_ids_unfinished) | length == 0
 
     # check that no job_id is in pending, queued, running at the same time
-    - test_exp_job_ids_unfinished | unique | length == test_exp_job_ids_unfinished | length 
+    - test_exp_job_ids_unfinished | unique | length == test_exp_job_ids_unfinished | length
 
   vars:
     test_exp_job_ids: "{{ state.exp_job_ids_unfinished|list + state.exp_job_ids_finished|list }}"
-    test_exp_job_ids_unfinished: "{{ state.exp_job_ids_pending | list + state.exp_job_ids_queued | list + state.exp_job_ids_running | list }}" 
+    test_exp_job_ids_unfinished: "{{ state.exp_job_ids_pending | list + state.exp_job_ids_queued | list + state.exp_job_ids_running | list }}"
 
 
 - name: Set facts from state

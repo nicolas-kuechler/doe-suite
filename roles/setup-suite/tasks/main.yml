@@ -1,8 +1,6 @@
 ---
 
-"""
-This role is always executed an ensures that the task spooler is installed and the code repository is downloaded.
-"""
+# This role is always executed an ensures that the task spooler is installed and the code repository is downloaded.
 
 - debug:
     msg: "-> setup suite"

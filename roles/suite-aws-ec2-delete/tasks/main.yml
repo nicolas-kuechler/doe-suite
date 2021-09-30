@@ -1,17 +1,16 @@
 ---
 
-"""
-This role terminates all ec2 instances of the suite.
-(there is a sanity check (delay) that allows the user to abort)
-"""
+
+# This role terminates all ec2 instances of the suite.
+# (there is a sanity check (delay) that allows the user to abort)
 
 - assert:
     that:
-    - inventory_hostname == `localhost`
+    - inventory_hostname == 'localhost'
 
 
 - community.aws.ec2_instance_info:
-      region: "{{ exp_base.aws_region }}" 
+      region: "{{ exp_base.aws_region }}"
       filters:
         "tag:prj_id": "{{ prj_id }}"
   register: ec2_instance_info

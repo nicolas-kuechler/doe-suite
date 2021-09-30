@@ -9,12 +9,12 @@ experiment_1:       # the experiment configuration (unique name of experiment)
       n: 2                    # number of current instances
       check_status: True      # check the service status of this host type when evaluating whether a job finished (optional, default: True)
       init_role: setup-client # role run on the initial instance setup
-      $CMD$: # TODO [nku] extend defaults such that this has the following form
+      $CMD$:
         # cmd is list with two entries because there are two instances of the host type
         - main: "{{ exp_code_dir }}/.venv/bin/python {{ exp_code_dir }}/demo/client.py -config config.json -a1 [% my_run.host_vars.client.arg1 %] -a2 [% my_run.host_vars.client.arg2 %]"
-          
+
           monitor: "{{ exp_code_dir }}/.venv/bin/python {{ exp_code_dir }}/demo/client.py -config config.json -hosts [% exp_host_lst %]" # uses list of environment (connection info such as public_dns_name or private_dns_name))
-          # for each host type instance, can launch potentially multiple commands, the main command will be used to determine whether program completed 
+          # for each host type instance, can launch potentially multiple commands, the main command will be used to determine whether program completed
         - main: "{{ exp_code_dir }}/.venv/bin/python {{ exp_code_dir }}/demo/client.py -config config.json -a1 [% my_run.host_vars.client.arg1 %] -a2 [% my_run.host_vars.client.arg2 %]"
     server:
       n: 1                    # number of current instances
@@ -97,13 +97,13 @@ experiment_3:       # the experiment configuration (unique name of experiment)
       $CMD$: "{{ exp_code_dir }}/.venv/bin/python {{ exp_code_dir }}/demo/client.py -config config.json -a1 [% my_run.info %] -a2 [% my_run.info %]"
   base_experiment:
     info: $FACTOR$  # Common variable for all host types
-    
+
   # in the experiments object you have a list for the different experiments
   # with the values for the fields marked as $FACTOR$ in the base config object.
   factor_levels:
     - info: "run1"
 
     - info: "run2"
-      
 
-    - info: "run3" 
+
+    - info: "run3"

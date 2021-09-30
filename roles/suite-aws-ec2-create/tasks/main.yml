@@ -1,22 +1,20 @@
 ---
 
-"""
-This role uses the `host_types` variable to create the ec2 instances 
-described in the suite design.
-We use instance tags to assign instances to experiments.
-
-The assignment is stored in the variable `suite_hosts_lst` which is a list
-of all hosts and contains the information on the assignment to experiments.
-
-In the end, we set the assignment information also as variables on the respective host.
-(e.g., `exp_name` on the host shows the experiment)
-
-After this role, all instances are ready to use for the suite to run experiments.
-"""
+# This role uses the `host_types` variable to create the ec2 instances
+# described in the suite design.
+# We use instance tags to assign instances to experiments.
+#
+# The assignment is stored in the variable `suite_hosts_lst` which is a list
+# of all hosts and contains the information on the assignment to experiments.
+#
+# In the end, we set the assignment information also as variables on the respective host.
+# (e.g., `exp_name` on the host shows the experiment)
+#
+# After this role, all instances are ready to use for the suite to run experiments.
 
 - name: Load the host specific vars from their groups_vars files
   # builds a dictionary `host_type: vars`, where `vars` are the variables defined for that host type in `group_vars/host_type/main.yml`
-  block: 
+  block:
   - name: Loop over different host types and load group vars from file.
     include_vars:
       file: "group_vars/{{ host_type }}/main.yml"
@@ -45,7 +43,7 @@ After this role, all instances are ready to use for the suite to run experiments
 
 
 #######################################################################
-# Create EC2 Instances for all host_types 
+# Create EC2 Instances for all host_types
 ######################################################################
 
 - name: Create EC2 Instances (only assign subset of tags yet)
@@ -83,14 +81,14 @@ After this role, all instances are ready to use for the suite to run experiments
 
 
 #######################################################################
-# Assign instances to experiments and define role in experiments 
+# Assign instances to experiments and define role in experiments
 # (e.g., instance is controller)
 # -> done by assigning tags to ec2 instances
 ######################################################################
 
 - name: Collect infos on ec2 instances (filter by prj_id and suite tags)
   community.aws.ec2_instance_info:
-      region: "{{ exp_base.aws_region }}" 
+      region: "{{ exp_base.aws_region }}"
       filters:
         instance-state-name: [ "pending", "running" ]
         "tag:prj_id": "{{ prj_id }}"
@@ -108,7 +106,7 @@ After this role, all instances are ready to use for the suite to run experiments
 
 - name: Assign exp_name and is_controller tag to ec2 instances
   amazon.aws.ec2_tag:
-    region: "{{ exp_base.aws_region }}" 
+    region: "{{ exp_base.aws_region }}"
     resource: "{{ tag_assignment.instance_id }}"
     tags:
       exp_name: "{{ tag_assignment.exp_name }}"
@@ -127,7 +125,7 @@ After this role, all instances are ready to use for the suite to run experiments
 
 - name: Wait until all ec2 instances have state `running`
   community.aws.ec2_instance_info:
-      region: "{{ exp_base.aws_region }}" 
+      region: "{{ exp_base.aws_region }}"
       filters:
         instance-state-name: [ "pending", "running" ]
         "tag:prj_id": "{{ prj_id }}"
@@ -152,14 +150,14 @@ After this role, all instances are ready to use for the suite to run experiments
     suite_hosts_lst: "{{ suite_hosts_lst + [tag_assignment | combine({'public_dns_name': public_dns_lookup[tag_assignment.instance_id], 'private_dns_name': private_dns_lookup[tag_assignment.instance_id]})] }}"
     # list of all instances with their id and other relevant infos (+ public and private dns names)
     # [{"instance_id": X, "exp_name": X, "is_controller": X, "host_type": X, "exp_host_type_idx": X, "exp_host_type_n": X, "init_role": X, "check_status": X, "public_dns_name": X, "private_dns_name": X}, ...]
-  
+
   loop: "{{ tag_assignment_lst }}"
   loop_control:
     loop_var: tag_assignment
   vars:
     public_dns_lookup: "{{ ec2_instance_info | json_query('instances[*].{key: instance_id, value: public_dns_name}') | items2dict }}"
     private_dns_lookup: "{{ ec2_instance_info | json_query('instances[*].{key: instance_id, value: private_dns_name}') | items2dict }}"
-    
+
 
 - name: Wait for SSH of the created EC2 instances to come up
   delegate_to: "{{ public_dns_name }}"

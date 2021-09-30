@@ -1,27 +1,23 @@
 ---
 
-"""
-This role finalizes the loading of the suite.
-After creating the AWS environment, now we also have connection information
-for the different hosts in a multi-instance experiment.
-
-As a first step, we extend the suite design (we create a list of run configurations).
-In each entry, the factors receive their level and we also resolve the start commands in $CMD$.
-
-Afterward, for a new suite, we initialize the job id lists:
-All jobs of the experiment are placed in the `exp_job_ids` list. 
-
-Further variables that are important:
-- `exp_runs_ext` contains the runs of an experiment (is set on all controller hosts for an experiment)
-- `exp_host_lst` lists all instances belonging to an experiment (e.g., clients and servers). 
-  This variable can be used to pass the ip address (private_dns_name) of an instance on the command line 
-  for an experiment starting command in $CMD$.
-
-
-Finally, we store the experiment state on the localhost in the corresponding results directory.
-
-"""
-
+# This role finalizes the loading of the suite.
+# After creating the AWS environment, now we also have connection information
+# for the different hosts in a multi-instance experiment.
+#
+# As a first step, we extend the suite design (we create a list of run configurations).
+# In each entry, the factors receive their level and we also resolve the start commands in $CMD$.
+#
+# Afterward, for a new suite, we initialize the job id lists:
+# All jobs of the experiment are placed in the `exp_job_ids` list.
+#
+# Further variables that are important:
+# - `exp_runs_ext` contains the runs of an experiment (is set on all controller hosts for an experiment)
+# - `exp_host_lst` lists all instances belonging to an experiment (e.g., clients and servers).
+#   This variable can be used to pass the ip address (private_dns_name) of an instance on the command line
+#   for an experiment starting command in $CMD$.
+#
+#
+# Finally, we store the experiment state on the localhost in the corresponding results directory.
 
 - assert:
     that:
@@ -38,7 +34,7 @@ Finally, we store the experiment state on the localhost in the corresponding res
 - set_fact:
     exp_specific_vars: []
 
-- name: build specific vars for experiment  
+- name: build specific vars for experiment
   set_fact:
     exp_specific_vars: "{{ exp_specific_vars | combine({my_exp_name: {'exp_host_lst': suite_hosts_d[my_exp_name] | json_query(query_exp_host_lst)}}, recursive=True) }}"
   loop: "{{ hostvars['localhost'].my_suite_design.keys() }}"
@@ -74,10 +70,10 @@ Finally, we store the experiment state on the localhost in the corresponding res
     exp_job_ids_running: []
     exp_job_ids_finished: []
   vars:
-    # produces a list of jobs (each entry contains info on suite, experiment, run, and repetition) 
+    # produces a list of jobs (each entry contains info on suite, experiment, run, and repetition)
     # exp_job_ids = [{"suite": X, "suite_id": X, "exp_name": X, "exp_run": X, "exp_run_rep": X, }, ...]
     my_job_ids: "{{ [suite]
-                    | product([suite_id]) 
+                    | product([suite_id])
                     | product([exp_name])
                     | product(range(0, (my_suite_design_ext['designs'][exp_name] | length), 1))
                     | product(range(0, (hostvars['localhost'].my_suite_design[exp_name].n_repetitions | int), 1))

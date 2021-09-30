@@ -1,26 +1,23 @@
 ---
 
-"""
-This role, 
-
-First, it determines if it needs to enqueue (i.e., start) a new job.
-The result of this is a variable: `exp_jobs_to_enqueue` that contains 
-a list with all required information to enqueue a new job in the task spooler.
-(if if is a single instance experiment -> enqueue all pending jobs
-else + there is no job currently running -> enqueue the first pending job )
-
-Second, for all jobs to enqueue it prepares the environment on the host 
-(e.g., creates directories + writes config.json file)
-
-After giving the jobs to the task spooler, we wait for the highest prio job to finish.
-(we do this in a loop until loop with `job_n_tries` retries and a delay of `job_check_wait_time` in between)
-
-When the job finishes, then we download the results and update the state.
--> When the role ends, either the number of tries is exceeded and the playbook ends, or then ONE job is finished 
-    and we downloaded the results. Since this role is called in a loop for each job, as long as the number of tries never exceeds,
-    we finish all jobs of an experiment.
-"""
-
+# This role, is responsible for running jobs.
+#
+# First, it determines if it needs to enqueue (i.e., start) a new job.
+# The result of this is a variable: `exp_jobs_to_enqueue` that contains
+# a list with all required information to enqueue a new job in the task spooler.
+# (if if is a single instance experiment -> enqueue all pending jobs
+# else + there is no job currently running -> enqueue the first pending job )
+#
+# Second, for all jobs to enqueue it prepares the environment on the host
+# (e.g., creates directories + writes config.json file)
+#
+# After giving the jobs to the task spooler, we wait for the highest prio job to finish.
+# (we do this in a loop until loop with `job_n_tries` retries and a delay of `job_check_wait_time` in between)
+#
+# When the job finishes, then we download the results and update the state.
+# -> When the role ends, either the number of tries is exceeded and the playbook ends, or then ONE job is finished
+#     and we downloaded the results. Since this role is called in a loop for each job, as long as the number of tries never exceeds,
+#     we finish all jobs of an experiment.
 
 - assert:
     that:
@@ -111,7 +108,7 @@ When the job finishes, then we download the results and update the state.
     tsp:
         clear_tasks: True
     delegate_to: "{{ host }}"
-    loop: "{{ groups[exp_name] }}" 
+    loop: "{{ groups[exp_name] }}"
     loop_control:
       loop_var: host
 
@@ -129,7 +126,7 @@ When the job finishes, then we download the results and update the state.
 
   - name: Update experiment state
     set_fact:
-      exp_job_ids_queued: "{{ exp_job_ids_to_enqueue }}" 
+      exp_job_ids_queued: "{{ exp_job_ids_to_enqueue }}"
       exp_job_ids_pending: "{{  exp_job_ids_pending | difference(exp_job_ids_to_enqueue) }}"
       exp_job_ids_to_enqueue: []
 
@@ -205,7 +202,7 @@ When the job finishes, then we download the results and update the state.
     loop: "{{ exp_host_lst }}"
     loop_control:
       loop_var: my_host
-  
+
   - name: Save the config of the job
     delegate_to: localhost
     local_action: "command rsync -az '{{ inventory_hostname }}:{{ remote_config_file }}' '{{ local_results_dir_base }}'"
@@ -253,7 +250,7 @@ When the job finishes, then we download the results and update the state.
 ###################################################################
 
 - name: compute overview of progress in different experiments in suite
-  set_fact: 
+  set_fact:
     suite_progress_info: "{{ suite_progress_info | default({}) | combine({my_exp_name: {'require_suite_to_finish': my_require_suite ,'n_finished': my_n_finished | int, 'n_unfinished': my_n_unfinished | int, 'progress':  (my_n_finished | int / (my_n_finished | int + my_n_unfinished | int) * 100) | round(2) | string + ' %' }})}}"
   vars:
     my_exp_name: "{{ hostvars[my_controller_host].exp_name }}"
@@ -263,7 +260,7 @@ When the job finishes, then we download the results and update the state.
   loop: "{{ groups['is_controller_yes'] }}"
   loop_control:
     loop_var: my_controller_host
-  
+
 - name: output progress information of experiments
   debug:
     msg: "{{ suite_progress_info[item] }}"
