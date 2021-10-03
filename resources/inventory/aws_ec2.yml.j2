@@ -3,12 +3,15 @@ plugin: aws_ec2
 regions:
   - eu-central-1
 filters:
+{% if is_ansible_controller %} # for the ansible controller, we only filter for controllers but not projects
+  tag:Name: ansible_controller
+{% else %}
   tag:prj_id: {{ prj_id }}
 {% if not prj_clear %}
   instance-state-name: ["running"]
   tag:suite: {{ suite }}
 {% endif %}
-   
+{% endif %}
 
 # keyed_groups may be used to create custom groups
 #leading_separator: False
@@ -17,7 +20,7 @@ keyed_groups:
   - prefix: ""
     separator: ""
     key: tags.prj_id
-    
+
   - prefix: ""
     separator: ""
     key: tags.suite
@@ -25,11 +28,11 @@ keyed_groups:
   - prefix: ""
     separator: ""
     key: tags.exp_name
-  
+
   - prefix: ""
     separator: ""
     key: tags.host_type
-  
+
   - prefix: "is_controller"
     separator: "_"
     key: tags.is_controller
@@ -38,4 +41,6 @@ keyed_groups:
     separator: "_"
     key: tags.check_status
 
-
+  - prefix: ""
+    separator: ""
+    key: tags.Name

@@ -43,6 +43,4 @@
 
 - name: Remove AWS VPC
   include_role:
-    name: experiment-aws-vpc
-  vars:
-    do_create_vpc: False
+    name: suite-aws-vpc-delete

@@ -14,6 +14,16 @@
   hosts: localhost
   tasks:
 
+    - name: Template dynamic inventory config file
+      # we do this because we want to have the project id as an inventory filter (such that only ec2 instances with a corresponding tag are visible)
+      template:
+        src: resources/inventory/aws_ec2.yml.j2
+        dest: inventory/aws_ec2.yml
+        mode: 0755
+      vars:
+        prj_clear: True
+        is_ansible_controller: True
+
     # Load variables
     - name: Load group variables
       include_role:
@@ -28,16 +38,14 @@
 
     - name: Setup AWS VPC
       include_role:
-        name: experiment-aws-vpc
-      vars:
-        do_create_vpc: true
+        name: suite-aws-vpc-create
 
     - name: Create AWS EC2 instance for ansible controller
       include_role:
         name: ansible-controller-ec2
 
 - name: Setup ansible controller
-  hosts: ~.*_ansible_controller
+  hosts: ansible_controller
 
   tasks:
     - name: Load group variables
