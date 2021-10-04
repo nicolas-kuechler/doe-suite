@@ -1,0 +1,14 @@
+
+- name: Install required packages
+  ansible.builtin.apt:
+    name:
+      - gcc-9
+      - g++-9
+      - build-essential
+      - libboost-all-dev
+      - python3-dev
+      - python3-pip
+      - cmake
+      - git
+    update_cache: yes
+    state: present

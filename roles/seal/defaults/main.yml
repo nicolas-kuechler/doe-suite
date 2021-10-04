@@ -1,0 +1,2 @@
+SEAL_INSTALL_PATH: "{{ ansible_env.HOME }}/SEAL"
+SEAL_VERSION: v3.6.6
