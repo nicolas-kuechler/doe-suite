@@ -1,0 +1,28 @@
+
+- name: "Clone the AWS Ansible Experiment Suite from {{ ansible_exp_suite_git_repo }}"
+  ansible.builtin.git:
+    repo: "{{ ansible_exp_suite_git_repo }}"
+    dest: "{{ ansible_controller_does_dir }}"
+    key_file: "{{ ansible_controller_ssh_key_paths['git'] }}"
+    accept_hostkey: yes
+  become: yes
+  become_method: sudo
+
+# We cannot clone the repo directly as ansible_controller_user because then
+# ansible fails when it tries to create temporary files and change their permissions,
+# because ansible_controller_user does not have root privileges.
+- name: Set permissions on cloned repo
+  ansible.builtin.file:
+    path: "{{ ansible_controller_does_dir }}"
+    owner: "{{ ansible_controller_user }}"
+    group: "{{ ansible_controller_group }}"
+    recurse: yes
+  become: yes
+  become_method: sudo
+
+- name: Install pipenv package dependencies
+  ansible.builtin.command:
+    cmd: pipenv install
+    chdir: "{{ ansible_controller_does_dir }}"
+  become: yes
+  become_method: sudo

@@ -1,5 +1,6 @@
 
 - name: Install boto3 Python package
-  pip:
+  ansible.builtin.pip:
     name: boto3
-
+  become: yes
+  become_method: sudo

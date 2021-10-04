@@ -25,7 +25,7 @@
 
 - name: Wait for SSH to come up
   delegate_to: "{{ public_dns_name }}"
-  wait_for_connection:
+  ansible.builtin.wait_for_connection:
     connect_timeout: 3
     timeout: 320
   loop: "{{ ec2_launch.instances

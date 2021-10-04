@@ -1,17 +1,17 @@
 ---
 
 - name: Set instance tags to remove (without ansible controller)
-  set_fact:
+  ansible.builtin.set_fact:
     instance_tags: "{{ groups.keys() }}"
   when: awsclean
 
 - name: Set instance tags to remove (with ansible controller)
-  set_fact:
+  ansible.builtin.set_fact:
     instance_tags: "{{ groups.keys() + [ ec2_tag_name_prefix + 'ansible_controller' ] }}"
   when: awscleanall | default(false)
 
 - name: Collect info about running ec2 instances
-  ec2_instance_info:
+  community.aws.ec2_instance_info:
     region: "{{ exp_base.aws_region }}"
     filters:
       "tag:Name": "{{ instance_tag | split(ec2_tag_name_prefix) | last }}"
@@ -22,10 +22,10 @@
   register: ec2_instances
 
 - name: Extract instance ids of ec2 instances to remove
-  set_fact:
+  ansible.builtin.set_fact:
     ec2_instance_ids: "{{ ec2_instances | json_query('results[*].instances[*].instance_id') | list | flatten }}"
 
-- pause:
+- ansible.builtin.pause:
     seconds: 10
     prompt: |
       "Removing instances with the following ids:
@@ -35,12 +35,12 @@
   tags: [print_action]
 
 - name: Cleanup AWS
-  ec2:
-    region: "{{ exp_base.aws_region }}"
+  community.aws.ec2_instance:
     instance_ids: "{{ ec2_instance_ids }}"
+    region: "{{ exp_base.aws_region }}"
     state: absent
   when: (ec2_instance_ids | length) > 0
 
 - name: Remove AWS VPC
-  include_role:
+  ansible.builtin.include_role:
     name: suite-aws-vpc-delete

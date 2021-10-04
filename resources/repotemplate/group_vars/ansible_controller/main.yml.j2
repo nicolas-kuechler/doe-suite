@@ -16,7 +16,7 @@ ansible_controller_home: "/home/{{ ansible_controller_user }}"
 # AWS Ansible Experiment Suite repo options
 ansible_exp_suite_git_repo: <<ansible_exp_suite_git_repo>> # TODO: change to the URL of your clone of the ansible experiment suite
 ansible_exp_suite_private_repo: yes # Set to true if the repo is public. In that case we don't need to setup SSH keys for the repo.
-ansible_controller_aes_dir: "{{ ansible_controller_home }}/aws_ansible_experiment_suite" # Path to where AWS Ansible Experiment Suite is cloned to
+ansible_controller_does_dir: "{{ ansible_controller_home }}/aws_ansible_experiment_suite" # Path to where AWS Ansible Experiment Suite is cloned to
 
 # SSH options
 ansible_controller_ssh_key_dir: "{{ ansible_controller_home }}/.ssh"

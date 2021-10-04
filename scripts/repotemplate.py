@@ -83,7 +83,7 @@ defaults = {
         'volume_size': 64,
         'ec2_image_id': ubuntu_ami,
         'snapshot_id': None,
-        'ansible_exp_suite_git_repo': 'git@github.com:pps-lab/aws-simple-ansible.git'
+        'ansible_exp_suite_git_repo': 'git@github.com:nicolas-kuechler/doe-suite.git'
     },
     # General default values
     DEFAULT_HOST_TYPE: {
