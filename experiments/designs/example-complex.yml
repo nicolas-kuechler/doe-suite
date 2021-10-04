@@ -1,0 +1,92 @@
+---
+
+# Example with 3 experiments:
+# - exp1: experiment on single instance
+# - exp2: experiment on multiple instances (client server)
+# - exp3: experiment on multiple instances (client server)
+
+exp_single:
+  n_repetitions: 2
+  common_roles:
+    - setup_common
+  host_types:
+    small:
+      n: 1
+      $CMD$: echo hello # TODO [nku] give proper command
+  
+  base_experiment:
+    info: $FACTOR$
+    seed: 1234
+    opt: $FACTOR$
+
+  factor_levels:
+    - info: run1 - with optimization
+      opt: True
+    - info: run2 - without optimization
+      opt: False
+  
+
+exp_multi1:
+  n_repetitions: 3
+  common_roles:
+    - setup_common
+  host_types:
+    client:
+      n: 3
+      $CMD$: 
+        # TODO [nku] need to feed connection ip info
+        - main: echo hello c1 # TODO [nku] give proper command
+        - main: echo hello c2 # TODO [nku] give proper command
+        - main: echo hello c3 # TODO [nku] give proper command
+    server:
+      n: 1
+      $CMD$: echo hello # TODO [nku] give proper command
+
+  base_experiment:
+    host_vars:
+      client:
+        msg: hello
+        n_msg: $FACTOR$
+      server:
+        delay: 5
+
+  factor_levels:
+    - host_vars:
+        client:
+          n_msg: 10
+    - host_vars:
+        client:
+          n_msg: 20
+    - host_vars:
+        client:
+          n_msg: 30
+
+
+exp_multi2:
+  n_repetitions: 1
+  common_roles:
+    - setup_common
+  host_types:
+    client:
+      n: 1
+      # TODO [nku] need to feed connection ip info
+      $CMD$: echo hello # TODO [nku] give proper command
+    server:
+      n: 1
+      $CMD$: echo hello # TODO [nku] give proper command
+
+  base_experiment:
+    host_vars:
+      client:
+        msg: hello
+        n_msg: 10
+      server:
+        delay: $FACTOR$
+
+  factor_levels:
+    - host_vars:
+        server:
+          delay: 50
+    - host_vars:
+        server:
+          delay: 100

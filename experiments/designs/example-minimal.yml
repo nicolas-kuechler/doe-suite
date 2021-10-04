@@ -1,0 +1,18 @@
+---
+
+minimal: # name of the experiment 
+  n_repetitions: 1  # do not run repetitions
+  common_roles:
+    - setup-common # use role to install hosts
+  host_types:
+    small: # use one instance 
+      n: 1 
+      $CMD$: "echo  [% my_run.arg1 %] [% my_run.arg2 %]" # start  experiment run
+  # configuration
+  base_experiment:
+    arg1: hello     # fix parameter between runs
+    arg2: $FACTOR$  # varied parameter between run (factor)
+  factor_levels:
+    - arg2: world
+    - arg2: universe
+  

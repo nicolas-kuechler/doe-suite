@@ -1,0 +1,51 @@
+---
+
+# Example for one client server experiment
+
+exp_client_server:
+  n_repetitions: 3
+  common_roles:
+    - setup-common
+  host_types:
+    client:
+      n: 2
+      check_status: True
+      init_role: setup-client
+      $CMD$:
+        # could use netcat echo server: https://nmap.org/ncat/guide/ncat-simple-services.html https://ubidots.com/blog/how-to-simulate-a-tcpudp-client-using-netcat/
+        - echo c1 # TODO [nku] replace with actual
+        - echo c2 # TODO [nku] need to feed ip address
+    server:
+      n: 1
+      check_status: False
+      $CMD$: echo server # TODO [nku] replace with actual
+    
+    base_experiment:
+      info: $FACTOR$
+
+      host_vars:
+        client:
+          msg: hello
+          n_msg: $FACTOR$
+        server:
+          delay: $FACTOR$
+    
+    factor_levels:
+      - info: run 1 - base
+        host_vars:
+          client:
+            n_msg: 5
+          server:
+            delay: 10
+      - info: run 2 - more delay
+        host_vars:
+          client:
+            n_msg: 5
+          server:
+            delay: 20
+      - info: run 3 - more msgs
+        host_vars:
+          client:
+            n_msg: 10
+          server:
+            delay: 10
