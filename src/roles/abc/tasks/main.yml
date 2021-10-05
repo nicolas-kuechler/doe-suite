@@ -1,0 +1,21 @@
+
+- name: Create folder for ABC
+  ansible.builtin.file:
+    path: "{{ ABC_INSTALL_PATH }}"
+    state: directory
+
+- name: "Clone ABC branch {{ ABC_BRANCH }} from {{ ABC_REPO }}"
+  ansible.builtin.git:
+    repo: "{{ ABC_REPO }}"
+    dest: "{{ ABC_INSTALL_PATH }}"
+    version: "{{ ABC_BRANCH }}"
+
+- name: Build ABC
+  block:
+    - ansible.builtin.command:
+        cmd: cmake -DCMAKE_CXX_FLAGS="-Werror" -DCMAKE_CXX_COMPILER=g++-9 -DCMAKE_C_COMPILER=gcc-9 ..
+        chdir: "{{ ABC_INSTALL_PATH }}/ABC/build"
+
+    - ansible.builtin.command:
+        cmd: cmake --build . --target testing-all # TODO replace with target that we want to run
+        chdir: "{{ ABC_INSTALL_PATH }}/ABC"

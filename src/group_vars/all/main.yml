@@ -1,0 +1,3 @@
+does_project_dir: "{{ lookup('env', 'DOES_PROJECT_DIR') }}"
+does_config_dir: "{{ does_project_dir }}/does_config"
+external_group_vars_dir: "{{ does_config_dir }}/group_vars"
