@@ -71,6 +71,9 @@
   strategy: free
   tasks:
 
+  - name: Load group_vars from non-standard location
+    include_vars: "{{ external_group_vars_dir }}/all/main.yml"
+
   - name: Execute init roles (incl. common roles for all hosts)
     include_role:
       name: "{{ role_name }}"

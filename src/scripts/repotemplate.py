@@ -10,7 +10,7 @@ import pyinputplus as pyip
 DEFAULT_HOST_TYPE = "host_type"
 
 vars_base_path = os.environ["DOES_PROJECT_FOLDER"] + "/does_config/group_vars"
-src_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) 
+src_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 templates_base_path = src_path + "/resources/repotemplate/group_vars"
 groups = ["all", "server", "client", "ansible_controller"]
 template_name = "main.yml.j2"
@@ -62,7 +62,7 @@ except:
 defaults = {
     "all": {
         #'prj_id': None,
-        'git_remote_repository': 'git@github.com:pps-lab/aws-simple-ansible.git',
+        'git_remote_repository': 'git@github.com:nicolas-kuechler/doe-suite.git',
         'job_n_tries': 100,
         'job_check_wait_time': 5,
         #'key_name': None,

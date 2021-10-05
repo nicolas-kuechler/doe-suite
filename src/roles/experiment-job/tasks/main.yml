@@ -131,8 +131,8 @@
         cmd: "{{ job.exp_run_cmd }}"
         cmd_label: "{{ job.job_info | to_json | string }}"
         cmd_working_dir: "{{ job.exp_working_dir }}"
-        cmd_stdout_file: "{{ local.results_dir }}/stdout.log" # relative path compared to working dir
-        cmd_stderr_file: "{{ local.results_dir }}/stderr.log"
+        cmd_stdout_file: results/stdout.log # relative path compared to working dir
+        cmd_stderr_file: results/stderr.log
     delegate_to: "{{ job.host_info.public_dns_name }}"
     loop: "{{ exp_jobs_to_enqueue }}"
     loop_control:

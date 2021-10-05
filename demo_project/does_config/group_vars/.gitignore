@@ -4,4 +4,4 @@ all
 ansible_controller
 client
 server
-simple
+small
