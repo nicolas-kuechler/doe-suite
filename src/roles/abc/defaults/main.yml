@@ -1,3 +1,0 @@
-ABC_INSTALL_PATH: "{{ ansible_env.HOME }}/ABC"
-ABC_REPO: git@github.com:MarbleHE/ABC.git
-ABC_BRANCH: main # TODO: overwrite this by the branch that triggered the git action
