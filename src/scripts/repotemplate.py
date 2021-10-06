@@ -9,7 +9,13 @@ import pyinputplus as pyip
 
 DEFAULT_HOST_TYPE = "host_type"
 
-vars_base_path = os.environ["DOES_PROJECT_FOLDER"] + "/does_config/group_vars"
+does_proj_env_varname = "DOES_PROJECT_DIR"
+
+if does_proj_env_varname not in os.environ:
+    print(f"ERROR: {does_proj_env_varname} is not set to the path to the project directory")
+    exit(1)
+
+vars_base_path = os.environ[does_proj_env_varname] + "/does_config/group_vars"
 src_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 templates_base_path = src_path + "/resources/repotemplate/group_vars"
 groups = ["all", "server", "client", "ansible_controller"]
