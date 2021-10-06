@@ -23,7 +23,7 @@ def tsp_job_finished(tsp_tasks, job_id):
             else:
                 raise ValueError(f"tsp task with unknown task state = {task['state']}   (task={task})")
 
-        
+
     raise ValueError(f"no matching job found in tsp: {job_id}   tsp_tasks={tsp_tasks}")
 
 def get_tsp_task_id(tsp_tasks, job_id):
@@ -49,7 +49,7 @@ def to_job_schedule_lst(job_ids, exp_host_lst, exp_runs_ext, working_base_dir):
 
     for job_id in job_ids:
         for host_info in exp_host_lst:
-            
+
             run_idx = int(job_id["exp_run"])
             host_type = host_info["host_type"]
             host_type_idx = host_info["exp_host_type_idx"]
@@ -79,12 +79,12 @@ def jobid2workingdir(job_id, base):
     return: path to the working directory for a job
     """
 
-    exp_working_dir = os.path.join(base, "results", 
-                f"{job_id['suite']}_{job_id['suite_id']}", 
-                job_id['exp_name'], 
+    exp_working_dir = os.path.join(base,
+                f"{job_id['suite']}_{job_id['suite_id']}",
+                job_id['exp_name'],
                 f"run_{job_id['exp_run']}",
                 f"rep_{job_id['exp_run_rep']}")
-    
+
     return exp_working_dir
 
 

@@ -230,7 +230,7 @@
 
   vars:
   - remote_results_dir: "{{ job_id_to_wait_for | jobid2workingdir(remote.dir) + '/results' }}"
-  - local_results_dir_base: "{{ job_id_to_wait_for | jobid2workingdir('') }}"
+  - local_results_dir_base: "{{ job_id_to_wait_for | jobid2workingdir(local.results_dir) }}"
   - remote_config_file: "{{ job_id_to_wait_for | jobid2workingdir(remote.dir) + '/config.json' }}"
 
 ###################################################################
