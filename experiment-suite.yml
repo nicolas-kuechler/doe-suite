@@ -16,6 +16,7 @@
       vars:
         prj_clear: False # controls whether to also filter for the suite or not (for a clear we want to include all instances of the project independent of the suite)
 
+    # TODO [nku] a design file should be able to contain an experiment design in table for in list form (could use info on whether list of factor levels is defined)
     - name: resolve suite_id, load and validate suite design, fill default values, and prepare variables
       include_role:
         name: suite-load-pre-aws
@@ -35,7 +36,7 @@
     - name: Setup AWS VPC
       include_role:
         name: suite-aws-vpc-create
-     
+
     - name: Setup AWS EC2 instances
       include_role:
         name: suite-aws-ec2-create
@@ -53,8 +54,9 @@
       tags: [print_action]
 
 
-- name: Setup registered host types (part 2) -> apply 
+- name: Setup registered host types (part 2) -> apply
   hosts: all  # intersection of hosts in project and in suite (via aws_ec2 dynamic inventory plugin)
+  # TODO [nku] when running multiple suites after each other but one of them is not finsihed, then this here can be problematic because all also includes hosts from other suites
   strategy: free
   tasks:
 
@@ -92,19 +94,20 @@
         loop: "{{ range(0, (exp_job_ids_unfinished | length), 1) | list }}"
         loop_control:
           loop_var: unfinished_job_idx
-      
+
       rescue:
+
       - name: handle unexpected error
         fail:
           msg: unexpected error occured in experiment = {{ exp_name }}
-        when: tsp_result is undefined or not tsp_result.failed  
+        when: is_expected_error is not defined or not is_expected_error
 
       # the loop until task in `experiment-job` throws an error if the number of tries are exceeded.
       # here we catch this error and handle this gracefully. (every other error is handled by the previous task)
       - name: handle expected error if number of tries exceeded
         ansible.builtin.debug:
           msg: number of tries exceeded -> experiment = {{ exp_name }}
-
+        # when: is_expected_error
 
 
 ##########################################################################
@@ -116,7 +119,7 @@
   tasks:
 
   - name: compute overview of progress in different experiments in suite
-    set_fact: 
+    set_fact:
       suite_progress_info: "{{ suite_progress_info | default({}) | combine({my_exp_name: {'require_suite_to_finish': my_require_suite ,'n_finished': my_n_finished | int, 'n_unfinished': my_n_unfinished | int, 'progress':  (my_n_finished | int / (my_n_finished | int + my_n_unfinished | int) * 100) | round(2) | string + ' %' }})}}"
     vars:
       my_exp_name: "{{ hostvars[my_controller_host].exp_name }}"
@@ -126,7 +129,7 @@
     loop: "{{ groups['is_controller_yes'] }}"
     loop_control:
       loop_var: my_controller_host
-  
+
   - set_fact:
       is_suite_finished: "{{ suite_progress_info | json_query('*.n_unfinished') | sum  == 0 }}"
 
@@ -142,7 +145,7 @@
     - name: Remove AWS VPC
       include_role:
         name: suite-aws-vpc-delete
-    
+
     # cleanup aws if suite is finished (unless the explicit flag is set to keep the aws environment)
     when: awsclean | default(true) | bool and is_suite_finished
 
@@ -150,11 +153,9 @@
     debug:
       msg: "suite={{ suite }}    suite_id={{ suite_id }}    finished={{ is_suite_finished }}"
     tags: [print_action]
-  
+
   - name: output progress information of experiments
     debug:
       msg: "{{ suite_progress_info[item] }}"
     loop: "{{ suite_progress_info.keys() | sort }}"
     tags: [print_action]
-
-

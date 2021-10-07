@@ -10,5 +10,6 @@
   become: True
   apt:
     pkg:
+    - ncat
     # TODO: add other required packages (only for server)
     update_cache: yes

@@ -81,7 +81,7 @@
 
 - name: validate the suite design and set default values
   suite_design_validate:
-    src: experiments/designs/example.yml
+    src: experiments/designs/{{ suite }}.yml
     dest: "{{ suite_design_dir }}/suite_design.yml"
   when: id == 'new' # only validate and resolve defaults for new (otherwise load the old already checked version)
 

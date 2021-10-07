@@ -3,8 +3,7 @@
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
-
-import subprocess, os, signal, re
+import subprocess, os, signal, re, time
 
 
 DOCUMENTATION = r'''
@@ -31,7 +30,7 @@ options:
         required: false
         type: bool
     cmd:
-        description: The command to add at the end of the task spooler queue. 
+        description: The command to add at the end of the task spooler queue.
         required: false
         type: str
     cmd_label:
@@ -109,7 +108,7 @@ def get_tasks(return_pid):
         cmd = m.group(7)
         if cmd is None:
             cmd = m.group(8) # has no label => cmd is in group 7
-        
+
         d = {
             "id": m.group(1),
             "state": m.group(2),
@@ -168,8 +167,8 @@ def run_module():
     if module.check_mode:
         module.exit_json(**result)
 
-    
-    # TSP LOGIC: 
+
+    # TSP LOGIC:
     changed = False # we start with changed false
 
     if module.params["clear_tasks"]:
@@ -210,7 +209,7 @@ def run_module():
             changed = True
 
 
-    # remove task from task spooler queue 
+    # remove task from task spooler queue
     if module.params['remove_task_id']:
         subprocess.run(["tsp", "-r", module.params['remove_task_id']], capture_output=True, text=True)
 
@@ -224,26 +223,24 @@ def run_module():
                 subprocess.run(["tsp", "-r", task["id"]], capture_output=True, text=True)
                 changed = True
 
-
     # mark whether module changed
     result['changed'] = changed
-        
+
 
     # in the event of a successful module execution, you will want to
     # simple AnsibleModule.exit_json(), passing the key/value results
     module.exit_json(**result)
 
 def clear_task_spooler():
-    
+
     # clear all done
     subprocess.run(["tsp", "-C"], capture_output=True, check=True)
-    
+
     tasks = get_tasks(return_pid=True)
 
     if len(tasks) == 0:
         return False # changed
-    
-    
+
     # make single slot
     subprocess.run(["tsp", "-S", "1"], capture_output=True, check=True)
 
@@ -253,32 +250,38 @@ def clear_task_spooler():
     # make the dummy task urgent (next in line)
     subprocess.run(["tsp", "-u"], capture_output=True, check=True)
 
-
     for task in tasks:
         if task["state"] == "running":
             # kill the running processes
-            os.kill(int(task['pid']), signal.SIGTERM)
+            os.killpg(int(task['pid']), signal.SIGTERM)
 
     # now the dummy task is running
-    tasks = get_tasks(return_pid=True)
-    dummy_task_pid = None
+    def get_dummy_task_pid():
+        tasks = get_tasks(return_pid=True)
+        dummy_task_pid = None
+        for task in tasks:
+            if task["state"] == "running":
+                if task["label"] != "DUMMY" or dummy_task_pid is not None:
+                    raise ValueError(f"unexpected running task  (only single dummy task should run): {task}")
+                dummy_task_pid = task["pid"]
 
-    
-    for task in tasks:
-        if task["state"] == "running":
-            if task["label"] != "DUMMY" or dummy_task_pid is not None:
-                raise ValueError(f"unexpected running task  (only single dummy task should run): {task}")
-        
-            dummy_task_pid = task["pid"]
+        if dummy_task_pid is None:
+            raise ValueError("running dummy task not found")
 
-    if dummy_task_pid is None:
-        raise ValueError("running dummy task not found")
-    
+        return dummy_task_pid
+
+    try:
+        dummy_task_pid = get_dummy_task_pid()
+    except ValueError as e:
+        time.sleep(3) # add some slack for process to finish
+        # try again
+        dummy_task_pid = get_dummy_task_pid()
+
     # clear the task spooler (remove all jobs in queue)
     subprocess.run(["tsp", "-K"], capture_output=True, check=True)
 
     # finally also kill the dummy task by pid
-    os.kill(int(dummy_task_pid) , signal.SIGTERM)
+    os.killpg(int(dummy_task_pid) , signal.SIGTERM)
 
     return True # changed
 

@@ -67,7 +67,7 @@ class ActionModule(ActionBase):
         module_args = self._task.args
         src = module_args["src"]
         dest = module_args["dest"]
-        
+
 
         prj_id = task_vars["prj_id"]
         suite = os.path.splitext(os.path.basename(src))[0]
@@ -77,12 +77,12 @@ class ActionModule(ActionBase):
                 design_raw = yaml.load(f, Loader=UniqueKeyLoader)
 
                 self._validate_and_default_suite(prj_id=prj_id, suite=suite, design_raw=design_raw)
-        
+
             with open(dest, 'w+') as f:
                 yaml.dump(design_raw, f)
 
         except AssertionError as e:
-            
+
             raise ValueError("duplicate keys (experiment names)")
 
 
@@ -90,7 +90,7 @@ class ActionModule(ActionBase):
 
 
     def _validate_and_default_suite(self, prj_id, suite, design_raw):
-        
+
         exp_names = list(design_raw.keys())
 
         host_type_names = []
@@ -105,12 +105,12 @@ class ActionModule(ActionBase):
         expected_unique = [prj_id, suite] + exp_names + host_type_names + keywords_all
 
         if len(set(expected_unique)) != len(expected_unique):
-            raise ValueError(f"found duplicates in identifiers -> adjust prj_id, suite, host_type, or exp_name to avoid them (identifiers={{ expected_unique }})")
-        
+            raise ValueError(f"found duplicates in identifiers -> adjust prj_id, suite, host_type, or exp_name to avoid them (identifiers={ expected_unique })")
+
         # check length limit of project id and suite (tag on aws has a limit)
         if len(prj_id) > 200:
             raise ValueError("project id too long")
-            
+
         if len(suite) > 200:
             raise ValueError("suite name too long")
 
@@ -120,7 +120,7 @@ class ActionModule(ActionBase):
 
 
         for exp_name, exp_raw in design_raw.items():
-            self._validate_and_default_experiment(exp_raw)        
+            self._validate_and_default_experiment(exp_raw)
 
 
         return True
@@ -143,13 +143,13 @@ class ActionModule(ActionBase):
         if "common_roles" not in exp_raw:
             exp_raw["common_roles"] = []
         # TODO [nku] could check that the common roles actually exists -> need to know the folder
-        
+
         if "factor_levels" not in exp_raw:
             exp_raw["factor_levels"] = [{}]
-        
+
         # handle host_types
         for host_type_name, host_type_raw in exp_raw["host_types"].items():
-            self._validate_and_default_host_type(host_type_raw)  
+            self._validate_and_default_host_type(host_type_raw)
 
         # check base_experiment
         expected_factor_paths = self._validate_base_experiment(exp_raw["base_experiment"])
@@ -174,10 +174,10 @@ class ActionModule(ActionBase):
             raise ValueError("$CMD$ must be in host_type")
 
         #############
-        # Set check_status: True if not set 
+        # Set check_status: True if not set
         if "check_status" not in host_type_raw:
             host_type_raw["check_status"] = True
-        
+
         #############
         # set n by default to 1
         if "n" not in host_type_raw:
@@ -186,7 +186,7 @@ class ActionModule(ActionBase):
         #############
         # set init_role by default to empty list
         if "init_role" not in host_type_raw:
-            host_type_raw["init_role"] = [] 
+            host_type_raw["init_role"] = []
 
         #############
         # convert init role to list
@@ -197,16 +197,16 @@ class ActionModule(ActionBase):
             raise ValueError("init_role must be a list")
 
         #############
-        # Convert $CMD$ to default structure 
+        # Convert $CMD$ to default structure
 
         if not isinstance(host_type_raw["$CMD$"], list):
-            # repeat the same cmd for all `n` hosts of this type 
+            # repeat the same cmd for all `n` hosts of this type
             host_type_raw["$CMD$"] = [host_type_raw["$CMD$"]] * host_type_raw["n"]
 
-        
+
         if len(host_type_raw["$CMD$"]) != host_type_raw["n"]:
             raise ValueError("cmd list length does not match the number of instances `n` of host type")
-        
+
         # host_type_raw["$CMD$"] is a list of length n
         cmds = []
         for cmd in host_type_raw["$CMD$"]:
@@ -221,13 +221,13 @@ class ActionModule(ActionBase):
 
         host_type_raw["$CMD$"] = cmds
         # host_type_raw["$CMD$"] is a list of length n, each element is a dict that contains at least one entry with key "main"
-        
+
         """
         # minimal example
         n: 1
         $CMD$:
           - main: X
-        
+
         # two instances, one command
         n: 2
         $CMD$:
@@ -258,16 +258,10 @@ class ActionModule(ActionBase):
             raise ValueError("factor levels must be a list")
 
         for run in factor_levels_raw:
-            
+
             actual_factors = []
             for path, value in nested_dict_iter(run):
                 actual_factors.append(path)
 
             if sorted(expected_factors) != sorted(actual_factors):
                 raise ValueError(f"expected factors do not match actual factors: expected={expected_factors} actual={actual_factors}")
-
-            
-            
-
-
-            

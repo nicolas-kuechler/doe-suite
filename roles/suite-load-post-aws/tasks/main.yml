@@ -57,6 +57,10 @@
   # run_once: True -> would like to do this but for strategy free not supported and it's not a relevant overhead
 
 
+- debug:
+    msg="my_suite_design_ext= {{ my_suite_design_ext }}"
+
+
 ##########################################
 # Setup Job Ids
 ##########################################
