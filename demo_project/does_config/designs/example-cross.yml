@@ -1,0 +1,18 @@
+---
+
+# TODO [nku] also show a command that uses the config.json file in the working directory
+
+minimal: # name of the experiment
+  n_repetitions: 1  # do not run repetitions
+  host_types:
+    small: # use one instance
+      n: 1
+      $CMD$: "echo  [% my_run.arg1 %] [% my_run.arg2 %] [% my_run.arg3 %] [% my_run.arg4 %]" # start  experiment run
+  # configuration
+  base_experiment:
+    arg1: hello     # fix parameter between runs
+    arg2: world
+    arg3:
+      $FACTOR$: [a, b, c]  # $FACTOR$ as key => the value is all the levels
+    arg4:
+      $FACTOR$: [1, 2] # $FACTOR$ as key => the value is all the levels

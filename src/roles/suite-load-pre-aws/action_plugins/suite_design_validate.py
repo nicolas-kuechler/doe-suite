@@ -36,7 +36,7 @@ def nested_dict_iter(nested, path=[]):
         if isinstance(value, abc.Mapping):
             yield from nested_dict_iter(value, path=path_c)
         else:
-            yield path, value
+            yield path_c, value
 
 class ActionModule(ActionBase):
 
@@ -246,9 +246,16 @@ class ActionModule(ActionBase):
     def _validate_base_experiment(self, base_experiment_raw):
         factors = []
         #extract `path`of all factors from base experiment
+
         for path, value in nested_dict_iter(base_experiment_raw):
+
             if value == "$FACTOR$":
                 factors.append(path)
+
+            if path[-1] == "$FACTOR$":
+                if not isinstance(value, list):
+                    raise ValueError(f"if $FACTOR$ is the key, then the value must be a list of levels used in the cross product (path={path} value={value})")
+
         return factors
 
 

@@ -59,6 +59,8 @@
 
 - debug:
     msg="my_suite_design_ext= {{ my_suite_design_ext }}"
+#  tags: [print_action]
+
 
 
 ##########################################
