@@ -4,7 +4,7 @@
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
-import copy, yaml, os
+import yaml, os, re
 from collections import abc
 
 from ansible.utils.vars import merge_hash
@@ -118,6 +118,9 @@ class ActionModule(ActionBase):
             if len(exp_name) > 200:
                 raise ValueError("exp_name too long")
 
+            if not re.match(r'^[A-Za-z0-9_]+$', exp_name):
+                raise ValueError(f"exp_name must consist of alphanumeric chars or underscores ({exp_name})")
+
 
         for exp_name, exp_raw in design_raw.items():
             self._validate_and_default_experiment(exp_raw)
@@ -130,7 +133,7 @@ class ActionModule(ActionBase):
     def _validate_and_default_experiment(self, exp_raw):
 
         exp_keywords = self.keywords["exp"]
-        exp_keywords_required = ["n_repetitions", "host_types", "base_experiment"]
+        exp_keywords_required = ["n_repetitions", "host_types"]
 
         if any(x not in exp_keywords for x in exp_raw.keys()):
             raise ValueError("unknown entry in experiment")
@@ -138,6 +141,8 @@ class ActionModule(ActionBase):
         if any(x not in exp_raw.keys() for x in exp_keywords_required):
             raise ValueError("missing required keyword")
 
+        if "base_experiment" not in exp_raw:
+            exp_raw["base_experiment"] = {}
 
         # set default values for not required keywords (common_roles, factor_levels)
         if "common_roles" not in exp_raw:

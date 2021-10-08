@@ -27,7 +27,6 @@
         prj_clear: False # controls whether to also filter for the suite or not (for a clear we want to include all instances of the project independent of the suite)
         is_ansible_controller: False
 
-    # TODO [nku] a design file should be able to contain an experiment design in table for in list form (could use info on whether list of factor levels is defined)
     - name: resolve suite_id, load and validate suite design, fill default values, and prepare variables
       include_role:
         name: suite-load-pre-aws
@@ -67,7 +66,6 @@
 
 - name: Setup registered host types (part 2) -> apply
   hosts: all  # intersection of hosts in project and in suite (via aws_ec2 dynamic inventory plugin)
-  # TODO [nku] when running multiple suites after each other but one of them is not finsihed, then this here can be problematic because all also includes hosts from other suites
   strategy: free
   tasks:
 
@@ -109,6 +107,8 @@
         loop_control:
           loop_var: unfinished_job_idx
 
+      # TODO: for easier debugging if a job failed, it would be good to download all the results. At the moment if there is a syntax error in the tsp command, no output is downloaded.
+      #       -> could maybe be solved when multi-command setup with comeback of service files is implemented
       rescue:
 
       - name: handle unexpected error

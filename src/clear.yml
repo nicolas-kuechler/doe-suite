@@ -4,6 +4,8 @@
   hosts: localhost
 
   tasks:
+  - include_vars: "{{ external_group_vars_dir }}/all/main.yml"
+
   - name: Template dynamic inventory config file
     template:
       src: resources/inventory/aws_ec2.yml.j2

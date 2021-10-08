@@ -47,16 +47,47 @@
 ######################################################################
 
 - name: Create EC2 Instances (only assign subset of tags yet)
-  include_role:
-    name: suite-aws-ec2-launch
+  community.aws.ec2_instance:
+    instance_type: '{{ ec2config.instance_type }}'
+    key_name: '{{ ec2config.key_name }}'
+    image_id: '{{ ec2config.ec2_image_id }}'
+    region: '{{ ec2config.aws_region }}'
+    security_group: '{{ ec2config.sg_name }}'
+    vpc_subnet_id: '{{ ec2config.vpc_subnet_id }}'
+    wait: no
+    purge_tags: yes
+    network:
+      assign_public_ip: yes
+    volumes:
+      - device_name: /dev/sda1
+        ebs:
+          volume_type: gp2
+          snapshot_id: '{{ ec2config.ec2_volume_snapshot }}'
+          volume_size: '{{ ec2config.ec2_volume_size }}'
+          delete_on_termination: True
+    filters:
+      tag:prj_id: "{{ prj_id }}"
+      tag:suite: "{{ suite }}"
+      tag:host_type: "{{ my_host['host_type'] }}"
+      tag:idx: "{{ my_host['idx'] }}"
+      instance-state-name: ["pending", "running"]
+    tags:
+      prj_id: "{{ prj_id }}"
+      suite: "{{ suite }}"
+      host_type: "{{ my_host['host_type'] }}"
+      idx: "{{ my_host['idx'] }}"
+  # First, we calculate max_n_sum which sums up the number of instances per host_type and then selects the maximum
+  # Second, we create a list of dictionaries {"host_type": X, "idx": X} with a cross product of host_types and range(max_n_sum)
+  # Third, now with this list, there are entries that don't actually represent instances (because we use the max_n_sum), hence we filter
+  # them out in the where condition and skip them.
+  when: (my_host['idx']|int) < (n_sum|int)
   vars:
-    ec2config: "{{ host_type_specific_vars[host_type] | combine( exp_base ) }}"
-    n_sum: "{{ host_types[host_type] | json_query('*.n') | sum }}"
-  loop: "{{ host_types.keys() }}"
+    max_n_sum: "{{ host_types | json_query('*.*.n') | map('sum') | max  }}"
+    n_sum: "{{ host_types[my_host['host_type']] | json_query('*.n') | sum }}"
+    ec2config: "{{ host_type_specific_vars[my_host['host_type']] | combine( exp_base ) }}"
+  loop: "{{ host_types.keys() | product(range(max_n_sum|int)) | map('tuple2dict', keys=['host_type', 'idx']) }}"
   loop_control:
-    loop_var:
-      host_type
-
+    loop_var: my_host
 
 #######################################################################
 # Assign instances to experiments and define role in experiments
@@ -96,6 +127,18 @@
   loop: "{{ tag_assignment_lst }}"
   loop_control:
     loop_var: tag_assignment
+
+######################################################
+# Terminate all instances that are not assigned but have the matching prj_id and suite tag
+######################################################
+
+- name: Terminate all instances that are not assigned but have the matching prj_id and suite tag
+  include_role:
+    name: suite-aws-ec2-delete
+  vars:
+    filter_by_suite: True
+    instance_ids_in_use: "{{ tag_assignment_lst | json_query('[*].instance_id') }}"
+
 
 ######################################################
 # Wait until all ec2 instances have state 'running'
