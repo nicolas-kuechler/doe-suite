@@ -1,0 +1,8 @@
+---
+
+- include_tasks: prerequisites.yml
+- include_tasks: ssh_setup.yml
+- include_tasks: fetch_does_repo.yml
+- include_tasks: install_boto3.yml
+- include_tasks: install_awscli.yml
+- include_tasks: prepare_ansible.yml

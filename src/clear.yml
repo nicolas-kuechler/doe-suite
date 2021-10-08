@@ -1,0 +1,22 @@
+---
+
+- name: Cleanup and Utility
+  hosts: localhost
+
+  tasks:
+  - name: Template dynamic inventory config file
+    template:
+      src: resources/inventory/aws_ec2.yml.j2
+      dest: inventory/aws_ec2.yml
+      mode: 0755
+    vars:
+      prj_clear: True
+      is_ansible_controller: False
+
+  - name: Clear EC2 instances
+    include_role:
+      name: suite-aws-ec2-delete
+
+  - name: Clear VPC
+    include_role:
+      name: suite-aws-vpc-delete

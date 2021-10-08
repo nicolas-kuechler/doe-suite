@@ -1,0 +1,11 @@
+
+- name: "Set AWS default region {{ exp_base.aws_region }}"
+  ansible.builtin.copy:
+    dest: "{{ ansible_controller_home/.aws/config }}"
+    content: |
+      [default]
+      region=eu-central-1
+
+# We don't use .aws/credentials to store AWS credentials. Instead, the GitHub action
+# uses the environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY, which
+# it populates from GitHub secrets.

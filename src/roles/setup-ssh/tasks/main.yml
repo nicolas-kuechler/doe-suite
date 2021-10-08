@@ -1,0 +1,57 @@
+---
+
+- assert:
+    that:
+      - ssh_key_dir is defined
+      - ssh_key_owner is defined
+      - ssh_key_group is defined
+      - ssh_key_path is defined
+      - ssh_key_size is defined
+
+- block:
+    - name: Create folder for SSH keys
+      file:
+        path: "{{ ssh_key_dir }}"
+        owner: "{{ ssh_key_owner }}"
+        group: "{{ ssh_key_group }}"
+        mode: '0750'
+        state: directory
+
+    - name: Generate SSH key
+      openssh_keypair:
+        path: "{{ ssh_key_path }}"
+        type: "{{ ssh_key_type }}"
+        size: "{{ ssh_key_size }}"
+        owner: "{{ ssh_key_owner }}"
+        group: "{{ ssh_key_group }}"
+        mode: '0600'
+      register: keygen
+
+  become: yes
+  become_method: sudo
+
+- name: Read public key
+  slurp:
+    src: "{{ ssh_key_path }}.pub"
+  register: slurped_pub_key
+
+  become: yes
+  become_method: sudo
+
+- name: Store public key in variable
+  set_fact:
+    new_pub_key: "{{ slurped_pub_key['content'] | b64decode }}"
+
+- pause:
+    prompt: "ACTION REQUIRED: A new key pair was generated, store the following public
+            key at the relevant service (Git, AWS, ...):
+              {{ new_pub_key }}
+
+            Acknowledge once you added this key to continue the playbook."
+
+  when: keygen.changed
+
+- debug:
+    msg: "Reuse existing public key: {{ new_pub_key }}"
+  tags: [print_action]
+  when: not keygen.changed

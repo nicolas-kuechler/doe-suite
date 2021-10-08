@@ -1,7 +1,0 @@
----
-
-instance_type: t2.small
-ec2_volume_size: 8
-
-ec2_image: ami-02e5f497990930ec1
-ec2_volume_snapshot: snap-0ae96a390fca425bd

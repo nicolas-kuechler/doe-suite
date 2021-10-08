@@ -1,0 +1,34 @@
+prj_id: <<prj_id>> # TODO: set a project id (will be used to identify resources on AWS that belong to this project)
+git_remote_repository: <<git_remote_repository>> # TODO: set remote repository (code will be cloned on each client and server host )
+
+
+# TODO: The following parameters define how the playbook checks whether a job finished, fetches the results and starts the next job.
+# - 'job_n_tries' is the maximal number times we check the job's status before aborting
+# - 'job_check_wait_time' is the time (in seconds) to wait in between checking whether a job finished
+# Note that those parameters directly influence the playbook duration:
+# Each experiments runs for at most #jobs * 'job_n_tries' * 'job_check_wait_time' seconds (usually less when the experiment finishes earlier).
+# The experiments are mostly run concurrently (apart from the setup and cleanup parts). Thus, the experiment with the most jobs defines the
+# maximal duration. But as experiments usually use fewer than 'job_n_tries' tries, an experiment with few long-running jobs can be the bottleneck too.
+job_n_tries: <<job_n_tries>>   # should be max 1000 (otherwise playbook freezes -> unsure why)
+job_check_wait_time: <<job_check_wait_time>>
+
+remote:
+  dir: "/home/ubuntu"
+  results_dir: "/home/ubuntu/results"
+
+exp_code_dir: "{{ remote.dir }}/code"
+
+local:
+  results_dir: "{{ does_project_dir }}/does_results"
+  designs_dir: "{{ does_config_dir }}/designs"
+
+exp_base:
+  key_name: <<key_name>> # TODO: add key pair name
+  aws_region: eu-central-1
+  name: frankfurt
+  vpc_name: "{{ prj_id }}_vpc_base"
+  vpc_cidr_block: 10.100.0.0/16
+  vpc_subnet_name: "{{ prj_id }}_subnet_az1"
+  vpc_subnet_cidr: 10.100.0.0/24
+  sg_name: "{{ prj_id }}_sg"
+  sg_desc: "{{ prj_id }} security group"

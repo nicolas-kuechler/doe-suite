@@ -1,9 +1,6 @@
-results/
-experiments/state/
-
 .ipynb_checkpoints
 
-inventory/aws_ec2.yml
+src/inventory/aws_ec2.yml
 
 ### Ansible ###
 *.retry

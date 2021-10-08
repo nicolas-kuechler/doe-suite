@@ -1,4 +1,0 @@
-# Ignore auto-generated (see repotemplate) client and server group vars YML files
-all/
-client/
-server/

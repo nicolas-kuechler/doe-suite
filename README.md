@@ -185,7 +185,7 @@ After completing the getting started section, it should be possible to run the [
 
 7. Run the repository initialization helper script and configure the experiment suite and the example host types `client` and `server`.
 
-    This prompts user input to perform variable substitution in the `group_vars/*/main.yml.j2` variable templates for the groups [all](group_vars/all/main.yml.j2), [client](group_vars/all/client.yml.j2), and [server](group_vars/all/server.yml.j2).
+    This prompts user input to perform variable substitution using the `resources/repotemplate/group_vars/*/main.yml.j2` templates. By default, it creates four groups: `all`, `server`, `client`, and `ansible_controller`.
 
     When unsure, set the unique `project id` and the AWS `key name` from the prerequisites and otherwise use the default options.
 
@@ -392,8 +392,7 @@ pipenv run ansible-playbook experiment.yml -e "suite=example id=last"
 
 ### Cleaning up AWS
 
-
-By default, after an experiment is complete, all resources created on AWS are terminated.
+By default, after an experiment is complete, all _experiment_ resources created on AWS are terminated.
 To deactivate this default behavior, provide the flag: `awsclean=false`.
 
 Creating resources on AWS and setting up the environment takes a considerable amount of time. So, for debugging and short experiments, it can make sense not to terminate the instances. If you use this flag, be sure to check that instances are terminated when you are done.
@@ -407,6 +406,8 @@ Furthermore, we also provide a playbook to terminate all AWS resources:
 ```sh
 pipenv run ansible-playbook clear.yml
 ```
+
+:warning: The ansible controller instance, if used, is not removed. It is intended to be left running and trigger individual experiment runs. To remove it, use the flag `awscleanall=true`.
 
 ### Experimental Results
 

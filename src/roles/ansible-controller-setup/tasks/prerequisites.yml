@@ -1,0 +1,38 @@
+
+- name: Install required packages
+  ansible.builtin.apt:
+    name:
+      - git
+      - build-essential
+      - python3-dev
+      - python3
+      - python3-pip
+      - gnupg # for verifying the signature of awscli
+      - unzip # to unpack awscli
+    update_cache: yes
+    state: present
+
+  become: yes
+  become_method: sudo
+
+- name: "Add user and group {{ ansible_controller_user }}:{{ ansible_controller_group }}"
+  block:
+  - ansible.builtin.group:
+      name: "{{ ansible_controller_group }}"
+      state: present
+
+  - ansible.builtin.user:
+      name: "{{ ansible_controller_user }}"
+      group: "{{ ansible_controller_group }}"
+      create_home: yes
+      state: present
+
+  become: yes
+  become_method: sudo
+
+- name: Install pipenv
+  ansible.builtin.pip:
+    name: pipenv
+    executable: pip3
+  become: yes
+  become_method: sudo

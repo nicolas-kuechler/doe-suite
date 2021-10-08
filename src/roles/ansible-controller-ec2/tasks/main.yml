@@ -1,0 +1,38 @@
+---
+
+- name: Launching ansible controller EC2 instance
+  community.aws.ec2_instance:
+    state: running
+    instance_type: '{{ instance_type }}'
+    key_name: '{{ exp_base.key_name }}'
+    image_id: '{{ ec2_image_id }}'
+    region: '{{ exp_base.aws_region }}'
+    security_group: '{{ exp_base.sg_name }}'
+    vpc_subnet_id: '{{ exp_base.vpc_subnet_id }}'
+    wait: yes
+    network:
+      assign_public_ip: yes
+    tags:
+      Name: ansible_controller
+    volumes:
+      - device_name: /dev/sda1
+        ebs:
+          snapshot_id: '{{ ec2_volume_snapshot }}'
+          delete_on_termination: true
+          volume_size: '{{ ec2_volume_size }}'
+          volume_type: gp2
+  register: ec2_launch
+
+- name: Wait for SSH to come up
+  delegate_to: "{{ public_dns_name }}"
+  ansible.builtin.wait_for_connection:
+    connect_timeout: 3
+    timeout: 320
+  loop: "{{ ec2_launch.instances
+              | map(attribute='public_dns_name')
+              | list }}"
+  loop_control:
+    loop_var: public_dns_name
+
+- name: Refresh dynamic ec2 inventory
+  ansible.builtin.meta: refresh_inventory

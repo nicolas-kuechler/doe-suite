@@ -1,0 +1,57 @@
+
+- name: Set shared SSH variables
+  ansible.builtin.set_fact:
+    ssh_key_dir: "{{ ansible_controller_ssh_key_dir }}"
+    ssh_key_owner: "{{ ansible_controller_user }}"
+    ssh_key_group: "{{ ansible_controller_group }}"
+
+- name: Generate SSH key for Git
+  ansible.builtin.include_role:
+    name: setup-ssh
+  vars:
+    ssh_key_path: "{{ ansible_controller_ssh_key_paths['git'] }}"
+    ssh_key_type: "{{ ansible_controller_ssh_key_types['git'] }}"
+    ssh_key_size: "{{ ansible_controller_ssh_key_sizes['git'] }}"
+  when: ansible_exp_suite_private_repo
+
+- name: Add entry for git to ~/.ssh/config
+  ansible.builtin.blockinfile:
+    path: "{{ ansible_controller_ssh_key_dir }}/config"
+    block: |
+      Host github.com
+      Hostname github.com
+      PreferredAuthentications publickey
+      User {{ ansible_controller_git_username }}
+      IdentityFile {{ ansible_controller_ssh_key_paths['git'] }}
+    owner: "{{ ansible_controller_user }}"
+    group: "{{ ansible_controller_group }}"
+    mode: "0644"
+    create: yes
+    state: present
+    marker: "# {mark} ANSIBLE MANAGED BLOCK FOR GIT"
+  become: yes
+  become_method: sudo
+
+- name: Generate SSH key for AWS
+  ansible.builtin.include_role:
+    name: setup-ssh
+  vars:
+    ssh_key_path: "{{ ansible_controller_ssh_key_paths['aws'] }}"
+    ssh_key_type: "{{ ansible_controller_ssh_key_types['aws'] }}"
+    ssh_key_size: "{{ ansible_controller_ssh_key_sizes['aws'] }}"
+
+- name: Add entry for EC2 hosts to ~/.ssh/config
+  ansible.builtin.blockinfile:
+    path: "{{ ansible_controller_ssh_key_dir }}/config"
+    block: |
+      Host ec2*
+      IdentityFile {{ ansible_controller_ssh_key_paths['aws'] }}
+      User ubuntu
+      ForwardAgent yes
+    owner: "{{ ansible_controller_user }}"
+    group: "{{ ansible_controller_group }}"
+    mode: "0644"
+    state: present
+    marker: "# {mark} ANSIBLE MANAGED BLOCK FOR AWS EC2"
+  become: yes
+  become_method: sudo
