@@ -1,0 +1,129 @@
+---
+
+# Example Goal - Demonstrate the use of the two (three) formats for expressing factors (varying parameters).
+#
+# The  2(+1) different formats:
+# - the `cross` format is the concise form for a cross product of all factors
+# - the `level-list` format allows to specify a list with a concrete level for each factor (i.e., not full cross-product)
+# - a mix between `cross` and `level-list` format that combines the advantages of both formats.
+#
+# The `cross` format uses the keyword `$FACTOR$` as a YAML key,
+# while the `factor list` uses `$FACTOR$` as a YAML value and expects a corresponding level in the `factor_levels` list.
+
+# experiment in the pure `cross` format
+format_cross:
+  n_repetitions: 3
+  host_types:
+    small:
+      n: 1
+      $CMD$: "echo \"run app=[% my_run.app.name %] with vec=[% my_run.vector_size %] seed=[% my_run.seed %]\"" # use echo as example
+  base_experiment:
+    seed: 1234 # constant
+    vector_size:
+      $FACTOR$: [10, 20, 30, 40] # varied parameter between runs (factor)
+    app:
+      name:
+        $FACTOR$: [app1, app2, app3]  # varied parameter between runs (factor)
+      # hyperparam: X  -> not used in this experiment
+  #
+  # The experiment `format_cross` results in 12 runs:
+  # - {"vector_size": 10, "app.name": app1, "seed": 1234}
+  # - {"vector_size": 10, "app.name": app2, "seed": 1234}
+  # - {"vector_size": 10, "app.name": app3, "seed": 1234}
+
+  # - {"vector_size": 20, "app.name": app1, "seed": 1234}
+  # - {"vector_size": 20, "app.name": app2, "seed": 1234}
+  # - {"vector_size": 20, "app.name": app3, "seed": 1234}
+
+  # - {"vector_size": 30, "app.name": app1, "seed": 1234}
+  # - {"vector_size": 30, "app.name": app2, "seed": 1234}
+  # - {"vector_size": 30, "app.name": app3, "seed": 1234}
+
+  # - {"vector_size": 40, "app.name": app1, "seed": 1234}
+  # - {"vector_size": 40, "app.name": app2, "seed": 1234}
+  # - {"vector_size": 40, "app.name": app3, "seed": 1234}
+
+
+# experiment in the pure `level list` format
+format_levellist:
+  n_repetitions: 3
+  host_types:
+    small: # use one instance
+      n: 1
+      $CMD$: "echo \"run app=[% my_run.app.name %] with hyperparam=[% my_run.app.hyperparam %] seed=[% my_run.seed %]\"" # use echo as example
+  base_experiment:
+    seed: 1234
+    # vector_size: X .> not used in this experiment
+    app:
+      name: $FACTOR$        # varied parameter between runs (factor)
+      hyperparam: $FACTOR$  # varied parameter between runs (factor)
+
+  factor_levels:
+    - app:
+        name: app1
+        hyperparam: 0.1
+    - app:
+        name: app2
+        hyperparam: 10
+    - app:
+        name: app3
+        hyperparam: 5
+  # The `level-list`format has the advantage that we don't need to create a run for the full cross product of factors.
+  #   (e.g., here each app has a specific hyperparam, hence we don't want to run the full cross product because the hyperparam is app specific)
+  #
+  # The experiment `format_levellist` results in 3 runs:
+  # - {"app.name": app1, "app.hyperparam": 0.1, "seed": 1234}
+  # - {"app.name": app2, "app.hyperparam": 10 , "seed": 1234}
+  # - {"app.name": app3, "app.hyperparam": 5 , "seed": 1234}
+
+
+# experiment in a `mixed` format of `cross`and `level list`format
+format_mixed:
+  n_repetitions: 3
+  host_types:
+    small:
+      n: 1
+      $CMD$: "echo \"run app=[% my_run.app.name %] with hyperparam=[% my_run.app.hyperparam %] vec=[% my_run.vector_size %] seed=[% my_run.seed %]\"" # use echo as example
+  base_experiment:
+    seed: 1234 # constant
+    vector_size:
+      $FACTOR$: [10, 20, 30, 40] # varied parameter between runs (factor)
+    app:
+      name: $FACTOR$        # varied parameter between runs (factor)
+      hyperparam: $FACTOR$  # varied parameter between runs (factor)
+
+  factor_levels:
+    - app:
+        name: app1
+        hyperparam: 0.1
+    - app:
+        name: app2
+        hyperparam: 10
+    - app:
+        name: app3
+        hyperparam: 5
+
+  # The mix between `cross`and `level-list` is the most flexible because it allows to define $FACTORS$
+  # for which we want to create the cross product (e.g., `vector_size`) and
+  # other factors to create the level list (e.g., app.name, app.hyperparam).
+  #
+  # In this example, the `hyperparam` is app specific and hence it does not make sense to create a
+  # cross product between app name and hyperparam. In the `cross`format this is not possible,
+  # while in the `level-list` format we would have to list all 12 runs under `factor_levels`.
+  #
+  # The experiment `format_mixed` results in 12 runs:
+  # - {"vector_size": 10, "app.name": app1, "app.hyperparam": 0.1, "seed": 1234}
+  # - {"vector_size": 10, "app.name": app2, "app.hyperparam": 10 , "seed": 1234}
+  # - {"vector_size": 10, "app.name": app3, "app.hyperparam": 5  , "seed": 1234}
+
+  # - {"vector_size": 20, "app.name": app1, "app.hyperparam": 0.1, "seed": 1234}
+  # - {"vector_size": 20, "app.name": app2, "app.hyperparam": 10 , "seed": 1234}
+  # - {"vector_size": 20, "app.name": app3, "app.hyperparam": 5  , "seed": 1234}
+
+  # - {"vector_size": 30, "app.name": app1, "app.hyperparam": 0.1, "seed": 1234}
+  # - {"vector_size": 30, "app.name": app2, "app.hyperparam": 10 , "seed": 1234}
+  # - {"vector_size": 30, "app.name": app3, "app.hyperparam": 5  , "seed": 1234}
+
+  # - {"vector_size": 40, "app.name": app1, "app.hyperparam": 0.1, "seed": 1234}
+  # - {"vector_size": 40, "app.name": app2, "app.hyperparam": 10 , "seed": 1234}
+  # - {"vector_size": 40, "app.name": app3, "app.hyperparam": 5  , "seed": 1234}

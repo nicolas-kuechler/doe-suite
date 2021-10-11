@@ -1,36 +1,9 @@
----
-
-# TODO [mh] for the repo template change, this role should be removed from here
-
+- debug:
+    msg: "-> common"
+  tags: [print_action]
 
 - name: Update repositories cache and install required packages
   become: True
   apt:
     pkg:
-    - python3-pip
-    - python3.8
-    # TODO: add other required packages (for both client and server)
-    update_cache: yes
-
-
-- name: Install pipenv
-  become: true
-  pip:
-    name: pipenv
-    executable: pip3
-
-
-- name: Setup a venv folder
-  file:
-    path: "{{ remote.dir }}/code/.venv"
-    state: directory
-    mode: 0755
-
-# XXX: This task is very slow at the moment
-- name: install dependencies via pipenv
-  command: pipenv install
-  args:
-    chdir: "{{ remote.dir }}/code"
-  environment:
-    LC_ALL: "C.UTF-8"
-    LANG: "C.UTF-8"
+    # TODO: add other required packages (for all host types)

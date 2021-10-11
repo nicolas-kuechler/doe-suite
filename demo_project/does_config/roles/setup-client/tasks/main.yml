@@ -1,6 +1,5 @@
 ---
 
-# TODO [mh] for the repo template change, this role should be removed from here
 
 - debug:
     msg: "-> client only"

@@ -13,7 +13,7 @@
   tags: [print_action]
 
 - name: Create VPC
-  ec2_vpc_net:
+  amazon.aws.ec2_vpc_net:
     name: "{{ exp_base.vpc_name }}"
     cidr_block: "{{ exp_base.vpc_cidr_block }}"
     region: "{{ exp_base.aws_region }}"
@@ -25,7 +25,7 @@
     exp_base: "{{ exp_base | combine({'vpc_id': my_vpc.vpc.id}) }}"
 
 - name: Create Public Subnet [AZ-1]
-  ec2_vpc_subnet:
+  amazon.aws.ec2_vpc_subnet:
     state: present
     vpc_id: "{{ exp_base.vpc_id }}"
     cidr: "{{ exp_base.vpc_subnet_cidr }}"
@@ -41,7 +41,7 @@
     exp_base: "{{ exp_base | combine({'vpc_subnet_id': public_subnet_client.subnet.id}) }}"
 
 - name: Create Internet Gateway for VPC
-  ec2_vpc_igw:
+  community.aws.ec2_vpc_igw:
     vpc_id: "{{ exp_base.vpc_id }}"
     region: "{{ exp_base.aws_region }}"
     state: present
@@ -64,7 +64,8 @@
         gateway_id: "{{ exp_base.igw_id }}"
 
 - name: Create Security Group
-  ec2_group:
+  # TODO [nku] raises warning: [WARNING]: Collection ansible.netcommon does not support Ansible version 2.11.5
+  amazon.aws.ec2_group:
     name: "{{ exp_base.sg_name }}"
     description: "{{ exp_base.sg_desc }}"
     vpc_id: "{{ exp_base.vpc_id }}"
@@ -76,7 +77,7 @@
     exp_base: "{{ exp_base | combine({'sg_id': sg.group_id, 'sg_ownerid': sg.owner_id }) }}"
 
 - name: Add rules to Security Group
-  ec2_group:
+  amazon.aws.ec2_group:
     name: "{{ exp_base.sg_name }}"
     description: "{{ exp_base.sg_desc }}"
     vpc_id: "{{ exp_base.vpc_id }}"

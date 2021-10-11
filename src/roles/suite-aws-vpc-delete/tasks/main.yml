@@ -22,7 +22,7 @@
     vpc_id: "{{ vpc_result.vpcs[0].vpc_id | default('undefined') }}"
 
 - name: Remove All Routes from Security Group
-  ec2_group:
+  amazon.aws.ec2_group:
     name: "{{ exp_base.sg_name }}"
     description: "{{ exp_base.sg_desc }}"
     vpc_id: "{{ vpc_id }}"
@@ -32,7 +32,7 @@
 
 # Delete Security Groups
 - name: Delete Security Group
-  ec2_group:
+  amazon.aws.ec2_group:
     name: "{{ exp_base.sg_name }}"
     vpc_id: "{{ vpc_id }}"
     region: "{{ exp_base.aws_region }}"
@@ -45,7 +45,7 @@
 
 # Delete Subnet
 - name: Delete Subnet AZ1
-  ec2_vpc_subnet:
+  amazon.aws.ec2_vpc_subnet:
     state: absent
     vpc_id: "{{ vpc_id }}"
     cidr: "{{ exp_base.vpc_subnet_cidr }}"
@@ -54,7 +54,7 @@
 
 # Delete Internet Gateway
 - name: Delete Server Internet Gateway
-  ec2_vpc_igw:
+  community.aws.ec2_vpc_igw:
     vpc_id: "{{ vpc_id }}"
     region: "{{ exp_base.aws_region }}"
     state: absent
@@ -73,7 +73,7 @@
 
 # Delete VPC
 - name: Delete the Server VPC
-  ec2_vpc_net:
+  amazon.aws.ec2_vpc_net:
     name: "{{ exp_base.vpc_name }}"
     cidr_block: "{{ exp_base.vpc_cidr_block }}"
     region: "{{exp_base.aws_region }}"

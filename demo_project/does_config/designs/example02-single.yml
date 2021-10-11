@@ -1,0 +1,42 @@
+---
+
+# Example Goal - Demonstrate that:
+#  (1) a suite can consist of multiple experiments that are executed in parallel (here 2 experiments)
+#  (2) `init_role` in host_type defines an ansible role to install packages etc. on a host
+#  (3) a `config.json` file with the run config is within the working directory of the `$CMD$`
+#     -> can be used to pass config parameters
+
+# experiment with two factors, each with two levels (cross-product), and two repetitions
+experiment_1:
+  n_repetitions: 2
+  host_types:
+    small:
+      n: 1
+      init_role: setup-small
+      # runs the python script demo.py within the code directory fetched from the code repository: the demo script creates a result file in csv or json
+      $CMD$: "{{ exp_code_dir }}/.venv/bin/python {{ exp_code_dir }}/demo_project/demo.py --config config.json" # (3) uses the config.json in the working dir of the command with the run config
+  base_experiment:
+    seed: 1234
+    out: json
+    payload_size_mb:
+      $FACTOR$: [10, 50]
+    opt:
+      $FACTOR$: [True, False]
+
+
+# experiment with one factor, with 5 levels, and three repetitions (each)
+experiment_2:
+  n_repetitions: 3
+  host_types:
+    small:
+      n: 1
+      init_role: setup-small
+      # (3) uses the config.json in cmd but also passes arguments on the command line
+      $CMD$: "{{ exp_code_dir }}/.venv/bin/python {{ exp_code_dir }}/demo_project/demo.py --config config.json --type [% my_run.problem.type %] --size [% my_run.problem.size %]"
+
+  base_experiment:
+    out: csv
+    problem:
+      type: abc
+      size:
+        $FACTOR$: [10, 20, 30, 40, 50]
