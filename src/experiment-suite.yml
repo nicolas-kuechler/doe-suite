@@ -8,6 +8,12 @@
   hosts: localhost
 
   tasks:
+
+    - debug:
+        msg: "Project Directory: {{ does_project_dir }}"
+      tags: [print_action]
+
+
     - include_vars: "{{ external_group_vars_dir }}/all/main.yml"
 
 ##########################################################################

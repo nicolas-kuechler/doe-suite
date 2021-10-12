@@ -8,29 +8,37 @@
   become: True
   apt:
     pkg:
-    - python3-pip
     - python3.9
     update_cache: yes
 
 
-- name: Install pipenv
-  become: true
-  pip:
-    name: pipenv
-    executable: pip3
+- name: Download get-pip.py
+  ansible.builtin.get_url:
+    url: https://bootstrap.pypa.io/get-pip.py
+    dest: /tmp/get-pip.py
 
+- name: Install pip for python (via script)
+  ansible.builtin.shell:
+    cmd: python3.9 /tmp/get-pip.py
 
-- name: Setup a venv folder
-  file:
-    path: "{{ remote.dir }}/code/.venv"
-    state: directory
-    mode: 0755
+- name: Download install-poetry.py
+  ansible.builtin.get_url:
+    url: https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py
+    dest: /tmp/install-poetry.py
 
-# XXX: This task is very slow at the moment
-- name: install dependencies via pipenv
-  command: pipenv install
-  args:
-    chdir: "{{ remote.dir }}/code"
-  environment:
-    LC_ALL: "C.UTF-8"
-    LANG: "C.UTF-8"
+- name: Install poetry with script install-poetry.py
+  ansible.builtin.shell:
+    cmd: python3.9 /tmp/install-poetry.py
+
+- name: make path to poetry available in variable
+  set_fact:
+    poetry: /home/ubuntu/.local/bin/poetry
+
+- name: Set config to create .venv folder in project directory
+  ansible.builtin.shell:
+    cmd: "{{ poetry }} config virtualenvs.in-project true"
+
+- name: Install python packages with poetry (-> afterward can run {{ poetry }} run python demo.py)
+  ansible.builtin.shell:
+    cmd: "{{ poetry }} install"
+    chdir: "{{ exp_code_dir }}/demo_project"
