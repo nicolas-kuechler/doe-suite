@@ -9,5 +9,7 @@ src/inventory/aws_ec2.yml
 # Python
 Pipfile.lock
 
+*.pyc
+
 # MacOS
 .DS_Store
