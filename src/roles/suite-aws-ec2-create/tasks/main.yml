@@ -108,7 +108,7 @@
   set_fact:
     tag_assignment_lst: "{{ instance_infos | to_tag_assignment(host_types)}}"
     # list of all instances with their id and other relevant infos
-    # [{"instance_id": X, "exp_name": X, "is_controller": X, "host_type": X, "exp_host_type_idx": X, "exp_host_type_n": X, "init_role": X, "check_status": X}, ...]
+    # [{"instance_id": X, "exp_name": X, "is_controller": X, "host_type": X, "exp_host_type_idx": X, "exp_host_type_n": X, "init_roles": X, "check_status": X}, ...]
   vars:
     instance_infos: "{{ ec2_instance_info | json_query('instances[*].{instance_id: instance_id, tags: tags}') }}"
 
@@ -170,7 +170,7 @@
   set_fact:
     suite_hosts_lst: "{{ suite_hosts_lst + [tag_assignment | combine({'public_dns_name': public_dns_lookup[tag_assignment.instance_id], 'private_dns_name': private_dns_lookup[tag_assignment.instance_id]})] }}"
     # list of all instances with their id and other relevant infos (+ public and private dns names)
-    # [{"instance_id": X, "exp_name": X, "is_controller": X, "host_type": X, "exp_host_type_idx": X, "exp_host_type_n": X, "init_role": X, "check_status": X, "public_dns_name": X, "private_dns_name": X}, ...]
+    # [{"instance_id": X, "exp_name": X, "is_controller": X, "host_type": X, "exp_host_type_idx": X, "exp_host_type_n": X, "init_roles": X, "check_status": X, "public_dns_name": X, "private_dns_name": X}, ...]
 
   loop: "{{ tag_assignment_lst }}"
   loop_control:

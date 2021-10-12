@@ -21,7 +21,7 @@ exp_single:
   host_types:
     small:
       n: 1
-      init_role: setup-small
+      init_roles: setup-small
       $CMD$: "echo \"[% my_run.info %];[% my_run.seed %];[% my_run.opt%]\" >> results/out.csv" # (4) write to output file
 
   base_experiment:
@@ -55,7 +55,7 @@ exp_multi_1:
     server:
       n: 1
       check_status: False
-      init_role: setup-server
+      init_roles: setup-server
       # run a single ncat server -> writes all incoming messages to stdout
       $CMD$: ncat -l [% my_run.port %] --keep-open
 

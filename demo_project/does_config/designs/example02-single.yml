@@ -2,17 +2,18 @@
 
 # Example Goal - Demonstrate that:
 #  (1) a suite can consist of multiple experiments that are executed in parallel (here 2 experiments)
-#  (2) `init_role` in host_type defines an ansible role to install packages etc. on a host
+#  (2) `init_roles` in host_type defines an ansible role to install packages etc. on a host
 #  (3) a `config.json` file with the run config is within the working directory of the `$CMD$`
 #     -> can be used to pass config parameters
+#  (4) we can repeat each run configuration multiple times (`n_repetitions`).
 
 # experiment with two factors, each with two levels (cross-product), and two repetitions
 experiment_1:
-  n_repetitions: 2
+  n_repetitions: 2 # (4) each of the 4 run configurations is repeated 2x -> 8 jobs
   host_types:
     small:
       n: 1
-      init_role: setup-small
+      init_roles: setup-small
       # runs the python script demo.py within the code directory fetched from the code repository: the demo script creates a result file in csv or json
       $CMD$: "{{ exp_code_dir }}/.venv/bin/python {{ exp_code_dir }}/demo_project/demo.py --config config.json" # (3) uses the config.json in the working dir of the command with the run config
   base_experiment:
@@ -26,11 +27,11 @@ experiment_1:
 
 # experiment with one factor, with 5 levels, and three repetitions (each)
 experiment_2:
-  n_repetitions: 3
+  n_repetitions: 3 # (4) each of the 5 run configurations is repeated 3x -> 15 jobs
   host_types:
     small:
       n: 1
-      init_role: setup-small
+      init_roles: setup-small
       # (3) uses the config.json in cmd but also passes arguments on the command line
       $CMD$: "{{ exp_code_dir }}/.venv/bin/python {{ exp_code_dir }}/demo_project/demo.py --config config.json --type [% my_run.problem.type %] --size [% my_run.problem.size %]"
 

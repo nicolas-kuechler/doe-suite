@@ -42,7 +42,7 @@
     loop_var: my_exp_name
   vars:
     # suite_hosts_lst -> group by exp_name
-    # {<exp_name1>: [{"instance_id": X, "exp_name": <exp_name1>, "is_controller": X, "host_type": X, "exp_host_type_idx": X, "exp_host_type_n": X, "init_role": X, "check_status": X, "public_dns_name": X, "private_dns_name": X}, ...], ...}
+    # {<exp_name1>: [{"instance_id": X, "exp_name": <exp_name1>, "is_controller": X, "host_type": X, "exp_host_type_idx": X, "exp_host_type_n": X, "init_roles": X, "check_status": X, "public_dns_name": X, "private_dns_name": X}, ...], ...}
     suite_hosts_d: "{{ hostvars['localhost'].suite_hosts_lst | collect_items2dict(key_name='exp_name', multiset=True) }}"
     query_exp_host_lst: "[*].{host_type: host_type, host_type_idx: exp_host_type_idx, host_type_n: exp_host_type_n, public_dns_name: public_dns_name, private_dns_name: private_dns_name}"
 

@@ -3,7 +3,7 @@ def suite_to_hosttypes(suite_design):
     """
     Extracts a host_types dict from a suite with default values set:
 
-    host_types = {host_type_name1:{exp_name1: {'init_role': X, 'n': X}, ... }, ...}
+    host_types = {host_type_name1:{exp_name1: {'init_roles': X, 'n': X}, ... }, ...}
     """
 
     host_types = {}

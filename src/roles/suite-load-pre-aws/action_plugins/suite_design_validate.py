@@ -46,7 +46,7 @@ class ActionModule(ActionBase):
     keywords = {
             "general": ["state", "suite_design", "$FACTOR$", 'is_controller_yes', 'is_controller_no', 'check_status_yes', 'check_status_no', 'localhost'],
             "exp": ["n_repetitions", "common_roles", "host_types", "base_experiment", "factor_levels"],
-            "host_type":  ["n", "init_role", "check_status", "$CMD$"]
+            "host_type":  ["n", "init_roles", "check_status", "$CMD$"]
     }
 
     def run(self,  tmp=None, task_vars=None):
@@ -68,15 +68,25 @@ class ActionModule(ActionBase):
         src = module_args["src"]
         dest = module_args["dest"]
 
+        dirs = {
+            "groupvars": module_args["prj_groupvars_dir"],
+            "roles": module_args["prj_roles_dir"]
+        }
 
         prj_id = task_vars["prj_id"]
+
         suite = os.path.splitext(os.path.basename(src))[0]
+
+        # check group vars `all`
+        groupvars_all_path = os.path.join(dirs["groupvars"], "all", "main.yml")
+        if not os.path.isfile(groupvars_all_path):
+            raise ValueError(f"group_vars all not found -> file does not exist ({groupvars_all_path})")
 
         try:
             with open(src) as f:
                 design_raw = yaml.load(f, Loader=UniqueKeyLoader)
 
-                self._validate_and_default_suite(prj_id=prj_id, suite=suite, design_raw=design_raw)
+                self._validate_and_default_suite(prj_id=prj_id, suite=suite, design_raw=design_raw, dirs=dirs)
 
             with open(dest, 'w+') as f:
                 yaml.dump(design_raw, f)
@@ -89,7 +99,7 @@ class ActionModule(ActionBase):
         return result
 
 
-    def _validate_and_default_suite(self, prj_id, suite, design_raw):
+    def _validate_and_default_suite(self, prj_id, suite, design_raw, dirs):
 
         exp_names = list(design_raw.keys())
 
@@ -123,14 +133,14 @@ class ActionModule(ActionBase):
 
 
         for exp_name, exp_raw in design_raw.items():
-            self._validate_and_default_experiment(exp_raw)
+            self._validate_and_default_experiment(exp_raw, dirs)
 
 
         return True
 
 
 
-    def _validate_and_default_experiment(self, exp_raw):
+    def _validate_and_default_experiment(self, exp_raw, dirs):
 
         exp_keywords = self.keywords["exp"]
         exp_keywords_required = ["n_repetitions", "host_types"]
@@ -147,14 +157,26 @@ class ActionModule(ActionBase):
         # set default values for not required keywords (common_roles, factor_levels)
         if "common_roles" not in exp_raw:
             exp_raw["common_roles"] = []
-        # TODO [nku] could check that the common roles actually exists -> need to know the folder
+
+        # convert common role to list
+        if isinstance(exp_raw["common_roles"], str):
+            exp_raw["common_roles"] = [exp_raw["common_roles"]]
+
+        if not isinstance(exp_raw["common_roles"], list):
+            raise ValueError("common_roles must be a list")
+
+        # check that common role actually exists
+        for common_role in exp_raw["common_roles"]:
+            role_path = os.path.join(dirs["roles"], common_role, "tasks", "main.yml")
+            if not os.path.isfile(role_path):
+                raise ValueError(f"common_role={common_role} not found -> file does not exist ({role_path})")
 
         if "factor_levels" not in exp_raw:
             exp_raw["factor_levels"] = [{}]
 
         # handle host_types
         for host_type_name, host_type_raw in exp_raw["host_types"].items():
-            self._validate_and_default_host_type(host_type_raw)
+            self._validate_and_default_host_type(host_type_name, host_type_raw, dirs)
 
         # check base_experiment
         expected_factor_paths = self._validate_base_experiment(exp_raw["base_experiment"])
@@ -164,11 +186,9 @@ class ActionModule(ActionBase):
 
 
 
-    def _validate_and_default_host_type(self, host_type_raw):
+    def _validate_and_default_host_type(self, host_type_name, host_type_raw, dirs):
 
         # TODO [nku] many of these checks could probably be replaced by json schema
-
-        # TODO [nku] could check that the init role actually exists + could check that for this host_type the group vars exist (etc.) -> need to know folder
 
         host_type_keywords = self.keywords["host_type"]
 
@@ -177,6 +197,13 @@ class ActionModule(ActionBase):
 
         if "$CMD$" not in host_type_raw:
             raise ValueError("$CMD$ must be in host_type")
+
+        ############
+        # Check that group vars exist
+        groupvars_path = os.path.join(dirs["groupvars"], host_type_name, "main.yml")
+        if not os.path.isfile(groupvars_path):
+            raise ValueError(f"group_vars for host_type={host_type_name} not found -> file does not exist ({groupvars_path})")
+
 
         #############
         # Set check_status: True if not set
@@ -189,17 +216,22 @@ class ActionModule(ActionBase):
             host_type_raw["n"] = 1
 
         #############
-        # set init_role by default to empty list
-        if "init_role" not in host_type_raw:
-            host_type_raw["init_role"] = []
+        # set init_roles by default to empty list
+        if "init_roles" not in host_type_raw:
+            host_type_raw["init_roles"] = []
 
         #############
         # convert init role to list
-        if isinstance(host_type_raw["init_role"], str):
-            host_type_raw["init_role"] = [host_type_raw["init_role"]]
+        if isinstance(host_type_raw["init_roles"], str):
+            host_type_raw["init_roles"] = [host_type_raw["init_roles"]]
 
-        if not isinstance(host_type_raw["init_role"], list):
-            raise ValueError("init_role must be a list")
+        if not isinstance(host_type_raw["init_roles"], list):
+            raise ValueError("init_roles must be a list")
+
+        for init_role in host_type_raw["init_roles"]:
+            role_path = os.path.join(dirs["roles"], init_role, "tasks", "main.yml")
+            if not os.path.isfile(role_path):
+                raise ValueError(f"init_role={init_role} not found -> file does not exist ({role_path})")
 
         #############
         # Convert $CMD$ to default structure

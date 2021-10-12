@@ -2,7 +2,7 @@
 
 # Example Goal - Demonstrate:
 #  (1) an experiment involving multiple instances (e.g., client-server)
-#  (2) that `common_roles` lists roles executed on all host_types, while `init_role` is a host_type specific role.
+#  (2) that `common_roles` lists roles executed on all host_types, while `init_roles` is a host_type specific role.
 #  (3) the use of the variable `exp_host_lst` in $CMD$ to get the dns name of of other instances (e.g., get dns name of server)
 #  (4) the use of `check_status`, to control when an experiment job is considered to be over.
 #     If set to `True`, then the experiment job waits until the $CMD$ stops. default(True)
@@ -16,7 +16,7 @@ exp_client_server:
     client: # (1)
       n: 2
       check_status: True # (4) when each client, sent a message, then the experiment job is complete
-      init_role: setup-client # (2) role executed only on client
+      init_roles: setup-client # (2) role executed only on client
       $CMD$:
         # send messages to the server with nc
         # (3) use exp_host_lst variable to extract ip address from server, the delay `sleep 5` ensures that the server is running when the client sends the message
@@ -27,7 +27,7 @@ exp_client_server:
     server: # (1)
       n: 1
       check_status: False # (4) the server does not stop (does not know when the experiment job is over)
-      init_role: setup-server # (2) role executed only on server
+      init_roles: setup-server # (2) role executed only on server
       # run a single ncat server -> writes all incoming messages to stdout
       $CMD$: ncat -l [% my_run.port %] --keep-open
 
