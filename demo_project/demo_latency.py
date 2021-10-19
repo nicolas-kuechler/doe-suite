@@ -5,15 +5,15 @@ def main():
 
     parser = argparse.ArgumentParser(description="")
     parser.add_argument("--size", type=int, required=True)
-    parser.add_argument("--opt", type=bool, required=True)
+    parser.add_argument("--opt", choices=['True', 'False'], required=True)
     parser.add_argument("--out", default="json", choices=['json', 'csv'])
 
     args = parser.parse_args()
 
-    if args.opt:
+    if args.opt == "True":
         a = 1.4
     else:
-        a = 3.9
+        a = 2.7
 
 
     print("Measuring Latency...")
