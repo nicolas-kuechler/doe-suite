@@ -11,9 +11,9 @@ def main():
     args = parser.parse_args()
 
     if args.opt:
-        a = 1.2
+        a = 1.4
     else:
-        a = 1.9
+        a = 3.9
 
 
     print("Measuring Latency...")
