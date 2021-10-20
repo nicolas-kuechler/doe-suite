@@ -101,10 +101,15 @@ class ActionModule(ActionBase):
 
     def _validate_and_default_suite(self, prj_id, suite, design_raw, dirs):
 
-        exp_names = list(design_raw.keys())
+        exp_names = []
+
 
         host_type_names = []
-        for exp in design_raw.values():
+        for key, exp in design_raw.items():
+            if key == "$ETL$":
+                continue
+            exp_names.append(key)
+
             host_type_names += list(exp["host_types"].keys())
         host_type_names = list(set(host_type_names)) # remove duplicates
 
@@ -131,14 +136,43 @@ class ActionModule(ActionBase):
             if not re.match(r'^[A-Za-z0-9_]+$', exp_name):
                 raise ValueError(f"exp_name must consist of alphanumeric chars or underscores ({exp_name})")
 
+        if "$ETL$" not in design_raw:
+            design_raw["$ETL$"] = {}
 
-        for exp_name, exp_raw in design_raw.items():
-            self._validate_and_default_experiment(exp_raw, dirs)
-
+        for key, value in design_raw.items():
+            if key == "$ETL$":
+                self._validate_etl_pipeline(etl_pipelines=value)
+            else:
+                self._validate_and_default_experiment(value, dirs)
 
         return True
 
+    def _validate_etl_pipeline(self, etl_pipelines):
 
+        for name, config in etl_pipelines.items():
+
+            if "experiments" not in config.keys() or not isinstance(config["experiments"], list):
+                raise ValueError(f"missing required list of experiments name={name}  config={config}")
+
+            if "extractors" not in config.keys():
+                raise ValueError("missing extractors")
+
+
+            for ext_name, ext_config in config["extractors"].items():
+                if ext_config is None:
+                    raise ValueError(f"extractor={ext_name} cannot be null -> use {{}} for no options")
+
+            if "transformers" not in config.keys():
+                config["transformers"] = []
+            elif not isinstance(config["transformers"], list):
+                raise ValueError(f"transformers in pipeline={name} is not a list")
+
+            if "loaders" not in config.keys():
+                raise ValueError(f"loader in pipeline={name} missing")
+
+            for load_name, load_config in config["loaders"].items():
+                if load_config is None:
+                    raise ValueError(f"loader={load_name} cannot be null -> use {{}} for no options")
 
     def _validate_and_default_experiment(self, exp_raw, dirs):
 

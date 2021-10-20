@@ -46,6 +46,9 @@ class ActionModule(ActionBase):
 
         for exp_name in suite_design.keys():
 
+            if exp_name == "$ETL$":
+                continue
+
             #print(f"exp_name={exp_name}")
 
             exp_runs_ext = []

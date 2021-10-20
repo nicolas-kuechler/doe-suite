@@ -227,6 +227,11 @@
     delegate_to: localhost
     local_action: "command rsync -az '{{ inventory_hostname }}:{{ remote_config_file }}' '{{ local_results_dir_base }}'"
 
+# TODO [nku] encapsulate etl processing failure (an error in etl stage must not stop the suite)-> if fail: catch, write error message to results_dir + print_tag stdout
+  - name: Run ETL pipeline over results files
+    delegate_to: localhost
+    ansible.builtin.shell:
+      cmd: python scripts/etl.py --suite {{ suite }} --id {{ suite_id }}
 
   vars:
   - remote_results_dir: "{{ job_id_to_wait_for | jobid2workingdir(remote.results_dir) + '/results' }}"
@@ -286,4 +291,3 @@
     msg: "{{ suite_progress_info[item] }}"
   loop: "{{ suite_progress_info.keys() | sort }}"
   tags: [print_action]
-# TEMPORARY END

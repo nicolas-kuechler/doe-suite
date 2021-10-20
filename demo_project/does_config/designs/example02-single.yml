@@ -6,21 +6,22 @@
 #  (3) a `config.json` file with the run config is within the working directory of the `$CMD$`
 #     -> can be used to pass config parameters
 #  (4) we can repeat each run configuration multiple times (`n_repetitions`).
+#  (5) an `$ETL$` pipeline can automatically process result files (e.g., extract from result structure, transform into a suited df, load a summary)
 
-# experiment with two factors, each with two levels (cross-product), and two repetitions
+# experiment with two factors: one with 4 levels and one with two levels (cross-product). We repeat each run config 3 times.
 experiment_1:
-  n_repetitions: 2 # (4) each of the 4 run configurations is repeated 2x -> 8 jobs
+  n_repetitions: 3  # (4) each of the 8 run configurations is repeated 3x -> 24 jobs
   host_types:
     small:
       n: 1
       init_roles: setup-small
-      # runs the python script demo.py within the code directory fetched from the code repository: the demo script creates a result file in csv or json
-      $CMD$: "{{ exp_code_dir }}/demo_project/.venv/bin/python  {{ exp_code_dir }}/demo_project/demo.py --config config.json" # (3) uses the config.json in the working dir of the command with the run config
+      # runs the python script demo_latency.py within the code directory fetched from the code repository: the demo script creates a result file in csv or json
+      # (3) passes arguments on the command line
+      $CMD$: "{{ exp_code_dir }}/demo_project/.venv/bin/python {{ exp_code_dir }}/demo_project/demo_latency.py --opt [% my_run.opt %] --size [% my_run.payload_size_mb %] --out [% my_run.out %]"
   base_experiment:
-    seed: 1234
     out: json
     payload_size_mb:
-      $FACTOR$: [10, 50]
+      $FACTOR$: [10, 20, 30, 40]
     opt:
       $FACTOR$: [True, False]
 
@@ -32,12 +33,45 @@ experiment_2:
     small:
       n: 1
       init_roles: setup-small
-      # (3) uses the config.json in cmd but also passes arguments on the command line
-      $CMD$: "{{ exp_code_dir }}/demo_project/.venv/bin/python  {{ exp_code_dir }}/demo_project/demo.py --config config.json --type [% my_run.problem.type %] --size [% my_run.problem.size %]"
+      $CMD$: "{{ exp_code_dir }}/demo_project/.venv/bin/python {{ exp_code_dir }}/demo_project/demo.py --config config.json" # (3) uses the config.json in the working dir of the command with the run config
 
   base_experiment:
     out: csv
     problem:
-      type: abc
+      opt: False
       size:
         $FACTOR$: [10, 20, 30, 40, 50]
+
+# (5) the suite has two etl pipelines to process results
+#      - each pipeline starts with a set of extractors, each produced result file is assigned to exactly one extractor (using a `file_regex`)
+#         (e.g., the JsonExtractor default regex matches all files ending with `.json`)
+#      - we combine the results from different extractors into a dataframe and transform it with a chain of transformers.
+#         (e.g., the RepAggTransformer aggregates over all repetitions of an experiment run and calculates `mean`, `std` etc.)
+#      - finally, all loaders are executed on the dataframe resulting from the chain of transformers
+$ETL$:
+  pipeline1:
+    experiments: [experiment_1]
+    extractors:
+      JsonExtractor: {} # with default file_regex
+      ErrorExtractor: {} # if a non-empty file exists matching the default regex -> then we throw an error using the ErrorExtractor
+      IgnoreExtractor: {} # since we want that each file is processed by an extractor, we provide the IgnoreExtractor which can be used to ignore certain files. (e.g., stdout)
+    transformers:
+      - name: RepAggTransformer # aggregate over all repetitions of a run and calc `mean`, `std`, etc.
+        data_columns: [latency] # the names of the columns in the dataframe that contain the measurements
+    loaders:
+      CsvSummaryLoader: {} # write the transformed dataframe across the whole experiment as a csv file
+      DemoLatencyPlotLoader: {} # create a plot based on project-specific plot loader
+
+
+  pipeline2:
+    experiments: [experiment_2]
+    extractors: # with overwritten default file_regex
+      CsvExtractor:
+        file_regex: '.*\.csv$'
+      ErrorExtractor:
+        file_regex: 'stderr.log'
+      IgnoreExtractor:
+        file_regex: 'stdout.log'
+    transformers: [] # no transformation
+    loaders:
+      CsvSummaryLoader: {}

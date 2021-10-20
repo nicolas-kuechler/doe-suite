@@ -14,7 +14,6 @@ def _list_dir_only(path):
 def _list_files_only(path):
     return [f for f in os.listdir(path) if not os.path.isdir(os.path.join(path, f))]
 
-
 def _flatten_d(d):
     return json.loads(pd.json_normalize(d, sep='.').iloc[0].to_json())
 
