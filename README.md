@@ -293,25 +293,25 @@ The resulting folder structure for a project looks as follows:
 ├── <b>doe-suite</b>                     # The doe-suite repo as a submodule -> can use the main branch or some specific branch with a custom extension
 ├── <b>does_config</b>                   # Configuration for DoE-Suite
 │   ├── <b>designs</b>                       # Folder with suite designs that define the experiments
-│   │   ├── <suite1>.yml
-│   │   └── <suite2>.yml
+│   │   ├── &ltsuite1&gt.yml
+│   │   └── &ltsuite2&gt.yml
 │   ├── <b>etl</b>                           # Folder with custom etl-pipeline steps (e.g., code to generate a plot from the results)
-│   │   └── <project_specific>.py
+│   │   └── &ltproject_specific&gt.py
 │   ├── <b>group_vars</b>                    # Folder with ansible playbook group vars (config) for host_types
 │   │   ├── all                           # General config
 │   │   │   └── main.yml
-│   │   ├── <host_type1>                  # Host type specific config
+│   │   ├── &lthost_type1&gt                  # Host type specific config
 │   │   │   └── main.yml
-│   │   └── <host_type2>                  # Host type specific config
+│   │   └── &lthost_type2&gt                  # Host type specific config
 │   │       └── main.yml
 │   └── <b>roles</b>                         # Folder with custom roles to setup host_types
-│       ├── <setup-host_type1>
+│       ├── &ltsetup-host_type1&gt
 │       │   └── ...
-│       └── <setup-host_type2>
+│       └── &ltsetup-host_type2&gt
 │           └── ...
 ├── <b>does_results</b>                  # Folder (auto created by doe-suite) that contains results.
 │   └── ...
-└── ...                           # existing project files, i.e, artifact
+└── ...                           # <b>existing project files, i.e, artifact</b>
 </code>
 </pre>
 
