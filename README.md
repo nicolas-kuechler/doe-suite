@@ -422,29 +422,27 @@ The experiment suite runs experiments based on `YAML` files in `does_config/desi
 The `YAML` files represent the structure discussed above.
 We provide a series of suite designs to demonstrate the different features by example:
 
-1. [example01-minimal](demo_project/does_config/designs/example01-minimal.yml):
-    Shows the minimal suite design with a single experiment on a single host and no ETL pipeline.
+1. [example01-minimal](demo_project/does_config/designs/example01-minimal.yml) shows the minimal suite design with a single experiment on a single host and no ETL pipeline.
 
-2. [example02-single](demo_project/does_config/designs/example02-single.yml):
-    Demonstrate that:
-    2.1  a suite can consist of multiple experiments that are executed in parallel (here 2 experiments)
-    2.2 `init_roles` in host_type defines an ansible role to install packages etc. on a host
-    2.3 a `config.json` file with the run config is within the working directory of the `$CMD$` -> can be used to pass config parameters
-    2.4 we can repeat each run configuration multiple times (`n_repetitions`).
-    2.5 an `$ETL$` pipeline can automatically process result files (e.g., extract from result structure, transform into a suited df, load a summary)
+2. [example02-single](demo_project/does_config/designs/example02-single.yml) demonstrates that:
+    *  a suite can consist of multiple experiments that are executed in parallel (here 2 experiments)
+    * `init_roles` in host_type defines an ansible role to install packages etc. on a host
+    * a `config.json` file with the run config is within the working directory of the `$CMD$` -> can be used to pass config parameters
+    * we can repeat each run configuration multiple times (`n_repetitions`).
+    * an `$ETL$` pipeline can automatically process result files (e.g., extract from result structure, transform into a suited df, load a summary)
 
-3. [example03-format](demo_project/does_config/designs/example03-format.yml)
-    Demonstrates the use of the two (three) formats for expressing factors (varying parameters).
+3. [example03-format](demo_project/does_config/designs/example03-format.yml) demonstrates the use of the two (three) formats for expressing factors (varying parameters).
 
-4. [example04-multi](demo_project/does_config/designs/example04-multi.yml)
-    Demonstrate:
-    4.1 an experiment involving multiple instances (e.g., client-server)
-    4.2 that `common_roles` lists roles executed on all host_types, while `init_roles` is a host_type specific role.
-    4.3 the use of the variable `exp_host_lst` in $CMD$ to get the dns name of of other instances (e.g., get dns name of server)
-    4.4 the use of `check_status`, to control when an experiment job is considered to be over. If set to `True`, then the experiment job waits until the $CMD$ stops. default(True)
+4. [example04-multi](demo_project/does_config/designs/example04-multi.yml) demonstrates:
+    * an experiment involving multiple instances (e.g., client-server)
+    * that `common_roles` lists roles executed on all host_types, while `init_roles` is a host_type specific role.
+    * the use of the variable `exp_host_lst` in $CMD$ to get the dns name of of other instances (e.g., get dns name of server)
+    * the use of `check_status`, to control when an experiment job is considered to be over. If set to `True`, then the experiment job waits until the $CMD$ stops. default(True)
 
-5. [example05-complex](demo_project/does_config/designs/example05-complex.yml)
-    Show complex experiments with : mix of formats, multiple experiments, running different commands on different instances.
+5. [example05-complex](demo_project/does_config/designs/example05-complex.yml) shows complex experiments with:
+    * a mix of formats
+    * multiple experiments
+    * running different commands on different instance
 
 ### Suite Designs Structure
 
