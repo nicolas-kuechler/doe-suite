@@ -40,6 +40,12 @@ Finally, after completing the experiment (all jobs), the suite can clean up the 
 
 The core of DoES are suite design files that define a set of experiments and how to process results:
 
+
+<a href="https://github.com/othneildrew/Best-README-Template">
+    <img src="docs/resources/example.png" alt="Plot">
+</a>
+
+<!--
 ```YAML
 experiment_1:
   n_repetitions: 3
@@ -70,6 +76,8 @@ $ETL$:
       DemoLatencyPlotLoader: {}
 
 ```
+
+-->
 
 In a nutshell, the above suite runs 8 configurations (cross-product of the two factors `payload_size_mb` and `opt`) and repeats each run 3 times. Note that suite designs are not limited to the cross-product of factors.
 Finally, the ETL pipeline processes the results and creates a plot:
