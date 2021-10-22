@@ -411,17 +411,75 @@ The artifact (code) is executed on the remote machine in the experiment job's wo
     <img src="docs/resources/design.png" alt="Design">
 </a>
 
-### AWS Environment
+The figure above shows that a suite design consists of one or more experiments.
+Each experiment defines the computational environment (i.e., how many machines of which type) and a list of run configurations (i.e., concrete parameters) that we want to execute.
+Within the run configurations we distinguish between constants and factors.
+Constant remain the same across all runs, while for factors, we use in each run a unique combination of their levels.
+To improve validity, we support repeating a run multiple times.
+
+Different experiments in the suite are executed on a different set of host instances **in parallel**, while run configurations within an experiment are executed **sequentially** on the same set of host instances.
+
+For each experiment, one instance is the controller which is logically responsible for coordination.
+
+### Suite Designs by Example
+
+The experiment suite runs experiments based on `YAML` files in `does_config/designs`.
+The `YAML` files represent the structure discussed above.
+We provide a series of suite designs to demonstrate the different features by example:
+
+1. [example01-minimal](demo_project/does_config/designs/example01-minimal.yml):
+    Shows the minimal suite design with a single experiment on a single host and no ETL pipeline.
+
+2. [example02-single](demo_project/does_config/designs/example02-single.yml):
+    Demonstrate that:
+    2.1  a suite can consist of multiple experiments that are executed in parallel (here 2 experiments)
+    2.2 `init_roles` in host_type defines an ansible role to install packages etc. on a host
+    2.3 a `config.json` file with the run config is within the working directory of the `$CMD$` -> can be used to pass config parameters
+    2.4 we can repeat each run configuration multiple times (`n_repetitions`).
+    2.5 an `$ETL$` pipeline can automatically process result files (e.g., extract from result structure, transform into a suited df, load a summary)
+
+3. [example03-format](demo_project/does_config/designs/example03-format.yml)
+    Demonstrates the use of the two (three) formats for expressing factors (varying parameters).
+
+4. [example04-multi](demo_project/does_config/designs/example04-multi.yml)
+    Demonstrate:
+    4.1 an experiment involving multiple instances (e.g., client-server)
+    4.2 that `common_roles` lists roles executed on all host_types, while `init_roles` is a host_type specific role.
+    4.3 the use of the variable `exp_host_lst` in $CMD$ to get the dns name of of other instances (e.g., get dns name of server)
+    4.4 the use of `check_status`, to control when an experiment job is considered to be over. If set to `True`, then the experiment job waits until the $CMD$ stops. default(True)
+
+5. [example05-complex](demo_project/does_config/designs/example05-complex.yml)
+    Show complex experiments with : mix of formats, multiple experiments, running different commands on different instances.
+
+### Suite Designs Structure
+
+An experiment design `YAML` file consists of one or more experiments. Each experiment consists of the following parts:
+1. **General configuration**:
+  - The `n_repetitions` variable specifies how many times to repeat each experiment run. (i.e., how many times to execute an experiment run with the same configurations).
+  - The `common_roles` variable specifies an ansible role (from `does-config/roles`) that is executed once on the initial instance set up independent of the host type.
+
+2. **Host types**: this section configures different host types. Each host has its own initial setup role `init_roles` and `n` active instances. Set the boolean `check_status` to false if the service running on this host type should not be checked to determine whether a job has finished. The default for `check_status` is true.
+<!-- TODO [nku] mention CMD -->
+
+3. **Base experiment**: The `base_experiment` consists of all the configuration options. All configuration options that vary between runs (i.e., the factors of the experiment) are marked with the placeholder `$FACTOR$`. The remaining configuration options are filled with a constant.
+See the example [example03-format.yml](demo_project/does_config/designs/example03-format.yml) design to see the three different options of expressing factors.
+
+4. **Factor levels**: The (optional) list of `factor_levels` specifies the levels that the factors take in a particular experiment run. For example, in the first run of the experiment, the framework replaces the `$FACTOR$` placeholder with the first entry values in the `factors_levels`list.
+
+
+#### General Configuration
+
+#### AWS Environment
 
 * host types -> group_vars, init roles
 * script to add host types
 
-### Run Configuration
+#### Run Configuration
 
 * constant vs factor -> levels
 * different ways to express
 
-### ETL
+#### ETL
 
 * extractor + available default (regex pattern)
 * transformer + available default
