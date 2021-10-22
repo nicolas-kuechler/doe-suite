@@ -101,13 +101,6 @@ Here, the `RepAggTransformer` aggregates over the repetitions of an experiment r
 Finally, in the Load stage, we execute all Loaders with the table from the Transform stage.
 Here, the `CsvSummaryLoader`stores the table in form of a csv and the `DemoLatencyPlotLoader` creates an experiment-specific plot for the experiment.
 
-
-#### Built With
-
-* [Ansible](https://www.ansible.com/)
-* [YAML](https://yaml.org/)
-* [Jinja](https://jinja.palletsprojects.com/en/3.0.x/)
-
 After discussing an example, the remainder of the readme is structured as follows:
 
 <!-- TABLE OF CONTENTS -->
@@ -175,6 +168,11 @@ After completing the getting started section, it should be possible to run the [
 
 Afterward, you can change the environment variable `DOES_PROJECT_DIR` to point to your own project (instead of the demo project) and continue from there.
 
+#### Built With
+
+* [Ansible](https://www.ansible.com/)
+* [YAML](https://yaml.org/)
+* [Jinja](https://jinja.palletsprojects.com/en/3.0.x/)
 
 ### Prerequisites
 
@@ -403,9 +401,6 @@ The artifact (code) is executed on the remote machine in the experiment job's wo
 
 
 ## Suite Design
-
-* discuss overview from slides
-* list series of examples
 
 <a align="center">
     <img src="docs/resources/design.png" alt="Design">
