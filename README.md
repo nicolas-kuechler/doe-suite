@@ -38,12 +38,14 @@ Finally, after completing the experiment (all jobs), the suite can clean up the 
 
 ### Example: Suite Design
 
-The core of DoES are suite design files that define a set of experiments and how to process results:
+The core of DoES are suite design files that define a set of experiments and how to process results.
+In a nutshell, the example suite below runs an experiment with 8 configurations (cross-product of the two factors `payload_size_mb` and `opt`) and repeats each run 3 times. Note that suite designs are not limited to the cross-product of factors.
+Finally, the ETL pipeline processes the results and creates a table and a plot.
 
-
-<a href="https://github.com/othneildrew/Best-README-Template">
-    <img src="docs/resources/example.png" alt="Plot">
+<a align="center">
+    <img src="docs/resources/example.png" alt="Overview">
 </a>
+<!-- TODO [nku] improve styling and quality of the overview figure-->
 
 <!--
 ```YAML
@@ -76,17 +78,10 @@ $ETL$:
       DemoLatencyPlotLoader: {}
 
 ```
-
 -->
 
-In a nutshell, the above suite runs 8 configurations (cross-product of the two factors `payload_size_mb` and `opt`) and repeats each run 3 times. Note that suite designs are not limited to the cross-product of factors.
-Finally, the ETL pipeline processes the results and creates a plot:
 
-<a href="https://github.com/othneildrew/Best-README-Template">
-    <img src="docs/resources/plot.png" alt="Plot">
-</a>
-
-#### Explanation
+#### Detailed Explanation
 
 The suite design consists of a single experiment `experiment_1` that runs on a single EC2 instance of type `small`.
 The experiment runs a script `demo_latency.py` that takes three command line arguments: `--opt`, `--size` (i.e., `payload_size_mb`), and `--out`.
@@ -151,22 +146,22 @@ After discussing an example, the remainder of the readme is structured as follow
 ## Cheatsheet
 
 Start the experiment suite:
-```
-poetry run ansible-playbook src/experiment-suite.yml -e "suite=example id=new"
+```sh
+poetry run ansible-playbook src/experiment-suite.yml -e "suite=example01-minimal id=new"
 ```
 
 Cmd to clean:
-```
+```sh
 TODO [nku] missing command
 ```
 
 Configure Project:
-```
+```sh
 TODO [nku] missing command
 ```
 
 Run ETL results pipeline:
-```
+```sh
 TODO [nku] missing command
 ```
 
@@ -175,22 +170,21 @@ TODO [nku] missing command
 <!-- GETTING STARTED -->
 ## Getting Started
 
-After completing the getting started section, it should be possible to run the [example suite designs](demo_project/does_config/designs) of the [demo project](demo_project).
-The demo project shows how to integrate DoES into an existing project.
-<!-- TODO [nku] maybe here we should just point to a concrete design?-->
+To get started, the DoE-Suite provides a [demo project](demo_project) that shows the required structure to integrate DoES in an existing project.
+After completing the getting started section, it should be possible to run the [example suite designs](demo_project/does_config/designs) of the demo project.
 
+Afterward, you can change the environment variable `DOES_PROJECT_DIR` to point to your own project (instead of the demo project) and continue from there.
 
-We assume that you have an existing project for which you want to run benchmarks with DoES.
 
 ### Prerequisites
 
-* Before starting, ensure that you have `poetry` installed [(see instructions)](https://python-poetry.org/docs/)
+* We assume that you have already an existing project for which you want to run benchmarks with DoES (otherwise just create a dummy project).
 
-* Moreover, create a `key pair for AWS` in the region `eu-central-1` [(see instructions)](https://docs.aws.amazon.com/servicecatalog/latest/adminguide/getstarted-keypair.html)
+* Before starting, ensure that you have `poetry` installed [(see instructions)](https://python-poetry.org/docs/).
 
-* and ensure that you can clone remote `repositories with SSH` [(see instructions for GitHub)](https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh).
+* Moreover, create a `key pair for AWS` in the region `eu-central-1` [(see instructions)](https://docs.aws.amazon.com/servicecatalog/latest/adminguide/getstarted-keypair.html).
 
-* you have an existing repository for which you want to use DoES
+* Finally, ensure that you can clone remote `repositories with SSH` [(see instructions for GitHub)](https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh).
 
 
 ### Installation
@@ -205,7 +199,7 @@ We assume that you have an existing project for which you want to run benchmarks
     cd doe-suite
     ```
 
-3. Install the Python packages (for Ansible)
+3. Within the doe-suite repository, install the Python packages (for Ansible)
 
     ```sh
     poetry install
@@ -258,8 +252,9 @@ We assume that you have an existing project for which you want to run benchmarks
     <!--
     TODO [nku] describe this process (re-design it) -> Q: maybe for the demo-project it's a bit strange that we need to generate the group_vars etc.?
     However, setting a prj_id might be sensible, + setting github repository
+    -->
 
-    and the example host types `client` and `server`.
+    <!--and the example host types `client` and `server`.
 
     This prompts user input to perform variable substitution using the `resources/repotemplate/group_vars/*/main.yml.j2` templates. By default, it creates four groups: `all`, `server`, `client`, and `ansible_controller`.
 
@@ -271,28 +266,60 @@ We assume that you have an existing project for which you want to run benchmarks
 
     -->
 
-8. Try running the minimal example experiment design (see [demo_project/does_config/designs/example01-minimal.yml](demo_project/does_config/designs/example01-minimal.yml))
+8. Try running the minimal example suite design (see [demo_project/does_config/designs/example01-minimal.yml](demo_project/does_config/designs/example01-minimal.yml))
 
     ```sh
     poetry run ansible-playbook src/experiment-suite.yml -e "suite=example01-minimal id=new"
     ```
 
+<!-- TODO [nku] describe what you can expect to see that everything worked -->
+
 
 <!-- USAGE -->
 ## Usage
 
-<!-- TODO [nku] write an overview -->
+Before we show how to use the suite, we discuss the structure of a project that uses the doe-suite.
 
-* project folder
-* does config
-* does results
+In every project repo, we add three top level folders: `doe-suite`, `does_config`, and `does_results`.
+The `doe-suite` folder is the doe-suite repo as a submodule.
+The `does_config` folder contains the whole configuration of how to run experiments + project specific extensions of the suite.
+In the `does_results` folder all the result files are stored.
 
-* terminology image from presentation?
+The resulting folder structure for a project looks as follows:
+(where the environment variable `DOES_PROJECT_DIR` points to)
+
+<pre><code>
+.
+├── <b>doe-suite</b>                     # The doe-suite repo as a submodule -> can use the main branch or some specific branch with a custom extension
+├── <b>does_config</b>                   # Configuration for DoE-Suite
+│   ├── <b>designs</b>                       # Folder with suite designs that define the experiments
+│   │   ├── <suite1>.yml
+│   │   └── <suite2>.yml
+│   ├── <b>etl</b>                           # Folder with custom etl-pipeline steps (e.g., code to generate a plot from the results)
+│   │   └── <project_specific>.py
+│   ├── <b>group_vars</b>                    # Folder with ansible playbook group vars (config) for host_types
+│   │   ├── all                           # General config
+│   │   │   └── main.yml
+│   │   ├── <host_type1>                  # Host type specific config
+│   │   │   └── main.yml
+│   │   └── <host_type2>                  # Host type specific config
+│   │       └── main.yml
+│   └── <b>roles</b>                         # Folder with custom roles to setup host_types
+│       ├── <setup-host_type1>
+│       │   └── ...
+│       └── <setup-host_type2>
+│           └── ...
+├── <b>does_results</b>                  # Folder (auto created by doe-suite) that contains results.
+│   └── ...
+└── ...                           # existing project files, i.e, artifact
+</code>
+</pre>
 
 ### Moving beyond the Demo Project
 
-After the getting started section we are able to run the suite designs from the demo_project.
-<!-- TODO [nku] questionable if this requires its own section -->
+After the getting started section we are able to run the suite designs from the `demo_project`.
+To use the suite in your own project, you must follow the folder structure shown above and change the environment variable `DOES_PROJECT_DIR` from pointing to the `demo_project` to your own project.
+
 
 ### Running an Experiment Suite
 
@@ -340,7 +367,7 @@ Creating resources on AWS and setting up the environment takes a considerable am
 
 Example:
 ```sh
-poetry run ansible-playbook src/experiment-suite.yml -e "suite=example id=new awsclean=false"
+poetry run ansible-playbook src/experiment-suite.yml -e "suite=example01-minimal id=new awsclean=false"
 ```
 
 Furthermore, we also provide a playbook to terminate all AWS resources:
@@ -377,7 +404,12 @@ The artifact (code) is executed on the remote machine in the experiment job's wo
 
 ## Suite Design
 
+* discuss overview from slides
 * list series of examples
+
+<a align="center">
+    <img src="docs/resources/design.png" alt="Design">
+</a>
 
 ### AWS Environment
 
