@@ -454,36 +454,66 @@ We provide a series of suite designs to demonstrate the different features by ex
 ### Suite Designs Structure
 
 An experiment design `YAML` file consists of one or more experiments. Each experiment consists of the following parts:
-1. **General configuration**:
-  - The `n_repetitions` variable specifies how many times to repeat each experiment run. (i.e., how many times to execute an experiment run with the same configurations).
-  - The `common_roles` variable specifies an ansible role (from `does-config/roles`) that is executed once on the initial instance set up independent of the host type.
-
-2. **Host types**: this section configures different host types. Each host has its own initial setup role `init_roles` and `n` active instances. Set the boolean `check_status` to false if the service running on this host type should not be checked to determine whether a job has finished. The default for `check_status` is true.
-<!-- TODO [nku] mention CMD -->
-
-3. **Base experiment**: The `base_experiment` consists of all the configuration options. All configuration options that vary between runs (i.e., the factors of the experiment) are marked with the placeholder `$FACTOR$`. The remaining configuration options are filled with a constant.
-See the example [example03-format.yml](demo_project/does_config/designs/example03-format.yml) design to see the three different options of expressing factors.
-
-4. **Factor levels**: The (optional) list of `factor_levels` specifies the levels that the factors take in a particular experiment run. For example, in the first run of the experiment, the framework replaces the `$FACTOR$` placeholder with the first entry values in the `factors_levels`list.
-
-
 #### General Configuration
+- The `n_repetitions` variable specifies how many times to repeat each experimentrun. (i.e., how many times to execute an experiment run with the same configurations).
+- The `common_roles` variable specifies an ansible role (from `does-config/roles`)that is executed once on the initial instance set up on all host types.
 
-#### AWS Environment
+#### Host Types (AWS Environment)
+This section configures different host types. Each host has its own initial setup role(s) `init_roles` and `n` active instances. For each host type, we expect a folder for host type specific variables in `does_config/group_vars` and the `init_roles`must be located in `does_config/roles`.
 
-* host types -> group_vars, init roles
-* script to add host types
+The `$CMD$` field controls the command to execute in the experiment.
+There are different options available:
+- a simple string: for every run, the same command is executed on all `n` instances of the host type (e.g., `$CMD$: "echo hello"`)
+- a list of strings of length `n`: the i'th entry in the list corresponds to the command executed on the i'th instance of the same host type (e.g., `n: 2`, and `$CMD$: ["echo hello from instance 0", "echo hello from instance 1"]`)
+- a list of dicts: allows to execute more than one command in a run on an instance **not implemented yet**
+(e.g., `n: 1`, and `$CMD$:  [{"main": "echo hello", "monitor": "echo world"}]`)
+
+The boolean flag `check_status` controls whether for the experiment job to be finished, the command needs to return. The default for `check_status` is true.
+
+We provide a helper script to add new or update host types.
+<!-- TODO [nku] mention the script here-->
 
 #### Run Configuration
 
-* constant vs factor -> levels
-* different ways to express
+The `base_experiment` consists of all the configuration options.
+All configuration options that vary between runs (i.e., the factors of the experiment) are marked with the placeholder `$FACTOR$`. The remaining configuration options are filled with a constant.
+See the example [example03-format.yml](demo_project/does_config/designs/example03-format.yml) design to see the three different options of expressing factors.
+
+The  2(+1) different formats are:
+- the `cross` format which is the concise form for a cross product of all factors
+- the `level-list` format which allows to specify a list with a concrete level for each factor (i.e., not full cross-product)
+- a mix between `cross` and `level-list` format that combines the advantages of both formats.
+
+The `cross` format uses the keyword `$FACTOR$` as a YAML key, while the `factor list` uses `$FACTOR$` as a YAML value and expects a corresponding level in the `factor_levels` list.
+
+When we use the `level-list` format or the mixed format, then we have the `factor_levels` that specify the levels that the factors take in a particular experiment run. For example, in the first run of the experiment, the framework replaces the `$FACTOR$` placeholder with the first entry values in the `factors_levels`list.
 
 #### ETL
 
-* extractor + available default (regex pattern)
-* transformer + available default
-* loaders + available default
+For each suite design you can optionally configure multiple ETL pipelines to process result files.
+
+The reason for this is that between experiments from different domains, there are a lot of common steps which can be covered by shared implementations
+For example, experiments may report results in a CSV and hence extracting this CSV file from the results folder structure is a common step.
+In case an experiment has some unique requirements, a project can define its own extractors, transformers, and loaders.
+
+In the **extract** phase the goal is to bring all generated results into a table form (data frame). In the first columns of this table, we have information about the suite (e.g., suite, suite id, experiment, run, repetition, etc.), then we have columns that contain the configuration used in the run, and finally there are columns that contain the measurements from running the artifact.
+Extracting information about the suite and the run config are done automatically.
+For extracting the results, we configure a set of Extractors.
+
+During the extract phase, we loop over all produced result files and assign them to exactly one extractor through a regex on the filename. The mapping must be 1:1, otherwise the phase aborts with an error.
+The reason behind this is that an experiment job should only generate expected files.
+Each extractor has a default regex on the filename. For example, the `YamlExtractor` matches all files ending in `.yml` and `.yaml`. However, it is possible to overwrite this default list in the ETL config of the suite design.
+
+In the **transform** phase, the goal is to bring the table into a suitable form. For example, since we have an experiment with repetition, it is useful to aggregate over the repetitions and calculate error metrics.
+
+The list of `transformers` is executed as a chain: the first entry receives the dataframe from the extract phase and passes the modified dataframe to the next transformer in the list.
+
+In the **loader** phase, the goal is to use the dataframe from the transform phase and produce different representations of the results.
+For example, storing results in a database, producing different plots of the data or storing a summary as a csv file.
+
+All the `loaders`specified in the ETL config of the suite design, receive the resulting table (data frame) from the transform phase.
+
+<!-- TODO could list the available defaults or provide link to find them-->
 
 
 ## More Documentation
