@@ -9,7 +9,7 @@ import subprocess
 
 from state import State
 
-OUT_FOLDER = "~/.does-master"
+OUT_FOLDER = f"{os.environ['HOME']}/.does-master"
 LOG_FOLDER = f"{OUT_FOLDER}/logs"
 STATE_PATH = f"{OUT_FOLDER}/state.json"
 RESULTS_ZIP_PATH = "/tmp/results"
