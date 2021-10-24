@@ -18,3 +18,10 @@
     recurse: yes
   become: yes
   become_method: sudo
+
+- name: "Set environment variable {{ doe_suite_env_var }} permantently in /etc/environment"
+  lineinfile:
+    dest: "/etc/environment"
+    state: present
+    regexp: "^{{ doe_suite_env_var }}="
+    line: "{{ doe_suite_env_var }}={{ ansible_master_git_dir}}

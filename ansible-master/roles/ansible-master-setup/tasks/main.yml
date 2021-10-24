@@ -6,3 +6,4 @@
 - include_tasks: install_boto3.yml
 - include_tasks: install_awscli.yml
 - include_tasks: prepare_ansible.yml
+- include_tasks: store_aws_creds.yml

@@ -15,6 +15,7 @@ ansible_exp_suite_private_repo: yes # Set to true if the repo is public. In that
 ansible_master_git_dir: "{{ ansible_master_home }}/DOES_benchmarks" # Path to where above repo is cloned
 ansible_master_does_dir: "{{ ansible_master_git_dir }}/doe-suite"
 ansible_master_git_username: pps-ansible-master # TODO: replace with the GitHub user name that the ansible master should use (where you store the SSH key)
+doe_suite_env_var: DOES_PROJECT_DIR
 
 ansible_master_user: "{{ ansible_master_git_username }}"
 ansible_master_group: "{{ ansible_master_git_username }}"
@@ -29,6 +30,7 @@ ansible_master_ssh_key_sizes:
   git: 521
   aws: 4096
 
+ansible_master_aws_key_name: aws_key_ansible_master
 ansible_master_ssh_key_paths:
   git: "{{ ansible_master_ssh_key_dir }}/id_ssh_git"
-  aws: "{{ ansible_master_ssh_key_dir }}/aws_key_ansible_master"
+  aws: "{{ ansible_master_ssh_key_dir }}/{{ansible_master_aws_key_name}}"

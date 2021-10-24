@@ -48,6 +48,14 @@
 - name: Setup ansible master
   hosts: ansible_master
 
+  vars_prompt:
+    - name: aws_access_key_id
+      prompt: Enter your AWS access key id
+      private: no
+
+    - name: aws_secret_access_key
+      prompt: Enter your AWS secret access key
+
   tasks:
     - name: Load group variables
       include_role:
