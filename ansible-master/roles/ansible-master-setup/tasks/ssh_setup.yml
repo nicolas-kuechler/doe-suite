@@ -1,0 +1,69 @@
+
+- name: Set shared SSH variables
+  ansible.builtin.set_fact:
+    ssh_key_dir: "{{ ansible_master_ssh_key_dir }}"
+    ssh_key_owner: "{{ ansible_master_user }}"
+    ssh_key_group: "{{ ansible_master_group }}"
+
+- name: Generate SSH key for Git
+  ansible.builtin.include_role:
+    name: setup-ssh
+  vars:
+    ssh_key_path: "{{ ansible_master_ssh_key_paths['git'] }}"
+    ssh_key_type: "{{ ansible_master_ssh_key_types['git'] }}"
+    ssh_key_size: "{{ ansible_master_ssh_key_sizes['git'] }}"
+  when: ansible_exp_suite_private_repo
+
+- name: Add entry for git to ~/.ssh/config
+  ansible.builtin.blockinfile:
+    path: "{{ ssh_conf.home }}/config"
+    block: |
+      Host github.com
+      Hostname github.com
+      PreferredAuthentications publickey
+      User {{ ansible_master_git_username }}
+      IdentityFile {{ ansible_master_ssh_key_paths['git'] }}
+    owner: "{{ ssh_conf.user }}"
+    group: "{{ ssh_conf.group }}"
+    mode: "0644"
+    create: yes
+    state: present
+    marker: "# {mark} ANSIBLE MANAGED BLOCK FOR GIT"
+  loop:
+    - { user: "{{ ansible_master_user }}", group: "{{ ansible_master_group }}", home: "{{ ansible_master_ssh_key_dir }}" }
+    - { user: "root", group: "root", home: "/root/.ssh" }
+  loop_control:
+    loop_var: ssh_conf
+
+  become: yes
+  become_method: sudo
+
+- name: Generate SSH key for AWS
+  ansible.builtin.include_role:
+    name: setup-ssh
+  vars:
+    ssh_key_path: "{{ ansible_master_ssh_key_paths['aws'] }}"
+    ssh_key_type: "{{ ansible_master_ssh_key_types['aws'] }}"
+    ssh_key_size: "{{ ansible_master_ssh_key_sizes['aws'] }}"
+
+- name: Add entry for EC2 hosts to ~/.ssh/config
+  ansible.builtin.blockinfile:
+    path: "{{ ssh_conf.home }}/config"
+    block: |
+      Host ec2*
+      IdentityFile {{ ansible_master_ssh_key_paths['aws'] }}
+      User ubuntu
+      ForwardAgent yes
+    owner: "{{ ssh_conf.user }}"
+    group: "{{ ssh_conf.group }}"
+    mode: "0644"
+    state: present
+    marker: "# {mark} ANSIBLE MANAGED BLOCK FOR AWS EC2"
+  loop:
+    - { user: "{{ ansible_master_user }}", group: "{{ ansible_master_group }}", home: "{{ ansible_master_ssh_key_dir }}" }
+    - { user: "root", group: "root", home: "/root/.ssh" }
+  loop_control:
+    loop_var: ssh_conf
+
+  become: yes
+  become_method: sudo

@@ -1,6 +1,6 @@
 ---
 
-- name: Launching ansible controller EC2 instance
+- name: Launching ansible master EC2 instance
   community.aws.ec2_instance:
     state: running
     instance_type: '{{ instance_type }}'
@@ -13,7 +13,7 @@
     network:
       assign_public_ip: yes
     tags:
-      Name: ansible_controller
+      Name: ansible_master
     volumes:
       - device_name: /dev/sda1
         ebs:

@@ -13,7 +13,6 @@
       mode: 0755
     vars:
       prj_clear: True
-      is_ansible_controller: False
 
   - name: Clear EC2 instances
     include_role:

@@ -1,0 +1,34 @@
+---
+
+# The asible master doesn't need to have beefy specs, it only distributes tasks.
+# However, we need enough space for the results.
+
+instance_type: t2.medium # change if you feel the master is a bottleneck
+ec2_volume_size: 64 # choose large enough to store results (at least until they are downloaded)
+
+ec2_image_id: ami-08481eff064f39a84 # TODO: potentially update to newest image ID
+ec2_volume_snapshot: snap-0b8d7894c93b6df7a # TODO: potentially update to new volume ID
+
+# AWS Ansible Experiment Suite repo options
+ansible_exp_suite_git_repo: git@github.com:MarbleHE/DOES_benchmarks.git # TODO: change to the URL of your clone of the ansible experiment suite
+ansible_exp_suite_private_repo: yes # Set to true if the repo is public. In that case we don't need to setup SSH keys for the repo.
+ansible_master_git_dir: "{{ ansible_master_home }}/DOES_benchmarks" # Path to where above repo is cloned
+ansible_master_does_dir: "{{ ansible_master_git_dir }}/doe-suite"
+ansible_master_git_username: pps-ansible-master # TODO: replace with the GitHub user name that the ansible master should use (where you store the SSH key)
+
+ansible_master_user: "{{ ansible_master_git_username }}"
+ansible_master_group: "{{ ansible_master_git_username }}"
+ansible_master_home: "/home/{{ ansible_master_user }}"
+
+# SSH options
+ansible_master_ssh_key_dir: "{{ ansible_master_home }}/.ssh"
+ansible_master_ssh_key_types:
+  git: ecdsa
+  aws: rsa
+ansible_master_ssh_key_sizes:
+  git: 521
+  aws: 4096
+
+ansible_master_ssh_key_paths:
+  git: "{{ ansible_master_ssh_key_dir }}/id_ssh_git"
+  aws: "{{ ansible_master_ssh_key_dir }}/aws_key_ansible_master"

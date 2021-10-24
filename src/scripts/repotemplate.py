@@ -18,7 +18,7 @@ if does_proj_env_varname not in os.environ:
 vars_base_path = os.environ[does_proj_env_varname] + "/does_config/group_vars"
 src_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 templates_base_path = src_path + "/resources/repotemplate/group_vars"
-groups = ["all", "server", "client", "ansible_controller"]
+groups = ["all", "server", "client"]
 template_name = "main.yml.j2"
 # The template path is assumed to be: f"{templates_base_path}/<<NAME>>", where
 # <<NAME>> is 'all' for the group 'all' and the string 'DEFAULT_HOST_TYPE' for all other host types.
@@ -84,13 +84,6 @@ defaults = {
         'volume_size': 16,
         'ec2_image_id': ubuntu_ami,
         'snapshot_id': None
-    },
-    "ansible_controller": {
-        'instance_type': 't2.small',
-        'volume_size': 64,
-        'ec2_image_id': ubuntu_ami,
-        'snapshot_id': None,
-        'ansible_exp_suite_git_repo': 'git@github.com:nicolas-kuechler/doe-suite.git'
     },
     # General default values
     DEFAULT_HOST_TYPE: {
@@ -165,9 +158,6 @@ def prompt_user(d, variables, host):
                 pass
 
         input_str(d, "snapshot_id", "> Snapshot ID for this instance")
-
-        if host == "ansible_controller":
-            input_str(d, "ansible_exp_suite_git_repo", "> URL to AWS Ansible Experiment Suite git repository")
 
     remaining_variables = list(filter(lambda x: not (x in d), variables))
     if len(remaining_variables) > 0:

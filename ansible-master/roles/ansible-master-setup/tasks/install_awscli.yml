@@ -1,26 +1,29 @@
 
 - name: Set variables for the CLI installation
   set_fact:
-    ansible_controller_awscli_dir: "{{ ansible_controller_home }}/awscli"
+    ansible_master_awscli_dir: "{{ ansible_master_home }}/awscli"
     awscli_url: https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
-    awscli_zip_dest: "{{ ansible_controller_awscli_dir }}/awscli-exe-linux-x86_64.zip"
-    awscli_pub_key_path: "{{ ansible_controller_awscli_dir }}/aws_cli_team_gpg_key.pub"
+
+# Part 2, because you cannot use variables that are also defined in the same set_fact
+- set_fact:
+    awscli_zip_dest: "{{ ansible_master_awscli_dir }}/awscli-exe-linux-x86_64.zip"
+    awscli_pub_key_path: "{{ ansible_master_awscli_dir }}/aws_cli_team_gpg_key.pub"
 
 - block:
   - name: Create a folder for the AWS CLI installer
     ansible.builtin.file:
-      path: "{{ ansible_controller_awscli_dir }}"
+      path: "{{ ansible_master_awscli_dir }}"
       state: directory
-      owner: "{{ ansible_controller_user }}"
-      group: "{{ ansible_controller_group }}"
+      owner: "{{ ansible_master_user }}"
+      group: "{{ ansible_master_group }}"
       mode: '0750'
 
   - name: Copy AWS CLI Team GPG public key to VM
     ansible.builtin.copy:
       src: resources/awscli/aws_cli_team_gpg_key.pub
       dest: "{{ awscli_pub_key_path }}"
-      owner: "{{ ansible_controller_user }}"
-      group: "{{ ansible_controller_group }}"
+      owner: "{{ ansible_master_user }}"
+      group: "{{ ansible_master_group }}"
       mode: '0440'
 
   - name: Import AWS CLI Team GPG public key in GPG
@@ -30,8 +33,8 @@
     ansible.builtin.get_url:
       url: "{{ awscli_url }}"
       dest: "{{ awscli_zip_dest }}"
-      owner: "{{ ansible_controller_user }}"
-      group: "{{ ansible_controller_group }}"
+      owner: "{{ ansible_master_user }}"
+      group: "{{ ansible_master_group }}"
       mode: '0440'
     register: get_url
 
@@ -39,8 +42,8 @@
     ansible.builtin.get_url:
       url: "{{ awscli_url }}.sig"
       dest: "{{ awscli_zip_dest }}.sig"
-      owner: "{{ ansible_controller_user }}"
-      group: "{{ ansible_controller_group }}"
+      owner: "{{ ansible_master_user }}"
+      group: "{{ ansible_master_group }}"
       mode: '0440'
 
   - name: Verify signature for AWS CLI ZIP-file
@@ -60,30 +63,31 @@
   - name: Unzip AWS CLI tools
     ansible.builtin.unarchive:
       src: "{{ awscli_zip_dest }}"
-      dest: "{{ ansible_controller_awscli_dir }}"
-      owner: "{{ ansible_controller_user }}"
-      group: "{{ ansible_controller_group }}"
+      dest: "{{ ansible_master_awscli_dir }}"
+      owner: "{{ ansible_master_user }}"
+      group: "{{ ansible_master_group }}"
       remote_src: yes
 
   - name: Check if AWS CLI is already installed
     ansible.builtin.command: which aws
+    ignore_errors: True
     register: which_cmd
 
   - name: Install AWS CLI (if it is not yet installed)
     ansible.builtin.command:
       cmd: ./aws/install
-      chdir: "{{ ansible_controller_awscli_dir }}"
+      chdir: "{{ ansible_master_awscli_dir }}"
     when: which_cmd.rc != 0
 
   - name: Update AWS CLI (if awscli is already installed)
     ansible.builtin.command:
       cmd: ./aws/install --update
-      chdir: "{{ ansible_controller_awscli_dir }}"
+      chdir: "{{ ansible_master_awscli_dir }}"
     when: which_cmd.rc == 0
 
   - name: Verify installation
     block:
-      - ansible.builtin.command: "sudo -u '{{ ansible_controller_user }}' aws --version"
+      - ansible.builtin.command: "sudo -u '{{ ansible_master_user }}' aws --version"
         register: awscli_cmd
 
       - ansible.builtin.debug:

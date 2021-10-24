@@ -1,0 +1,19 @@
+
+- name: Install python package dependencies with poetry
+  ansible.builtin.command:
+    cmd: poetry install
+    chdir: "{{ ansible_master_does_dir }}"
+  become: yes
+  become_method: sudo
+
+- name: Install ansible
+  ansible.builtin.pip:
+    name: ansible
+    executable: pip3
+  become: yes
+  become_method: sudo
+
+- name: Install the required Ansible collections
+  ansible.builtin.command:
+    cmd: poetry run ansible-galaxy install -r requirements-collections.yml
+    chdir: "{{ ansible_master_does_dir }}"

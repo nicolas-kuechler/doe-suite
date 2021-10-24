@@ -15,15 +15,15 @@
   become: yes
   become_method: sudo
 
-- name: "Add user and group {{ ansible_controller_user }}:{{ ansible_controller_group }}"
+- name: "Add user and group {{ ansible_master_user }}:{{ ansible_master_group }}"
   block:
   - ansible.builtin.group:
-      name: "{{ ansible_controller_group }}"
+      name: "{{ ansible_master_group }}"
       state: present
 
   - ansible.builtin.user:
-      name: "{{ ansible_controller_user }}"
-      group: "{{ ansible_controller_group }}"
+      name: "{{ ansible_master_user }}"
+      group: "{{ ansible_master_group }}"
       create_home: yes
       state: present
 
@@ -32,7 +32,7 @@
 
 - name: Install pipenv
   ansible.builtin.pip:
-    name: pipenv
+    name: poetry
     executable: pip3
   become: yes
   become_method: sudo

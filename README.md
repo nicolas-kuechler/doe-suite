@@ -254,7 +254,7 @@ Afterward, you can change the environment variable `DOES_PROJECT_DIR` to point t
 
     <!--and the example host types `client` and `server`.
 
-    This prompts user input to perform variable substitution using the `resources/repotemplate/group_vars/*/main.yml.j2` templates. By default, it creates four groups: `all`, `server`, `client`, and `ansible_controller`.
+    This prompts user input to perform variable substitution using the `resources/repotemplate/group_vars/*/main.yml.j2` templates. By default, it creates four groups: `all`, `server`, `client`.
 
     When unsure, set the unique `project id` and the AWS `key name` from the prerequisites and otherwise use the default options.
 

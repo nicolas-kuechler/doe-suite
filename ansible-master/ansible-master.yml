@@ -1,30 +1,30 @@
 ---
 
 ##################################################################################
-# This playbook sets up an ansible controller on AWS. This instance is able to   #
+# This playbook sets up an ansible master on AWS. This instance is able to       #
 # run the experiment playbook and gather the results. It is intended to be used  #
 # as a long-running instance where GitHub actions can send commands to, to       #
 # trigger experiment runs.                                                       #
 ##################################################################################
 
 ##########################################################################
-#   Setup Ansible Controller                                             #
+#   Setup Ansible master                                             #
 ##########################################################################
-- name: Create ansible controller
+- name: Create ansible master
   hosts: localhost
   tasks:
 
     - name: Template dynamic inventory config file
-      # we do this because we want to have the project id as an inventory filter (such that only ec2 instances with a corresponding tag are visible)
+      # we do this because we want to filter the inventory for ansible masters
+      # (such that only ec2 instances with a corresponding tag are visible)
       template:
         src: resources/inventory/aws_ec2.yml.j2
         dest: inventory/aws_ec2.yml
         mode: 0755
       vars:
         prj_clear: True
-        is_ansible_controller: True
 
-    # Load variables
+    # Load variables from doe-suite/src
     - name: Load group variables
       include_role:
         name: load-group-vars
@@ -32,20 +32,21 @@
         groups_to_load:
           - all
 
-    - name: Manually load variables for ansible_controller
+    # Load variables for the ansible_master host type
+    - name: Manually load variables for ansible_master
       include_vars:
-        file: "{{ external_group_vars_dir }}/ansible_controller/main.yml"
+          file: group_vars/ansible_master/main.yml
 
     - name: Setup AWS VPC
       include_role:
         name: suite-aws-vpc-create
 
-    - name: Create AWS EC2 instance for ansible controller
+    - name: Create AWS EC2 instance for ansible master
       include_role:
-        name: ansible-controller-ec2
+        name: ansible-master-ec2
 
-- name: Setup ansible controller
-  hosts: ansible_controller
+- name: Setup ansible master
+  hosts: ansible_master
 
   tasks:
     - name: Load group variables
@@ -54,8 +55,7 @@
       vars:
         groups_to_load:
           - all
-          - ansible_controller
 
     - name: Configure the EC2 instance for running the AWS Ansible Experiment Suite
       include_role:
-        name: ansible-controller-setup
+        name: ansible-master-setup

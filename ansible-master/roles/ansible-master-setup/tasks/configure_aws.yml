@@ -1,7 +1,7 @@
 
 - name: "Set AWS default region {{ exp_base.aws_region }}"
   ansible.builtin.copy:
-    dest: "{{ ansible_controller_home/.aws/config }}"
+    dest: "{{ ansible_master_home }}/.aws/config "
     content: |
       [default]
       region=eu-central-1
