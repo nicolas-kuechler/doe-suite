@@ -33,6 +33,7 @@ def parse_arguments():
     ansible_subparser.add_argument("-c", "--commit",
         help="Commit that triggered this run",
         default="manual", type=str)
+
     #
     # primary command: slack
     #
