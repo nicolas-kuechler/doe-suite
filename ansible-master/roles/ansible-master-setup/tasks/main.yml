@@ -7,3 +7,4 @@
 - include_tasks: install_awscli.yml
 - include_tasks: prepare_ansible.yml
 - include_tasks: store_aws_creds.yml
+- include_tasks: setup_does_master_binary.yml

@@ -1,19 +1,22 @@
 
-- name: Create folder for AWS credentials
-  ansible.builtin.file:
-    path:  "{{ ansible_master_home }}/.aws"
-    owner: "{{ ansible_master_user }}"
-    group: "{{ ansible_master_group }}"
-    state: directory
-  become: yes
-  become_method: sudo
+- block:
+  - name: Create folder for AWS credentials
+    ansible.builtin.file:
+      path:  "{{ ansible_master_home }}/.aws"
+      owner: "{{ ansible_master_user }}"
+      group: "{{ ansible_master_group }}"
+      state: directory
+    become: yes
+    become_method: sudo
 
-- name: Store AWS credentials
-  ansible.builtin.template:
-    src: resources/aws/credentials.j2
-    dest: "{{ ansible_master_home }}/.aws/credentials"
-    owner: "{{ ansible_master_user }}"
-    group: "{{ ansible_master_group }}"
-    mode: '0640'
-  become: yes
-  become_method: sudo
+  - name: Store AWS credentials
+    ansible.builtin.template:
+      src: resources/aws/credentials.j2
+      dest: "{{ ansible_master_home }}/.aws/credentials"
+      owner: "{{ ansible_master_user }}"
+      group: "{{ ansible_master_group }}"
+      mode: '0640'
+    become: yes
+    become_method: sudo
+
+  when: aws_access_key_id != 'None' and aws_secret_access_key != 'NONE'

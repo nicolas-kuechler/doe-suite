@@ -72,12 +72,12 @@ def handle_ansible_cmd(args, state):
     benchmark = args.benchmark
     commit = args.commit
 
-    # TODO: change project ID to commit hash -> add functionality to kill old benchmarks
-    subprocess.run(["poetry", "run", "ansible-playbook", "src/experiment-suite.yml", "-e", f"suite={benchmark} id=new"], cwd=state.state["home"])
-
     # TODO: get result path fron ETL pipeline!
     path = ""
     state.add_new_result(path, commit)
+
+    # TODO: change project ID to commit hash -> add functionality to kill old benchmarks
+    #subprocess.run(["poetry", "run", "ansible-playbook", "src/experiment-suite.yml", "-e", f"suite={benchmark} id=new"], cwd=state.home)
 
 def handle_slack_cmd(args, state):
     files_to_post = args.post
@@ -93,7 +93,7 @@ def handle_results_cmd(args, state):
 
     if do_list_results:
         print("The following results are available:")
-        for result in state.state["results"]:
+        for result in state.results:
             print(f"\t-", result)
         return
 
@@ -101,7 +101,7 @@ def handle_results_cmd(args, state):
 
     results_path = tempfile.mkdtemp()
 
-    for result in state.state["results"]:
+    for result in state["results"]:
         if result["path"] in files_to_fetch:
             commit_folder = f"{results_path}/{result['commit']}"
             create_folder(commit_folder)
@@ -109,7 +109,7 @@ def handle_results_cmd(args, state):
             # TODO: find better way to not overwrite result files
             shutil.copyfile(result["path"], f"{commit_folder}/{results_path.split('/')[1]}")
 
-    if len(state.state["results"]) > 0:
+    if len(state["results"]) > 0:
         if os.path.exists(RESULTS_ZIP_PATH):
             os.remove(RESULTS_ZIP_PATH)
 

@@ -52,9 +52,15 @@
     - name: aws_access_key_id
       prompt: Enter your AWS access key id
       private: no
+      default: NONE
 
     - name: aws_secret_access_key
       prompt: Enter your AWS secret access key
+      default: NONE
+
+    - name: ansible_master_slack_oauth_access_token
+      prompt: Enter slack bot oauth access token
+      default: NONE
 
   tasks:
     - name: Load group variables

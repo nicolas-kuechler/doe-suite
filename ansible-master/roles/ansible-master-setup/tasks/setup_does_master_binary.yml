@@ -1,0 +1,15 @@
+
+- name: Install slackclient
+  ansible.builtin.pip:
+    name: slackclient
+    executable: pip3
+  become: yes
+  become_method: sudo
+
+- name: "Set environment variable SLACK_BOT_TOKEN permantently in /etc/environment"
+  lineinfile:
+    dest: "/etc/environment"
+    state: present
+    regexp: "^SLACK_OAUTH_ACCESS_TOKEN="
+    line: "SLACK_OAUTH_ACCESS_TOKEN={{ ansible_master_slack_oauth_access_token }}"
+  when: ansible_master_slack_oauth_access_token != 'NONE'
