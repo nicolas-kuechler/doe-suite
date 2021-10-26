@@ -1,79 +1,78 @@
 
-# TODO: rework with https://www.twilio.com/blog/how-to-build-a-slackbot-in-socket-mode-with-python
-
+import logging
+import os
 import re
 
-from time import sleep
-from slackclient import SlackClient
+from slack_bolt import App
+from slack_bolt.adapter.socket_mode import SocketModeHandler
 
-class AnsibleMasterBot():
-    RTM_READ_DELAY = 1
+SLACK_BOT_TOKEN = os.environ["SLACK_BOT_TOKEN"]
+SLACK_APP_TOKEN = os.environ["SLACK_APP_TOKEN"]
 
-    KNOWN_CMDS = {
-        "echo": echo
-    }
+CMD_REGEX = "<@[A-Z0-9]+> ([a-z]+) (.*)"
 
-    def __init__(self, token):
-        self.client = SlackClient(token)
-        self.name = "Ansible Master Bot"
-        
+app = App(token=SLACK_BOT_TOKEN)
 
-    class BotCommand():
-        def __init__(self, cmd, channel):
-            parts = cmd.strip().split()
-            self.cmd = parts[0]
-            self.args = parts[1:]
-            self.channel = channel
+class BotCommand():
+    def __init__(self, body):
+        event = body["event"]
 
-    #
-    # Commands
-    #
-    def echo(*args):
-        return args
+        self.sender = event["user"]
+        text = event["text"]
+        matches = re.search(CMD_REGEX, text)
 
-    #
-    # Helper functions
-    #
-    def filter_bot_commands(self, slack_events):
-        """
-        Parse a list of Slack events and identify and yield bot commands.
-        """
-        for event in slack_events:
-            if event["type"] == "message": 
-                matches = re.search(f"^<@{self.id}>(.*)", event["text"])
-                if matches:
-                    yield BotCommand(matches.group(0), event["channel"])
+        if not matches:
+            logging.debug(f"Invalid command (not matching the regex): {text}")
+            raise Exception
 
-    def handle_cmd(self, cmd):
-        """
-        Execute known commands
-        """
+        groups = matches.groups()
+        self.cmd = groups[0]
+        self.args = groups[1]
 
-        if cmd.cmd not in known_cmds:
-            response = f"Unknown command. Try: {', '.join(known_cmds.keys())}"
-        else:
-            response = known_cmds[cmd.cmd](*cmd.args)
+#
+# Commands
+#
+def echo(args):
+    return str(args)
 
-        # Sends the response back to the channel
-        self.client.api_call(
-            "chat.postMessage",
-            channel=cmd.channel,
-            text=response
-        )
+KNOWN_CMDS = {
+    "echo": echo
+}
 
-    def run(self):
-        if self.client.rtm_connect(with_team_state=False):
-            print("{self.name} connected and running!")
+#
+# Bot Handler
+#
 
-            self.id = slack_client.api_call("auth.test")["user_id"]
-            while True:
-                for cmd in self.filter_bot_commands(self.client.rtm_read()):
-                    self.handle_cmd(cmd)
-                    sleep(self.RTM_READ_DELAY)
-        else:
-            print("{self.name} failed to connect.")
+def bot_handle(cmd, say):
+    """
+    Execute known commands
+    """
+
+    if cmd.cmd not in KNOWN_CMDS:
+        logging.debug(f"Received unknown command: {cmd.cmd}")
+        response = f"Unknown command. Try: {', '.join(KNOWN_CMDS.keys())}"
+    else:
+        logging.debug(f"Executing command: {cmd.cmd}")
+        response = KNOWN_CMDS[cmd.cmd](cmd.args)
+
+    say(response)
+
+#
+# Decorators
+#
+@app.event("app_mention")
+def mention_handler(body, say):
+    try:
+        cmd = BotCommand(body)
+    except:
+        say(f"Invalid command: it has to match the regex '{CMD_REGEX}'")
+        return
+
+    bot_handle(cmd, say)
 
 
 if __name__ == "__main__":
-    slack_client = SlackClient(os.environ.get("SLACK_OAUTH_ACCESS_TOKEN"))
+    logging.RootLogger(level=logging.DEBUG)
 
+    handler = SocketModeHandler(app, SLACK_APP_TOKEN)
+    handler.start()

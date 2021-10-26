@@ -58,8 +58,12 @@
       prompt: Enter your AWS secret access key
       default: NONE
 
-    - name: ansible_master_slack_oauth_access_token
-      prompt: Enter slack bot oauth access token
+    - name: ansible_master_slack_app_token
+      prompt: Enter slack bot app-level token
+      default: NONE
+
+    - name: ansible_master_slack_bot_token
+      prompt: Enter slack bot user OAuth token
       default: NONE
 
   tasks:
