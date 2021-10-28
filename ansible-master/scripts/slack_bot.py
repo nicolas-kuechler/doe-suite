@@ -6,6 +6,8 @@ import re
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 
+from does_master import does_master_exec
+
 SLACK_BOT_TOKEN = os.environ["SLACK_BOT_TOKEN"]
 SLACK_APP_TOKEN = os.environ["SLACK_APP_TOKEN"]
 
@@ -35,8 +37,12 @@ class BotCommand():
 def echo(args):
     return str(args)
 
+def does(args_str):
+    return does_master_exec(args_str)
+
 KNOWN_CMDS = {
-    "echo": echo
+    "echo": echo,
+    "does": does,
 }
 
 #
