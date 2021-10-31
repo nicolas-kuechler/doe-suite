@@ -30,7 +30,7 @@ ansible_master_ssh_key_sizes:
   git: 521
   aws: 4096
 
-ansible_master_aws_key_name: aws_key_ansible_master
+# The AWS key name is defined in does_config/group_vars/all
 ansible_master_ssh_key_paths:
   git: "{{ ansible_master_ssh_key_dir }}/id_ssh_git"
   aws: "{{ ansible_master_ssh_key_dir }}/{{ansible_master_aws_key_name}}"

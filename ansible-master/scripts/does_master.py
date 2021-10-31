@@ -87,18 +87,18 @@ class DOESMaster():
     def handle_ansible_cmd(self):
         benchmark = self.args.benchmark
         commit = self.args.commit
-    
+
         # TODO: get result path fron ETL pipeline!
         path = ""
         self.state.add_new_result(path, commit)
-    
+
         # TODO: change project ID to commit hash -> add functionality to kill old benchmarks
         p = subprocess.run([
-            "poetry", 
-            "run", 
-            "ansible-playbook", 
-            "src/experiment-suite.yml", 
-            "-e", 
+            "poetry",
+            "run",
+            "ansible-playbook",
+            "src/experiment-suite.yml",
+            "-e",
             f"suite={benchmark} id=new prj_id={commit}"
         ], cwd=self.state.home)
 
@@ -108,43 +108,43 @@ class DOESMaster():
         else:
             state = "STARTED"
         return f"{context} {state}"
-    
+
     def handle_slack_cmd(self):
         files_to_post = self.args.post
         channel = self.args.channel
-    
+
         self.state.update()
-    
+
     def handle_results_cmd(self):
         do_list_results = self.args.list
         files_to_fetch = self.args.fetch
-    
+
         self.state.update()
-    
+
         if do_list_results:
             print("The following results are available:")
             for result in self.state.results:
                 print(f"\t- {result}")
             return
-    
+
         # TODO: add functionality to fetch all results for a commit
-    
+
         results_path = tempfile.mkdtemp()
-    
+
         for result in self.state["results"]:
             if result["path"] in files_to_fetch:
                 commit_folder = f"{results_path}/{result['commit']}"
                 create_folder(commit_folder)
-    
+
                 # TODO: find better way to not overwrite result files
                 shutil.copyfile(result["path"], f"{commit_folder}/{results_path.split('/')[1]}")
-    
+
         if len(self.state["results"]) > 0:
             if os.path.exists(RESULTS_ZIP_PATH):
                 os.remove(RESULTS_ZIP_PATH)
-    
+
             shutil.make_archive(RESULTS_ZIP_PATH, "zip", results_path)
-    
+
             print(f"Download the requested files from {RESULTS_ZIP_PATH} (e.g., using scp).")
 
 
@@ -177,7 +177,7 @@ def does_master_exec(args_str):
 
     sys.stdout = cmd_stdout
 
-    # Convention: 
+    # Convention:
     #   - if there is an error, respond with error message
     #   - if the handle function returns something, we return that to slack.
     #   - Otherwise, we write the stdout back
