@@ -14,7 +14,7 @@
     state: present
     regexp: "^{{ env_ctx.name }}="
     line: "{{ env_ctx.name }}={{ env_ctx.value }}"
-  when: env_ctx.name != 'NONE'
+  when: env_ctx.value != 'NONE'
   loop:
     - { name: 'SLACK_APP_TOKEN', value: "{{ ansible_master_slack_app_token }}" }
     - { name: 'SLACK_BOT_TOKEN', value: "{{ ansible_master_slack_bot_token }}" }

@@ -13,6 +13,7 @@ import uuid
 
 from io import StringIO
 from state import State
+from slack_bot import str_to_markdown
 
 OUT_FOLDER = f"{os.environ['HOME']}/.does-master"
 LOG_FOLDER = f"{OUT_FOLDER}/logs"
@@ -34,7 +35,7 @@ def get_parser():
 
     ansible_subparser.add_argument("-b", "--benchmark",
         help="Specify the benchmark (name of the file in does_config/designs without extension)",
-        required=True, type=str)
+        type=str)
 
     ansible_subparser.add_argument("-c", "--commit",
         help="Commit that triggered this run", type=str)
@@ -117,11 +118,11 @@ class DOESMaster():
         instance_desc = aws_client.describe_instances()
 
         running_instances = ""
-        for reservation in instance_desc"Reservations"]:
+        for reservation in instance_desc["Reservations"]:
             for instance in reservation["Instances"]:
                 if instance["State"]["Name"] in states:
                     name = "-"
-                    for key_vals in reservation["Tags"]:
+                    for key_vals in instance["Tags"]:
                         if key_vals["Key"] == "Name":
                             name = key_vals["Value"]
                     instances.append({"name": name, "id": instance['InstanceId']})
@@ -136,7 +137,7 @@ class DOESMaster():
 
         # TODO: get result path fron ETL pipeline!
         path = ""
-        self.state.add_new_result(path, commit)
+        self.state.add_new_result(path, self.args.commit)
 
         # TODO: change project ID to commit hash -> add functionality to kill old benchmarks
         p = subprocess.run([
@@ -164,12 +165,12 @@ class DOESMaster():
             "poetry",
             "run",
             "ansible-playbook",
-            "src/clear",
+            "src/clear.yml",
             "-e",
             f"prj_id={self.args.commit}"
         ], cwd=self.state.home)
 
-        context = f"Clearing all instances for commit {slef.args.commit} "
+        context = f"Clearing all instances for commit {self.args.commit} "
         if p.returncode != 0:
             state = "FAILED!"
         else:
@@ -178,10 +179,10 @@ class DOESMaster():
 
         return f"{context} {state}\n\n{self.aws_currently_running()}"
 
-    def aws_currently_running(self):
+    def aws_currently_running(self, states=["running"]):
         running_instances = "Currently running AWS EC2 instances:\n"
-        for instance in self.aws_get_instances("running"):
-            running_instances += f"- name: {instance['name']}, id: {instance['id']}\n"
+        for instance in self.aws_get_instances(states):
+            running_instances += f"\t- name: {instance['name']}, id: {instance['id']}\n"
 
         return running_instances
 
@@ -193,19 +194,19 @@ class DOESMaster():
             return self.ansible_do_benchmark()
         # Terminate the instances of  a running benchmark
         elif self.args.terminate and self.args.commit:
-                return self.ansible_clear()
+                return self.ansible_clear(), None
         else:
             msg = "Received invalid command or arguments for 'ansible' subcommand!"
             logging.error(msg)
-            return msg
+            return msg, None
 
     def handle_aws_cmd(self):
         if self.args.list:
-            return self.aws_currently_running(self.args.state)
+            return "Response:", [str_to_markdown(self.aws_currently_running(self.args.state))]
         else:
             msg = "Received invalid command or arguments for 'aws' subcommand!"
             logging.error(msg)
-            return msg
+            return msg, None
 
     def handle_slack_cmd(self):
         files_to_post = self.args.post
@@ -213,7 +214,10 @@ class DOESMaster():
 
         self.state.update()
 
+        return "", None # TODO
+
     def handle_results_cmd(self):
+        # TODO
         do_list_results = self.args.list
         files_to_fetch = self.args.fetch
 
@@ -250,7 +254,7 @@ class DOESMaster():
         if self.args.command == "ansible":
             return self.handle_ansible_cmd()
         if self.args.command == "aws":
-            return self.handle_aws_cmds()
+            return self.handle_aws_cmd()
         elif self.args.command == "slack":
             return self.handle_slack_cmd()
         elif self.args.command == "results":
@@ -273,7 +277,7 @@ def does_master_exec(args_str):
     except SystemExit:
         rc = sys.exc_info()[1]
         success = rc == 0
-        logging.error("Caught system exit with return code {rc}")
+        logging.error(f"Caught system exit with return code {rc}")
 
     sys.stdout = cmd_stdout
 
@@ -282,7 +286,7 @@ def does_master_exec(args_str):
     #   - if the handle function returns something, we return that to slack.
     #   - Otherwise, we write the stdout back
     if not success:
-        return f"ERROR: executing the does command {self.args.command} failed unexpectedly with error code {rc}!"
+        return f"ERROR: executing the does command '{args_str}' failed unexpectedly with error code {rc}!"
     elif out:
         return out
     else:

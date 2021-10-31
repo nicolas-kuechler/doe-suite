@@ -6,8 +6,6 @@ import re
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 
-from does_master import does_master_exec
-
 SLACK_BOT_TOKEN = os.environ["SLACK_BOT_TOKEN"]
 SLACK_APP_TOKEN = os.environ["SLACK_APP_TOKEN"]
 
@@ -35,9 +33,10 @@ class BotCommand():
 # Commands
 #
 def echo(args):
-    return str(args)
+    return str(args), None
 
 def does(args_str):
+    from does_master import does_master_exec
     return does_master_exec(args_str)
 
 KNOWN_CMDS = {
@@ -54,14 +53,27 @@ def bot_handle(cmd, say):
     Execute known commands
     """
 
+    blocks = None
     if cmd.cmd not in KNOWN_CMDS:
         logging.debug(f"Received unknown command: {cmd.cmd}")
-        response = f"Unknown command. Try: {', '.join(KNOWN_CMDS.keys())}"
+        text = f"Unknown command. Try: {', '.join(KNOWN_CMDS.keys())}"
     else:
         logging.debug(f"Executing command: {cmd.cmd}")
-        response = KNOWN_CMDS[cmd.cmd](cmd.args)
+        text, blocks = KNOWN_CMDS[cmd.cmd](cmd.args)
 
-    say(response)
+    say(blocks=blocks, text=text)
+
+#
+# Advanced message formats
+#
+def str_to_markdown(s):
+    return {
+        "type": "section",
+        "text": {
+            "type": "mrkdwn",
+            "text": s
+        }
+    }
 
 #
 # Decorators
