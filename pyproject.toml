@@ -6,7 +6,7 @@ authors = ["Nicolas Küchler <nico.kuechler@protonmail.com>"]
 # TODO [nku] after poetry update to 1.2.0, we can load .env file via plugin: https://github.com/python-poetry/poetry/issues/337
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.11"
+python = ">=3.8,<3.11"
 ansible = ">=2.11"
 pandas = "^1.3.3"
 PyYAML = "^5.4.1"
