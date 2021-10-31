@@ -9,14 +9,54 @@
   become_method: sudo
 
 - name: "Set environment variable {{ env_ctx.name }} permantently in /etc/environment"
-  lineinfile:
+  ansible.builtin.lineinfile:
     dest: "/etc/environment"
     state: present
     regexp: "^{{ env_ctx.name }}="
     line: "{{ env_ctx.name }}={{ env_ctx.value }}"
-  when: {{ env_ctx.name }} != 'NONE'
+  when: env_ctx.name != 'NONE'
   loop:
-    - {name: 'SLACK_APP_TOKEN', value: "{{ ansible_master_slack_app_token }}" }
-    - {name: 'SLACK_BOT_TOKEN', value: "{{ ansible_master_slack_bot_token }}" }
+    - { name: 'SLACK_APP_TOKEN', value: "{{ ansible_master_slack_app_token }}" }
+    - { name: 'SLACK_BOT_TOKEN', value: "{{ ansible_master_slack_bot_token }}" }
+    - { name: 'SSH_AUTH_SOCK', value: '$XDG_RUNTIME_DIR/ssh-agent.socket' }
+    - { name: 'AWS_REGION_NAME', value: "{{ exp_base.aws_region }}" }
   loop_control:
     loop_var: env_ctx
+  become: yes
+  become_method: sudo
+
+- name: Install systemd service for ssh-agent
+  ansible.builtin.copy:
+    src: resources/systemd/system/ssh-agent.service
+    dest: /etc/systemd/system/ssh-agent.service
+    owner: root
+    group: root
+    mode: '0644'
+  become: yes
+  become_method: sudo
+
+- name: Enable and start new ssh-agent service
+  ansible.builtin.systemd:
+    name: ssh-agent
+    enabled: yes
+    state: started
+  become: yes
+  become_method: sudo
+
+- name: Install systemd service for slack bot
+  ansible.builtin.template:
+    src: resources/systemd/system/slack-bot.service.j2
+    dest: /etc/systemd/system/slack-bot.service
+    owner: root
+    group: root
+    mode: '0644'
+  become: yes
+  become_method: sudo
+
+- name: Enable and start slack bot service
+  ansible.builtin.systemd:
+    name: slack-bot
+    enabled: yes
+    state: started
+  become: yes
+  become_method: sudo

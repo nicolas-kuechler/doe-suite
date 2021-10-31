@@ -8,6 +8,8 @@ import tempfile
 import shutil
 import subprocess
 import sys
+import boto3
+import uuid
 
 from io import StringIO
 from state import State
@@ -17,6 +19,7 @@ LOG_FOLDER = f"{OUT_FOLDER}/logs"
 STATE_PATH = f"{OUT_FOLDER}/state.json"
 RESULTS_ZIP_PATH = "/tmp/results"
 DOES_PRJ_DIR_VARIABLE = "DOES_PROJECT_DIR"
+AWS_REGION_NAME_VARIABLE = "AWS_REGION_NAME"
 
 
 def get_parser():
@@ -34,8 +37,24 @@ def get_parser():
         required=True, type=str)
 
     ansible_subparser.add_argument("-c", "--commit",
-        help="Commit that triggered this run",
-        default="manual", type=str)
+        help="Commit that triggered this run", type=str)
+
+    ansible_subparser.add_argument("-t", "--terminate",
+        help="Terminate AWS EC2 instances that run benchmarks for the given commit",
+        action="store_true")
+
+    #
+    # primary command: aws
+    #
+    aws_subparser = subparsers.add_parser("aws", help="AWS-related commands")
+
+    aws_subparser.add_argument("-l", "--list",
+        help="List AWS EC2 instances that are in (one of the) specified state(s)",
+        action="store_true")
+
+    aws_subparser.add_argument("-s", "--state",
+        help="AWS EC2 instance state to filter for (one or more)",
+        nargs="+", default=["running"])
 
     #
     # primary command: slack
@@ -76,17 +95,44 @@ class DOESMaster():
     def __init__(self, args):
         self.args = args
 
-        if DOES_PRJ_DIR_VARIABLE not in os.environ:
-            logging.error(f"The variable '{DOES_PRJ_DIR_VARIABLE}' is not set. "
-                           "Set it to the directory of the doe-suite.")
-            exit(1)
+        for var in [DOES_PRJ_DIR_VARIABLE, AWS_REGION_NAME_VARIABLE]:
+            if var not in os.environ:
+                logging.error(f"The variable '{var}' is not set. "
+                               "Set it to the directory of the doe-suite.")
+                exit(1)
 
         setup_outdir()
         self.state = State(STATE_PATH, f"{os.environ[DOES_PRJ_DIR_VARIABLE]}/doe-suite")
 
-    def handle_ansible_cmd(self):
-        benchmark = self.args.benchmark
-        commit = self.args.commit
+
+    def aws_get_instances(self, states):
+        """
+        Get AWS EC2 instance descriptions (only the ID and instance name) for
+        all instances that are in one of the given states.
+        """
+        instances = []
+
+        # Gather which AWS instances are still running
+        aws_client = boto3.client('ec2', region_name=os.environ["AWS_REGION_NAME"])
+        instance_desc = aws_client.describe_instances()
+
+        running_instances = ""
+        for reservation in instance_desc"Reservations"]:
+            for instance in reservation["Instances"]:
+                if instance["State"]["Name"] in states:
+                    name = "-"
+                    for key_vals in reservation["Tags"]:
+                        if key_vals["Key"] == "Name":
+                            name = key_vals["Value"]
+                    instances.append({"name": name, "id": instance['InstanceId']})
+
+        return instances
+
+    def ansible_do_benchmark(self):
+        """
+        Start ansible playboook to spin up AWS EC2 instances for the specified
+        experiment design.
+        """
 
         # TODO: get result path fron ETL pipeline!
         path = ""
@@ -99,15 +145,67 @@ class DOESMaster():
             "ansible-playbook",
             "src/experiment-suite.yml",
             "-e",
-            f"suite={benchmark} id=new prj_id={commit}"
+            f"suite={self.args.benchmark} id=new prj_id={self.args.commit}"
         ], cwd=self.state.home)
 
-        context = f"Benchmark {benchmark} for commit {commit}"
+        context = f"Benchmark {self.args.benchmark} for commit {self.args.commit}"
         if p.returncode != 0:
             state = "FAILED!"
         else:
             state = "STARTED"
         return f"{context} {state}"
+
+    def ansible_clear(self):
+        """
+        Clear ansible instances of the specified commit (project ID)
+        """
+
+        p = subprocess.run([
+            "poetry",
+            "run",
+            "ansible-playbook",
+            "src/clear",
+            "-e",
+            f"prj_id={self.args.commit}"
+        ], cwd=self.state.home)
+
+        context = f"Clearing all instances for commit {slef.args.commit} "
+        if p.returncode != 0:
+            state = "FAILED!"
+        else:
+            state = "SUCCESSFUL"
+
+
+        return f"{context} {state}\n\n{self.aws_currently_running()}"
+
+    def aws_currently_running(self):
+        running_instances = "Currently running AWS EC2 instances:\n"
+        for instance in self.aws_get_instances("running"):
+            running_instances += f"- name: {instance['name']}, id: {instance['id']}\n"
+
+        return running_instances
+
+    def handle_ansible_cmd(self):
+        # Start a benchmark
+        if self.args.benchmark:
+            if not self.args.commit:
+                self.args.commit = f"manual-{uuid.uuid1().hex}"
+            return self.ansible_do_benchmark()
+        # Terminate the instances of  a running benchmark
+        elif self.args.terminate and self.args.commit:
+                return self.ansible_clear()
+        else:
+            msg = "Received invalid command or arguments for 'ansible' subcommand!"
+            logging.error(msg)
+            return msg
+
+    def handle_aws_cmd(self):
+        if self.args.list:
+            return self.aws_currently_running(self.args.state)
+        else:
+            msg = "Received invalid command or arguments for 'aws' subcommand!"
+            logging.error(msg)
+            return msg
 
     def handle_slack_cmd(self):
         files_to_post = self.args.post
@@ -151,6 +249,8 @@ class DOESMaster():
     def handle(self):
         if self.args.command == "ansible":
             return self.handle_ansible_cmd()
+        if self.args.command == "aws":
+            return self.handle_aws_cmds()
         elif self.args.command == "slack":
             return self.handle_slack_cmd()
         elif self.args.command == "results":

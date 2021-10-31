@@ -54,6 +54,7 @@
       IdentityFile {{ ansible_master_ssh_key_paths['aws'] }}
       User ubuntu
       ForwardAgent yes
+      AddKeysToAgent yes
     owner: "{{ ssh_conf.user }}"
     group: "{{ ssh_conf.group }}"
     mode: "0644"
