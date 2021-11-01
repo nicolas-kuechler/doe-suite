@@ -26,8 +26,8 @@
   become_method: sudo
 
 - name: Install systemd service for ssh-agent
-  ansible.builtin.copy:
-    src: resources/systemd/system/ssh-agent.service
+  ansible.builtin.template:
+    src: resources/systemd/system/ssh-agent.service.j2
     dest: /etc/systemd/system/ssh-agent.service
     owner: root
     group: root

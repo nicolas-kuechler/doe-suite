@@ -154,7 +154,7 @@ class DOESMaster():
             state = "FAILED!"
         else:
             state = "STARTED"
-        return f"{context} {state}"
+        return f"{context} {state}", None
 
     def ansible_clear(self):
         """
@@ -273,7 +273,7 @@ def does_master_exec(args_str):
         args = parser.parse_args(shlex.split(args_str))
 
         does = DOESMaster(args)
-        out = does.handle()
+        out, out_markdown = does.handle()
     except SystemExit:
         rc = sys.exc_info()[1]
         success = rc == 0
@@ -286,11 +286,11 @@ def does_master_exec(args_str):
     #   - if the handle function returns something, we return that to slack.
     #   - Otherwise, we write the stdout back
     if not success:
-        return f"ERROR: executing the does command '{args_str}' failed unexpectedly with error code {rc}!"
-    elif out:
-        return out
+        return f"ERROR: executing the does command '{args_str}' failed unexpectedly with error code {rc}!", None
+    elif out or out_markdown:
+        return out, out_markdown
     else:
-        return str_stdout.getvalue()
+        return str_stdout.getvalue(), None
 
 if __name__ == '__main__':
     parser = get_parser()

@@ -23,6 +23,8 @@
       PreferredAuthentications publickey
       User {{ ansible_master_git_username }}
       IdentityFile {{ ansible_master_ssh_key_paths['git'] }}
+      ForwardAgent yes
+      AddKeysToAgent yes
     owner: "{{ ssh_conf.user }}"
     group: "{{ ssh_conf.group }}"
     mode: "0644"

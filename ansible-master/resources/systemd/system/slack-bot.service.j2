@@ -2,8 +2,12 @@
 Description=AWS Ansible Master Slack Bot
 
 [Service]
+Environment=HOME={{ ansible_master_home }}
+EnvironmentFile=/etc/environment
 Type=simple
 ExecStart=/usr/bin/env python3 {{ ansible_master_does_dir }}/ansible-master/scripts/slack_bot.py
+StandardOutput=file:/var/log/slack-bot.log
+StandardError=inherit
 
 [Install]
 WantedBy=default.target

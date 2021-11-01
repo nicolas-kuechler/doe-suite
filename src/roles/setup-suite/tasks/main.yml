@@ -6,12 +6,18 @@
     msg: "-> setup suite"
   tags: [print_action]
 
+# Update the cache in a separate task because otherwise it sometimes doesn't find
+# the package...
 - name: Update repositories cache and install required packages
+  block:
+  - apt:
+      update_cache: yes
+
+  - apt:
+      pkg:
+      - task-spooler
+
   become: True
-  apt:
-    pkg:
-    - task-spooler
-    update_cache: yes
 
 
 # Use ssh-agent to get code from Git Remote Repository:
