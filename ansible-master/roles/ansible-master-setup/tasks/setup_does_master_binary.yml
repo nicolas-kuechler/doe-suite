@@ -18,7 +18,7 @@
   loop:
     - { name: 'SLACK_APP_TOKEN', value: "{{ ansible_master_slack_app_token }}" }
     - { name: 'SLACK_BOT_TOKEN', value: "{{ ansible_master_slack_bot_token }}" }
-    - { name: 'SSH_AUTH_SOCK', value: '$XDG_RUNTIME_DIR/ssh-agent.socket' }
+    - { name: 'SSH_AUTH_SOCK', value: "{{ ansible_master_home }}/.ssh/ssh-agent.socket" }
     - { name: 'AWS_REGION_NAME', value: "{{ exp_base.aws_region }}" }
   loop_control:
     loop_var: env_ctx
