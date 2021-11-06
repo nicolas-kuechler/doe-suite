@@ -15,6 +15,9 @@ app = App(token=SLACK_BOT_TOKEN)
 
 class BotCommand():
     def __init__(self, body):
+        print(body)
+        # TODO: store channel
+
         event = body["event"]
 
         self.sender = event["user"]
@@ -45,6 +48,26 @@ KNOWN_CMDS = {
 }
 
 #
+# Helpers
+#
+def post_files(channel_id, files, text):
+    """
+    Post files in the specified channel
+    """
+
+    if typeof(files) == str:
+        files = [files]
+        text = [text]
+
+    for i, file_name in enumerate(files_to_upload):
+        app.client.files_upload(
+            channels=channel_id,
+            initial_comment=text[i],
+            file=file_name,
+        )
+
+
+#
 # Bot Handler
 #
 
@@ -62,16 +85,7 @@ def bot_handle(cmd, say):
         text, blocks, files_to_upload = KNOWN_CMDS[cmd.cmd](cmd.args)
 
     if files_to_upload:
-        if typeof(files_to_upload) == str:
-            files_to_upload = [files_to_upload]
-            text = [text]
-
-        for i, file_name in enumerate(files_to_upload):
-            app.client.files_upload(
-                channels=channel_id,
-                initial_comment=text[i],
-                file=file_name,
-            )
+        post_files(cmd.channel_id, files_to_upload, text)
     else:
         say(blocks=blocks, text=text)
 
@@ -104,5 +118,27 @@ def mention_handler(body, say):
 if __name__ == "__main__":
     logging.RootLogger(level=logging.DEBUG)
 
-    handler = SocketModeHandler(app, SLACK_APP_TOKEN)
-    handler.start()
+    parser = argparse.ArgumentParser(description="Slack bot for the DoE-Suite")
+
+    # TODO
+    parser.add_argument("--commit", help="Commit(s) for which the bot should post results", nargs="+")
+
+    # TODO
+    parser.add_argument("--channel", help="Channel to post in", type=str)
+
+    args = parser.parse_args()
+    commit = args.commit
+    channel = args.channel
+
+    if not commit:
+        handler = SocketModeHandler(app, SLACK_APP_TOKEN)
+        handler.start()
+    elif channel:
+        app.client.files_upload(
+            channels=channel,
+            initial_comment=text[i],
+            file=file_name,
+        )
+    else:
+        print("Invalid arguments: commit and channel must be set both or none.")
+        parser.print_help()

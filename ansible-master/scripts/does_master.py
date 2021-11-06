@@ -21,6 +21,7 @@ STATE_PATH = f"{OUT_FOLDER}/state.json"
 RESULTS_ZIP_NAME = "results"
 DOES_PRJ_DIR_VARIABLE = "DOES_PROJECT_DIR"
 AWS_REGION_NAME_VARIABLE = "AWS_REGION_NAME"
+AWS_INSTANCE_STATES_ALL = ["pending", "running", "shutting-down", "terminated", "stopping", "stopped"]
 
 
 def get_parser():
@@ -53,27 +54,13 @@ def get_parser():
         help="List AWS EC2 instances that are in (one of the) specified state(s)",
         action="store_true")
 
-    # TODO
     aws_subparser.add_argument("-a", "--all",
         help="List AWS EC2 instances that are in (one of the) specified state(s)",
         action="store_true")
 
     aws_subparser.add_argument("-s", "--state",
         help="AWS EC2 instance state to filter for (one or more)",
-        nargs="+", default=["running"])
-
-    #
-    # primary command: slack
-    #
-    slack_subparser = subparsers.add_parser("slack", help="Slack-related commands")
-
-    # TODO
-    slack_subparser.add_argument("-p", "--post",
-        help="Post the specified files", nargs="+")
-
-    # TODO
-    slack_subparser.add_argument("-c", "--channel",
-        help="Channel to post messages in", type=str)
+        choices=AWS_INSTANCE_STATES_ALL, nargs="+", default=["running"])
 
     #
     # primary command: fetch
@@ -228,11 +215,15 @@ class DOESMaster():
         """
 
         if self.args.list:
-            return "Response:", [str_to_markdown(self.aws_currently_running(self.args.state))]
+            if self.args.all:
+                states = AWS_INSTANCE_STATES_ALL
+            else:
+                states = self.args.state
+            return "Response:", [str_to_markdown(self.aws_currently_running(states))], None
         else:
             msg = "Received invalid command or arguments for 'aws' subcommand!"
             logging.error(msg)
-            return msg, None
+            return msg, None, None
 
     def handle_fetch_cmd(self):
         """
@@ -287,26 +278,11 @@ class DOESMaster():
             else:
                 print(f"No results found for commit(s) {commits}.")
 
-
-    def handle_slack_cmd(self):
-        """
-        Handle Slack subcommand of does.
-        """
-
-        files_to_post = self.args.post
-        channel = self.args.channel
-
-        self.state.update()
-
-        return "", None # TODO
-
     def handle(self):
         if self.args.command == "ansible":
             return self.handle_ansible_cmd()
         if self.args.command == "aws":
             return self.handle_aws_cmd()
-        elif self.args.command == "slack":
-            return self.handle_slack_cmd()
         elif self.args.command == "fetch":
             return self.handle_fetch_cmd()
         else:
