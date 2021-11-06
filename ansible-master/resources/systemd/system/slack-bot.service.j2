@@ -1,6 +1,9 @@
 [Unit]
 Description=AWS Ansible Master Slack Bot
 
+StartLimitIntervalSec=500
+StartLimitBurst=5
+
 [Service]
 Environment=HOME={{ ansible_master_home }}
 EnvironmentFile=/etc/environment
@@ -8,6 +11,10 @@ Type=simple
 ExecStart=/usr/bin/env python3 {{ ansible_master_does_dir }}/ansible-master/scripts/slack_bot.py
 StandardOutput=file:/var/log/slack-bot.log
 StandardError=inherit
+
+# Try to restart failed service 5 times, if all of those fail, give up
+Restart=on-failure
+RestartSec=5s
 
 [Install]
 WantedBy=default.target
