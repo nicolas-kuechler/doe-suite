@@ -101,7 +101,7 @@
     name: experiment-state
   vars:
     expstate: 'load'
-  when: is_new_run
+  when: not is_new_run
 
 - name: Save job_ids (state) on each controller
   include_role:
