@@ -76,7 +76,7 @@ def get_parser():
         help="Channel to post messages in", type=str)
 
     #
-    # primary command: results
+    # primary command: fetch
     #
     fetch_subparser = subparsers.add_parser("fetch", help="Commands related to "
                             "fetching files from the ansible master")
@@ -128,7 +128,7 @@ class DOESMaster():
         experiment design.
         """
 
-        self.state.add_new_result(self.args.commit)
+        result = self.state.add_new_result(self.args.benchmark, self.args.commit)
 
         p = subprocess.run([
             "poetry",
@@ -136,7 +136,7 @@ class DOESMaster():
             "ansible-playbook",
             "src/experiment-suite.yml",
             "-e",
-            f"suite={self.args.benchmark} id={self.state.suite_id} prj_id={self.args.commit}"
+            f"suite={self.args.benchmark} id={result.suite_id} is_new_run=True prj_id={self.args.commit}"
         ], cwd=self.state.doe_suite)
 
         context = f"Benchmark {self.args.benchmark} for commit {self.args.commit}"
@@ -245,16 +245,19 @@ class DOESMaster():
         plot_subdir = self.args.plots
         do_fetch_plots = plot_subdir is not None
 
-        if not commits and not do_list_results:
+        if not commits and not (do_list_results or do_fetch_logs):
             parser.print_help()
             return
 
         self.state.update()
 
         if do_list_results:
-            print("The following results are available:")
-            for result in self.state.results:
-                print(f"\t- {result}")
+            if len(self.state.results) > 0:
+                print("The following results are available:")
+                for result in self.state.results:
+                    print(f"\t- {result}")
+            else:
+                print("No results stored")
             return
 
         if do_fetch_logs:
@@ -304,8 +307,8 @@ class DOESMaster():
             return self.handle_aws_cmd()
         elif self.args.command == "slack":
             return self.handle_slack_cmd()
-        elif self.args.command == "results":
-            return self.handle_results_cmd()
+        elif self.args.command == "fetch":
+            return self.handle_fetch_cmd()
         else:
             logging.warning(f"Unknown primary command {self.args.command}")
 

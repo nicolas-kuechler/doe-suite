@@ -85,7 +85,7 @@
                     | product(range(0, (hostvars['localhost'].my_suite_design[exp_name].n_repetitions | int), 1))
                     | map('tuple2flat2dict', ['suite', 'suite_id', 'exp_name', 'exp_run', 'exp_run_rep'])
                     | list }}"
-  when: id == 'new'
+  when: is_new_run
 
 
 - name: cleanup variables and set variables for experiment
@@ -101,11 +101,11 @@
     name: experiment-state
   vars:
     expstate: 'load'
-  when: id != 'new'
+  when: is_new_run
 
 - name: Save job_ids (state) on each controller
   include_role:
     name: experiment-state
   vars:
     expstate: 'save'
-  when: id == 'new'
+  when: is_new_run

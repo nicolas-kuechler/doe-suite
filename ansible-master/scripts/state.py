@@ -40,7 +40,7 @@ class Result():
                 self.timestamp = int(time.time())
 
             self.suite = suite
-            self.subdir = f"{self.state.suite}_{self.state.suite_id}"
+            self.subdir = f"{self.suite}_{self.suite_id}"
             self.commit = commit
             self.progress = "running"
         elif len(args) == 1:
@@ -154,6 +154,8 @@ class State():
         with open(self.path, "w+") as fp:
             fp.write(json.dumps(self.to_json()))
 
-    def add_new_result(self, commit):
-        self.results.add(Result(commit))
+    def add_new_result(self, suite, commit):
+        new_result = Result(suite, commit)
+        self.results.add(new_result)
         self.store()
+        return new_result

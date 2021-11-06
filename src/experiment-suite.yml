@@ -46,7 +46,7 @@
     - debug:
         msg: "Setup AWS..."
       tags: [print_action]
-      when: id == 'new'
+      when: is_new_run
 
     - name: Setup AWS VPC
       include_role:
@@ -83,7 +83,7 @@
     loop: "{{ setup_roles }}"
     loop_control:
       loop_var: role_name
-    when: id == 'new' # only setup if it is a new experiment
+    when: is_new_run # only setup if it is a new experiment
 
 
 

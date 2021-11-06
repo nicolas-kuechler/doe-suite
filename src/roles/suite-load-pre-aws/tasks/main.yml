@@ -69,6 +69,10 @@
 # Read and Validate the suite design file (only if new)
 ###########################################################
 
+- name: set variable is_new_run if id == 'new' unless it was set manually
+  set_fact:
+    is_new_run: "{{ is_new_run | default(id == 'new') }}"
+
 - name: set the directory of where to place the (default) resolved suite design
   set_fact:
     suite_design_dir: "{{ local.results_dir }}/{{ suite }}_{{ suite_id }}"
@@ -85,7 +89,7 @@
     dest: "{{ suite_design_dir }}/suite_design.yml"
     prj_roles_dir:  "{{ external_roles_dir }}"
     prj_groupvars_dir: "{{ external_group_vars_dir }}"
-  when: id == 'new' # only validate and resolve defaults for new (otherwise load the old already checked version)
+  when: is_new_run # only validate and resolve defaults for new (otherwise load the old already checked version)
 
 - name: read the suite design (with default values resolved)
   include_vars:
