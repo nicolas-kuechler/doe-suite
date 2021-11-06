@@ -161,7 +161,7 @@ class DOESMaster():
             state = "SUCCESSFUL"
 
 
-        return f"{context} {state}\n\n{self.aws_currently_running()}"
+        return f"{context} {state}\n\n{self.aws_currently_running()}", None, None
 
     def aws_get_instances(self, states):
         """
@@ -268,11 +268,11 @@ class DOESMaster():
                 results_zip_path = shutil.make_archive(f"{tmp_path}/{RESULTS_ZIP_NAME}", "zip", results_path)
 
                 if self.is_run_from_cmd:
-                    print(f"The requested results were written to {results_zip_path}")
+                    return f"The requested results were written to {results_zip_path}", None, None
                 else:
                     return [f"Results for commit(s): {', '.join(commits)}"], None, [results_zip_path]
             else:
-                print(f"No results found for commit(s) {commits}.")
+                f"No results found for commit(s) {commits}.", None, None
 
     def handle_fetch_cmd(self):
         """

@@ -73,6 +73,7 @@ def bot_handle(cmd, say):
     """
 
     blocks = None
+    files_to_upload = None
     if cmd.cmd not in KNOWN_CMDS:
         logging.debug(f"Received unknown command: {cmd.cmd}")
         text = f"Unknown command. Try: {', '.join(KNOWN_CMDS.keys())}"
