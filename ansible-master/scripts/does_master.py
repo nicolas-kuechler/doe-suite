@@ -18,7 +18,7 @@ from slack_bot import str_to_markdown
 OUT_FOLDER = f"{os.environ['HOME']}/.does-master"
 LOG_FOLDER = f"{OUT_FOLDER}/logs"
 STATE_PATH = f"{OUT_FOLDER}/state.json"
-RESULTS_ZIP_PATH = "/tmp/results"
+RESULTS_ZIP_NAME = "results"
 DOES_PRJ_DIR_VARIABLE = "DOES_PROJECT_DIR"
 AWS_REGION_NAME_VARIABLE = "AWS_REGION_NAME"
 
@@ -41,7 +41,7 @@ def get_parser():
         help="Commit that triggered this run", type=str)
 
     ansible_subparser.add_argument("-t", "--terminate",
-        help="Terminate AWS EC2 instances that run benchmarks for the given commit",
+        help="Terminate all AWS EC2 instances that run benchmarks for the given commit",
         action="store_true")
 
     #
@@ -50,6 +50,11 @@ def get_parser():
     aws_subparser = subparsers.add_parser("aws", help="AWS-related commands")
 
     aws_subparser.add_argument("-l", "--list",
+        help="List AWS EC2 instances that are in (one of the) specified state(s)",
+        action="store_true")
+
+    # TODO
+    aws_subparser.add_argument("-a", "--all",
         help="List AWS EC2 instances that are in (one of the) specified state(s)",
         action="store_true")
 
@@ -62,22 +67,31 @@ def get_parser():
     #
     slack_subparser = subparsers.add_parser("slack", help="Slack-related commands")
 
+    # TODO
     slack_subparser.add_argument("-p", "--post",
         help="Post the specified files", nargs="+")
 
+    # TODO
     slack_subparser.add_argument("-c", "--channel",
         help="Channel to post messages in", type=str)
 
     #
     # primary command: results
     #
-    results_subparser = subparsers.add_parser("results", help="Commands related to result-fetching")
+    fetch_subparser = subparsers.add_parser("fetch", help="Commands related to "
+                            "fetching files from the ansible master")
 
-    results_subparser.add_argument("-l", "--list",
-        help="List all produced results", action="store_true")
+    fetch_subparser.add_argument("-s", "--show",
+        help="Show information on results", action="store_true")
 
-    results_subparser.add_argument("-f", "--fetch",
-        help="Fetch the specified results", nargs="+")
+    fetch_subparser.add_argument("-c", "--commit",
+        help="Filter for the specified commit(s)", nargs="+")
+
+    fetch_subparser.add_argument("-l", "--logs",
+        help="Fetch asible master log file", action="store_true")
+
+    fetch_subparser.add_argument("-p", "--plots", nargs="?", const="plots", type=str,
+        help="Only fetch plots from the specified subfolder in does_results ")
 
     return parser
 
@@ -93,8 +107,10 @@ def setup_outdir():
 
 
 class DOESMaster():
-    def __init__(self, args):
+    def __init__(self, args, parser, is_run_from_cmd):
         self.args = args
+        self.parser = parser
+        self.is_run_from_cmd = is_run_from_cmd
 
         for var in [DOES_PRJ_DIR_VARIABLE, AWS_REGION_NAME_VARIABLE]:
             if var not in os.environ:
@@ -103,8 +119,57 @@ class DOESMaster():
                 exit(1)
 
         setup_outdir()
-        self.state = State(STATE_PATH, f"{os.environ[DOES_PRJ_DIR_VARIABLE]}/doe-suite")
+        self.state = State(STATE_PATH, f"{os.environ[DOES_PRJ_DIR_VARIABLE]}/doe-suite",
+                        f"{os.environ[DOES_PRJ_DIR_VARIABLE]}/does_results")
 
+    def ansible_do_benchmark(self):
+        """
+        Start ansible playboook to spin up AWS EC2 instances for the specified
+        experiment design.
+        """
+
+        self.state.add_new_result(self.args.commit)
+
+        p = subprocess.run([
+            "poetry",
+            "run",
+            "ansible-playbook",
+            "src/experiment-suite.yml",
+            "-e",
+            f"suite={self.args.benchmark} id={self.state.suite_id} prj_id={self.args.commit}"
+        ], cwd=self.state.doe_suite)
+
+        context = f"Benchmark {self.args.benchmark} for commit {self.args.commit}"
+        clear_out = ""
+        if p.returncode != 0:
+            state = "FAILED!"
+            clear_out = "\nCleaning up instances of failed run:\n" + self.ansible_clear()
+        else:
+            state = "STARTED"
+        return f"{context} {state}{clear_out}", None
+
+    def ansible_clear(self):
+        """
+        Clear ansible instances of the specified commit (project ID)
+        """
+
+        p = subprocess.run([
+            "poetry",
+            "run",
+            "ansible-playbook",
+            "src/clear.yml",
+            "-e",
+            f"prj_id={self.args.commit}"
+        ], cwd=self.state.doe_suite)
+
+        context = f"Clearing all instances for commit {self.args.commit} "
+        if p.returncode != 0:
+            state = "FAILED!"
+        else:
+            state = "SUCCESSFUL"
+
+
+        return f"{context} {state}\n\n{self.aws_currently_running()}"
 
     def aws_get_instances(self, states):
         """
@@ -129,57 +194,10 @@ class DOESMaster():
 
         return instances
 
-    def ansible_do_benchmark(self):
-        """
-        Start ansible playboook to spin up AWS EC2 instances for the specified
-        experiment design.
-        """
-
-        # TODO: get result path fron ETL pipeline!
-        path = ""
-        self.state.add_new_result(path, self.args.commit)
-
-        # TODO: change project ID to commit hash -> add functionality to kill old benchmarks
-        p = subprocess.run([
-            "poetry",
-            "run",
-            "ansible-playbook",
-            "src/experiment-suite.yml",
-            "-e",
-            f"suite={self.args.benchmark} id=new prj_id={self.args.commit}"
-        ], cwd=self.state.home)
-
-        context = f"Benchmark {self.args.benchmark} for commit {self.args.commit}"
-        if p.returncode != 0:
-            state = "FAILED!"
-        else:
-            state = "STARTED"
-        return f"{context} {state}", None
-
-    def ansible_clear(self):
-        """
-        Clear ansible instances of the specified commit (project ID)
-        """
-
-        p = subprocess.run([
-            "poetry",
-            "run",
-            "ansible-playbook",
-            "src/clear.yml",
-            "-e",
-            f"prj_id={self.args.commit}"
-        ], cwd=self.state.home)
-
-        context = f"Clearing all instances for commit {self.args.commit} "
-        if p.returncode != 0:
-            state = "FAILED!"
-        else:
-            state = "SUCCESSFUL"
-
-
-        return f"{context} {state}\n\n{self.aws_currently_running()}"
-
     def aws_currently_running(self, states=["running"]):
+        """
+        Build a string listing all AWS instances that are in the given states.
+        """
         running_instances = "Currently running AWS EC2 instances:\n"
         for instance in self.aws_get_instances(states):
             running_instances += f"\t- name: {instance['name']}, id: {instance['id']}\n"
@@ -187,6 +205,10 @@ class DOESMaster():
         return running_instances
 
     def handle_ansible_cmd(self):
+        """
+        Handle ansible subcommand of does.
+        """
+
         # Start a benchmark
         if self.args.benchmark:
             if not self.args.commit:
@@ -201,6 +223,10 @@ class DOESMaster():
             return msg, None
 
     def handle_aws_cmd(self):
+        """
+        Handle AWS subcommand of does.
+        """
+
         if self.args.list:
             return "Response:", [str_to_markdown(self.aws_currently_running(self.args.state))]
         else:
@@ -208,18 +234,20 @@ class DOESMaster():
             logging.error(msg)
             return msg, None
 
-    def handle_slack_cmd(self):
-        files_to_post = self.args.post
-        channel = self.args.channel
+    def handle_fetch_cmd(self):
+        """
+        Handle fetch subcommand of does.
+        """
 
-        self.state.update()
+        do_list_results = self.args.show
+        do_fetch_logs = self.args.logs
+        commits = self.args.commit
+        plot_subdir = self.args.plots
+        do_fetch_plots = plot_subdir is not None
 
-        return "", None # TODO
-
-    def handle_results_cmd(self):
-        # TODO
-        do_list_results = self.args.list
-        files_to_fetch = self.args.fetch
+        if not commits and not do_list_results:
+            parser.print_help()
+            return
 
         self.state.update()
 
@@ -229,26 +257,45 @@ class DOESMaster():
                 print(f"\t- {result}")
             return
 
-        # TODO: add functionality to fetch all results for a commit
+        if do_fetch_logs:
+            # TODO
+            pass
+        else:
+            # Gather results
+            tmp_path = tempfile.mkdtemp()
+            results_path = f"{tmp_path}/results"
 
-        results_path = tempfile.mkdtemp()
+            res_cnt = 0
+            for result in self.state.results:
+                if result.commit in commits:
+                    commit_folder = f"{results_path}/{result.commit}"
+                    create_folder(commit_folder)
+                    shutil.copytree(f"{self.state.does_results}/{result.subdir}", f"{commit_folder}/")
+                    res_cnt += 1
 
-        for result in self.state["results"]:
-            if result["path"] in files_to_fetch:
-                commit_folder = f"{results_path}/{result['commit']}"
-                create_folder(commit_folder)
+            if res_cnt > 0:
+                results_zip_path = f"{tmp_path}/{RESULTS_ZIP_NAME}"
+                shutil.make_archive(results_zip_path, "zip", results_path)
 
-                # TODO: find better way to not overwrite result files
-                shutil.copyfile(result["path"], f"{commit_folder}/{results_path.split('/')[1]}")
+                if self.is_run_from_cmd:
+                    print(f"The requested results were written to {results_zip_path}.")
+                else:
+                    return f"Results for commit(s) {commits}", None, results_zip_path
+            else:
+                print(f"No results found for commit(s) {commits}.")
 
-        if len(self.state["results"]) > 0:
-            if os.path.exists(RESULTS_ZIP_PATH):
-                os.remove(RESULTS_ZIP_PATH)
 
-            shutil.make_archive(RESULTS_ZIP_PATH, "zip", results_path)
+    def handle_slack_cmd(self):
+        """
+        Handle Slack subcommand of does.
+        """
 
-            print(f"Download the requested files from {RESULTS_ZIP_PATH} (e.g., using scp).")
+        files_to_post = self.args.post
+        channel = self.args.channel
 
+        self.state.update()
+
+        return "", None # TODO
 
     def handle(self):
         if self.args.command == "ansible":
@@ -264,6 +311,8 @@ class DOESMaster():
 
 
 def does_master_exec(args_str):
+    # TODO: refactor and remove out, replace it with the caught stdout
+    # TODO: redirect stdout of ansible run to some useful log file
     cmd_stdout = sys.stdout
     sys.stdout = str_stdout = StringIO()
 
@@ -272,8 +321,8 @@ def does_master_exec(args_str):
         parser = get_parser()
         args = parser.parse_args(shlex.split(args_str))
 
-        does = DOESMaster(args)
-        out, out_markdown = does.handle()
+        does = DOESMaster(args, parser, False)
+        out, out_markdown, files_to_upload = does.handle()
     except SystemExit:
         rc = sys.exc_info()[1]
         success = rc == 0
@@ -286,14 +335,14 @@ def does_master_exec(args_str):
     #   - if the handle function returns something, we return that to slack.
     #   - Otherwise, we write the stdout back
     if not success:
-        return f"ERROR: executing the does command '{args_str}' failed unexpectedly with error code {rc}!", None
+        return f"ERROR: executing the does command '{args_str}' failed unexpectedly with error code {rc}!", None, None
     elif out or out_markdown:
-        return out, out_markdown
+        return out, out_markdown, files_to_upload
     else:
-        return str_stdout.getvalue(), None
+        return str_stdout.getvalue(), None, None
 
 if __name__ == '__main__':
     parser = get_parser()
     args = parser.parse_args()
-    does = DOESMaster(args)
+    does = DOESMaster(args, parser, True)
     does.handle()

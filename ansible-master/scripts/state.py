@@ -12,26 +12,44 @@ from datetime import datetime, timedelta
 DAYS_TO_PRESERVE_RESULTS = 7
 
 
-# Structure of a result
-#     "timestamp": time of creation
-#     "path": "/path/to/results",
-#     "commit": "hash",
-#     "progress": "running"/"done"/"failed",
-
 class Result():
+    """
+    Structure of a result
+        "suite": suite name
+        "suite_id": suite id (time of creation in seconds from the epoch)
+        "timestamp": timestamp when the result was started
+        "subdir": "sub folder of the results (parent folder is specified by the state)",
+        "commit": "hash",
+        "progress": "running"/"done"/"failed",
+    """
+
     def __init__(self, *args):
-        if len(args) == 2:
-            path, commit = args
-            
-            self.timestamp = time.time()
-            self.path = path
+        """
+        Different numbers of arguments are possible:
+            - 1 argument: json string of a state
+            - 2 arguments: suite, path, commit (in this order)
+            - 3 arguments: suite, suite_id, path, commit (in this order)
+        """
+        if len(args) == 2 or len(args) == 3:
+            if len(args) == 2:
+                suite, commit = args
+                self.suite_id = int(time.time())
+                self.timestamp = self.suite_id
+            else:
+                suite, self.suite_id, commit = args
+                self.timestamp = int(time.time())
+
+            self.suite = suite
+            self.subdir = f"{self.state.suite}_{self.state.suite_id}"
             self.commit = commit
             self.progress = "running"
         elif len(args) == 1:
             d, = args
 
+            self.suite = d["suite"]
+            self.suite_id = d["suite_id"]
             self.timestamp = d["timestamp"]
-            self.path = d["path"]
+            self.subdir = d["subdir"]
             self.commit = d["commit"]
             self.progress = d["progress"]
         else:
@@ -40,9 +58,11 @@ class Result():
 
     def to_json(self):
         d = {
-            "timestamp": self.timestamp, 
-            "path": self.path, 
-            "commit": self.commit, 
+            "suite": self.suite,
+            "suite_id": self.suite_id,
+            "timestamp": self.timestamp,
+            "subdir": self.subdir,
+            "commit": self.commit,
             "progress": self.progress
         }
         return d
@@ -55,24 +75,31 @@ class Result():
     def __cmp__(self, other):
         return self.commit.__cmp__(other.commit)
 
-# Structure of the kept state:
-#    "does_home": "path/to/does/suite",
-#    "results": { Result(), ... }
+
 class State():
-    def __init__(self, path, home):
+    """
+    Structure of the kept state:
+       "path": "path/to/state"
+       "doe_suite": "path/to/does/suite",
+       "does_results": "path/to/does_results",
+       "results": { Result(), ... }
+    """
+
+    def __init__(self, path, doe_suite, does_results):
         self.path = path
-        self.init_state(home, set())
+        self.does_results = does_results
+        self.init_state(doe_suite, set())
         self.store()
 
     def __str__(self):
-        return f"home: {self.home}, results: {self.results}"
+        return f"doe_suite: {self.doe_suite}, results: {self.results}"
 
-    def init_state(self, home, results):
+    def init_state(self, doe_suite, results):
         if os.path.exists(self.path):
             # load old state
             self.update()
 
-            if self.home != home:
+            if self.doe_suite != doe_suite:
                 logging.error(
                     "Conflicting state detected! Delete the file in {self.path} to start a new run.\n"
                     f"Conflicting state:\n{self}"
@@ -82,7 +109,7 @@ class State():
             logging.debug("Using stored state.")
             self.results = self.results.union(results)
         else:
-            self.home = home
+            self.doe_suite = doe_suite
             self.results = results
 
 
@@ -104,7 +131,8 @@ class State():
     def to_json(self):
         d = {
             "results": [r.to_json() for r in self.results],
-            "home": self.home
+            "doe_suite": self.doe_suite,
+            "does_results": self.does_results
         }
         return d
 
@@ -117,7 +145,8 @@ class State():
                 traceback.print_exc()
                 exit(1)
 
-            self.home = state["home"]
+            self.doe_suite = state["doe_suite"]
+            self.does_results = state["does_results"]
             self.results = {Result(r) for r in state["results"]}
         self.cleanup_results()
 
@@ -125,6 +154,6 @@ class State():
         with open(self.path, "w+") as fp:
             fp.write(json.dumps(self.to_json()))
 
-    def add_new_result(self, path, commit):
-        self.results.add(Result(path, commit))
+    def add_new_result(self, commit):
+        self.results.add(Result(commit))
         self.store()

@@ -33,7 +33,7 @@ class BotCommand():
 # Commands
 #
 def echo(args):
-    return str(args), None
+    return str(args), None, None
 
 def does(args_str):
     from does_master import does_master_exec
@@ -59,9 +59,21 @@ def bot_handle(cmd, say):
         text = f"Unknown command. Try: {', '.join(KNOWN_CMDS.keys())}"
     else:
         logging.debug(f"Executing command: {cmd.cmd}")
-        text, blocks = KNOWN_CMDS[cmd.cmd](cmd.args)
+        text, blocks, files_to_upload = KNOWN_CMDS[cmd.cmd](cmd.args)
 
-    say(blocks=blocks, text=text)
+    if files_to_upload:
+        if typeof(files_to_upload) == str:
+            files_to_upload = [files_to_upload]
+            text = [text]
+
+        for i, file_name in enumerate(files_to_upload):
+            app.client.files_upload(
+                channels=channel_id,
+                initial_comment=text[i],
+                file=file_name,
+            )
+    else:
+        say(blocks=blocks, text=text)
 
 #
 # Advanced message formats
