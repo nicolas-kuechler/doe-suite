@@ -1,4 +1,5 @@
 
+import argparse
 import logging
 import os
 import re
@@ -15,11 +16,9 @@ app = App(token=SLACK_BOT_TOKEN)
 
 class BotCommand():
     def __init__(self, body):
-        print(body)
-        # TODO: store channel
-
         event = body["event"]
 
+        self.channel_id = event["channel"]
         self.sender = event["user"]
         text = event["text"]
         matches = re.search(CMD_REGEX, text)
@@ -39,6 +38,7 @@ def echo(args):
     return str(args), None, None
 
 def does(args_str):
+    # Import here to avoid circular imports
     from does_master import does_master_exec
     return does_master_exec(args_str)
 
@@ -55,11 +55,7 @@ def post_files(channel_id, files, text):
     Post files in the specified channel
     """
 
-    if typeof(files) == str:
-        files = [files]
-        text = [text]
-
-    for i, file_name in enumerate(files_to_upload):
+    for i, file_name in enumerate(files):
         app.client.files_upload(
             channels=channel_id,
             initial_comment=text[i],
@@ -120,10 +116,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Slack bot for the DoE-Suite")
 
-    # TODO
-    parser.add_argument("--commit", help="Commit(s) for which the bot should post results", nargs="+")
-
-    # TODO
+    parser.add_argument("--commit", help="Commit for which the bot should post results", type=str)
     parser.add_argument("--channel", help="Channel to post in", type=str)
 
     args = parser.parse_args()
@@ -134,10 +127,14 @@ if __name__ == "__main__":
         handler = SocketModeHandler(app, SLACK_APP_TOKEN)
         handler.start()
     elif channel:
+        # Import here to avoid circular imports
+        from does_master import does_fetch_results
+
+        texts, _, files_to_upload = does_fetch_results([commit])
         app.client.files_upload(
             channels=channel,
-            initial_comment=text[i],
-            file=file_name,
+            initial_comment=texts[0],
+            file=files_to_upload[0],
         )
     else:
         print("Invalid arguments: commit and channel must be set both or none.")

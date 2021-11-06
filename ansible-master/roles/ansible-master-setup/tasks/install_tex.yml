@@ -1,0 +1,20 @@
+- name: Install texlive and dvipng (for matplotlib use_latex)
+  ansible.builtin.apt:
+    name:
+      - texlive
+      - texlive-latex-extra
+      - texlive-latex-recommended
+      - texlive-fonts-recommended
+      - dvipng
+      - cm-super
+    update_cache: yes
+    state: present
+
+  become: yes
+  become_method: sudo
+
+- name: Install latex Python package (for matplotlib use_latex)
+  ansible.builtin.pip:
+    name: latex
+  become: yes
+  become_method: sudo

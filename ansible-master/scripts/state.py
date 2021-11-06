@@ -159,3 +159,15 @@ class State():
         self.results.add(new_result)
         self.store()
         return new_result
+
+    def _set_result_progress(self, commit, new_progress):
+        for result in self.results:
+            if result.commit == commit:
+                result.progress = new_progress
+                self.store()
+
+    def set_result_failed(self, commit):
+        self._set_result_progress(commit, "failed")
+
+    def set_result_successful(self, commit):
+        self._set_result_progress(commit, "finished")
