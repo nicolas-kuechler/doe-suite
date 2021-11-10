@@ -138,7 +138,7 @@ class DOESMaster():
         else:
             self.state.set_result_successful(self.args.commit)
             state = "SUCCESSFUL"
-        return f"{context} {state}{clear_out}", None
+        return f"{context} {state}{clear_out}", None, None
 
     def ansible_clear(self):
         """
@@ -161,7 +161,7 @@ class DOESMaster():
             state = "SUCCESSFUL"
 
 
-        return f"{context} {state}\n\n{self.aws_currently_running()}", None, None
+        return f"{context} {state}\n\n{self.aws_currently_running()}"
 
     def aws_get_instances(self, states):
         """
@@ -208,7 +208,7 @@ class DOESMaster():
             return self.ansible_do_benchmark()
         # Terminate the instances of  a running benchmark
         elif self.args.terminate and self.args.commit:
-                return self.ansible_clear(), None
+                return self.ansible_clear(), None, None
         else:
             msg = "Received invalid command or arguments for 'ansible' subcommand!"
             logging.error(msg)
@@ -333,16 +333,18 @@ def output_wrapper(fn, *args, **kwargs):
     sys.stdout = str_stdout = StringIO()
 
     success = True
+    out, out_markdown = None, None
     try:
-        out, out_markdown, files_to_upload = fn(*args, **kwargs)
+        out, out_markdown, files_to_upload = fn(args, kwargs)
     except SystemExit:
-        rc = sys.exc_info()[1]
+        rc = sys.exc_info()[1].code
         success = rc == 0
-        logging.error(f"Caught system exit with return code {rc}")
+        print(success)
 
     sys.stdout = cmd_stdout
 
     if not success:
+        logging.error(f"Caught system exit with return code {rc}")
         return f"ERROR: executing the function with '{args}' and '{kwargs}' failed unexpectedly " + \
                f"with error code {rc}!", None, None
     elif out or out_markdown:
@@ -350,7 +352,7 @@ def output_wrapper(fn, *args, **kwargs):
     else:
         return str_stdout.getvalue(), None, None
 
-def does_master_exec_helper(args_str):
+def does_master_exec_helper(args_str, *args, **kwargs):
     parser = get_parser()
     args = parser.parse_args(shlex.split(args_str))
 
@@ -364,7 +366,7 @@ def does_master_exec(args_str):
     """
     return output_wrapper(does_master_exec_helper, args_str)
 
-def does_fetch_results_helper(commits, plots_subdir):
+def does_fetch_results_helper(commits, plots_subdir, *args, **kwargs):
     does = DOESMaster("", None, False)
     return does.fetch_results(commits, plots_subdir)
 
