@@ -32,6 +32,10 @@
       vars:
         prj_clear: False # controls whether to also filter for the suite or not (for a clear we want to include all instances of the project independent of the suite)
 
+    - name: set variable is_new_run if id == 'new' unless it was set manually
+      set_fact:
+        is_new_run: "{{ is_new_run | default(id == 'new') }}"
+
     - name: resolve suite_id, load and validate suite design, fill default values, and prepare variables
       include_role:
         name: suite-load-pre-aws
@@ -62,8 +66,6 @@
         - suite_hosts_lst is defined
         - my_suite_design is defined
 
-
-
     - debug:
         msg: "Setup Host Machines..."
       tags: [print_action]
@@ -73,6 +75,10 @@
   hosts: all  # intersection of hosts in project and in suite (via aws_ec2 dynamic inventory plugin)
   strategy: free
   tasks:
+
+  - name: set variable is_new_run if id == 'new' unless it was set manually
+    set_fact:
+      is_new_run: "{{ is_new_run | default(id == 'new') }}"
 
   - name: Load group_vars from non-standard location
     include_vars: "{{ external_group_vars_dir }}/all/main.yml"

@@ -69,10 +69,6 @@
 # Read and Validate the suite design file (only if new)
 ###########################################################
 
-- name: set variable is_new_run if id == 'new' unless it was set manually
-  set_fact:
-    is_new_run: "{{ is_new_run | default(id == 'new') }}"
-
 - name: set the directory of where to place the (default) resolved suite design
   set_fact:
     suite_design_dir: "{{ local.results_dir }}/{{ suite }}_{{ suite_id }}"

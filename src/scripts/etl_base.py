@@ -93,14 +93,20 @@ class CsvExtractor(Extractor):
         delimiter = options.get("delimiter", ",")
         has_header = options.get("has_header", True)
         fieldnames = options.get("fieldnames", None)
+        store_file_name = options.get("store_file_name", False)
 
         with open(path, 'r') as f:
+            file_name = os.path.basename(path)
 
             if has_header or fieldnames is not None:
                 reader = csv.DictReader(f, delimiter=delimiter, fieldnames=fieldnames)
             else:
                 reader = csv.reader(f, delimiter=delimiter)
+
+            print("reader", reader)
             for row in reader:
+                if store_file_name:
+                    row.append(file_name)
                 data.append(row)
 
         return data
