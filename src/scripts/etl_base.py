@@ -88,6 +88,8 @@ class CsvExtractor(Extractor):
         return ['.*\.csv$']
 
     def extract(self, path: str, options: Dict) -> List[Dict]:
+        FILE_NAME_COL = "file_name"
+
         data = []
 
         delimiter = options.get("delimiter", ",")
@@ -103,10 +105,14 @@ class CsvExtractor(Extractor):
             else:
                 reader = csv.reader(f, delimiter=delimiter)
 
-            print("reader", reader)
+            if fieldnames == None:
+                fieldnames = reader[0].keys()
+            if store_file_name and FILE_NAME_COL in fieldnames:
+                raise ValueError(f"Column name {FILE_NAME_COL} is reserved for the file name")
+
             for row in reader:
                 if store_file_name:
-                    row.append(file_name)
+                    row[FILE_NAME_COL] = file_name
                 data.append(row)
 
         return data
