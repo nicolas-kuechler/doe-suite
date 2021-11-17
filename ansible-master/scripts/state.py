@@ -120,9 +120,16 @@ class State():
 
         to_remove = []
         for result in self.results:
+            result_path = f"{self.does_results}/{result.subdir}"
+            if not os.path.exists(result_path):
+                logging.warning(f"Removing orphan result for commit {result.commit} from state"
+                                " (no longer existing on disk)")
+                to_remove.append(result)
+                continue
+
             if datetime.fromtimestamp(result.timestamp) < oldest_log_timestamp:
-                logging.debug("Removing results for commit", result.commit)
-                shutil.rmtree(result.path)
+                logging.debug(f"Removing results for commit {result.commit}")
+                shutil.rmtree(result_path)
                 to_remove.append(result)
 
         for result in to_remove:
@@ -161,13 +168,20 @@ class State():
         return new_result
 
     def _set_result_progress(self, commit, new_progress):
-        for result in self.results:
-            if result.commit == commit:
-                result.progress = new_progress
-                self.store()
+        result = self.get_result(commit)
+        if result:
+            result.progress = new_progress
+            self.store()
 
     def set_result_failed(self, commit):
         self._set_result_progress(commit, "failed")
 
     def set_result_successful(self, commit):
         self._set_result_progress(commit, "finished")
+
+    def get_result(self, commit):
+        for result in self.results:
+            if result.commit == commit:
+                return result
+        logging.warning(f"No result for commit {commit} found.")
+        return None

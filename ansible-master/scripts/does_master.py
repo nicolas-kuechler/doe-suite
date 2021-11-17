@@ -81,6 +81,22 @@ def get_parser():
     fetch_subparser.add_argument("-p", "--plots", nargs="?", const="plots", type=str,
         help="Only fetch plots from the specified subfolder in does_results ")
 
+
+    #
+    # primary command: plot
+    #
+    plot_subparser = subparsers.add_parser("plot", help="Commands related to "
+                            "plotting existing benchmarks")
+
+    plot_subparser.add_argument("-c", "--commit",
+        help="Commit for which we should re-generate the plot", type=str, required=True)
+
+    plot_subparser.add_argument("-p", "--path", default="plots", type=str,
+        help="Path to the plots in does_results")
+
+    plot_subparser.add_argument("-e", "--ext", default=["png"], type=str, nargs="+",
+        help="Extensions of plots that should be posted in response")
+
     return parser
 
 def create_folder(path):
@@ -239,18 +255,7 @@ class DOESMaster():
         self.state.update()
 
         if plots_subdir:
-            plot_exts_str = ",".join(plots_ext)
-            texts = []
-            files = []
-            for result in self.state.results:
-                if result.commit in commits:
-                    plots_path = f"{self.state.does_results}/{result.subdir}/{plots_subdir}"
-                    for plot_dir, _, plot_files in os.walk(plots_path):
-                        for plot_file in plot_files:
-                            if re.search(f".*\.({plot_exts_str})", plot_file):
-                                texts.append(f"Plot for commit {result.commit}")
-                                files.append(f"{plot_dir}/{plot_file}")
-
+            texts, files = self.get_plot_files(result, plots_subdir, plot_exts)
             return texts, None, files
         else:
             # Gather results
@@ -273,6 +278,20 @@ class DOESMaster():
                     return [f"Results for commit(s): {', '.join(commits)}"], None, [results_zip_path]
             else:
                 f"No results found for commit(s) {commits}.", None, None
+
+    def get_plot_files(self, result, plots_subdir, plot_exts):
+        plot_exts_str = ",".join(plot_exts)
+        texts, files = [], []
+        i = 1
+        plots_path = f"{self.state.does_results}/{result.subdir}/{plots_subdir}"
+        for plot_dir, _, plot_files in os.walk(plots_path):
+            for plot_file in plot_files:
+                if re.search(f".*\.({plot_exts_str})", plot_file):
+                    texts.append(f"Plot {i} for commit {result.commit}")
+                    files.append(f"{plot_dir}/{plot_file}")
+                    i += 1
+
+        return texts, files
 
     def handle_fetch_cmd(self):
         """
@@ -307,6 +326,41 @@ class DOESMaster():
         else:
             return self.fetch_results(commits, plots_subdir)
 
+    def handle_plot_cmd(self):
+        """
+        Handle plot subcommand of does.
+        """
+
+        commit = self.args.commit
+        plots_subdir = self.args.path
+        plot_exts = self.args.ext
+
+        result = self.state.get_result(commit)
+
+        if not result:
+            print(f"No results stored for commit {commit}.\n"
+                   "Available results can be listed with `does fetch -s`")
+            return
+
+        p = subprocess.run([
+            "poetry",
+            "run",
+            "python3",
+            "src/scripts/etl.py",
+            "--suite",
+            result.suite,
+            "--id",
+            str(result.suite_id)
+
+        ], cwd=self.state.doe_suite)
+
+        if p.returncode != 0:
+            return f"Plotting failed with return code {p.returncode}.\nError:\n{p.stderr.decode()}", None, None
+
+        texts, files = self.get_plot_files(result, plots_subdir, plot_exts)
+
+        return texts, None, files
+
     def handle(self):
         if self.args.command == "ansible":
             return self.handle_ansible_cmd()
@@ -314,6 +368,8 @@ class DOESMaster():
             return self.handle_aws_cmd()
         elif self.args.command == "fetch":
             return self.handle_fetch_cmd()
+        elif self.args.command == "plot":
+            return self.handle_plot_cmd()
         else:
             logging.warning(f"Unknown primary command {self.args.command}")
 
@@ -335,11 +391,10 @@ def output_wrapper(fn, *args, **kwargs):
     success = True
     out, out_markdown = None, None
     try:
-        out, out_markdown, files_to_upload = fn(args, kwargs)
+        out, out_markdown, files_to_upload = fn(*args, **kwargs)
     except SystemExit:
         rc = sys.exc_info()[1].code
         success = rc == 0
-        print(success)
 
     sys.stdout = cmd_stdout
 
