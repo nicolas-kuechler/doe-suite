@@ -183,5 +183,6 @@ class State():
         for result in self.results:
             if result.commit == commit:
                 return result
+        # TODO: add error message for fetch instead of failing...
         logging.warning(f"No result for commit {commit} found.")
         return None
