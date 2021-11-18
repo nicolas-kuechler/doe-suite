@@ -391,7 +391,7 @@ def output_wrapper(fn, *args, **kwargs):
     success = True
     out, out_markdown = None, None
     try:
-        out, out_markdown, files_to_upload = fn(*args, **kwargs)
+        response = fn(*args, **kwargs)
     except SystemExit:
         rc = sys.exc_info()[1].code
         success = rc == 0
@@ -402,8 +402,8 @@ def output_wrapper(fn, *args, **kwargs):
         logging.error(f"Caught system exit with return code {rc}")
         return f"ERROR: executing the function with '{args}' and '{kwargs}' failed unexpectedly " + \
                f"with error code {rc}!", None, None
-    elif out or out_markdown:
-        return out, out_markdown, files_to_upload
+    elif response:
+        return response
     else:
         return str_stdout.getvalue(), None, None
 
