@@ -253,9 +253,10 @@ class DOESMaster():
         """
 
         self.state.update()
+        results = [ self.state.get_result(commit) for commit in commits ]
 
         if plots_subdir:
-            texts, files = self.get_plot_files(result, plots_subdir, plot_exts)
+            texts, files = self.get_plot_files(results, plots_subdir, plots_ext)
             return texts, None, files
         else:
             # Gather results
@@ -279,17 +280,19 @@ class DOESMaster():
             else:
                 f"No results found for commit(s) {commits}.", None, None
 
-    def get_plot_files(self, result, plots_subdir, plot_exts):
+    def get_plot_files(self, results, plots_subdir, plot_exts):
         plot_exts_str = ",".join(plot_exts)
         texts, files = [], []
         i = 1
-        plots_path = f"{self.state.does_results}/{result.subdir}/{plots_subdir}"
-        for plot_dir, _, plot_files in os.walk(plots_path):
-            for plot_file in plot_files:
-                if re.search(f".*\.({plot_exts_str})", plot_file):
-                    texts.append(f"Plot {i} for commit {result.commit}")
-                    files.append(f"{plot_dir}/{plot_file}")
-                    i += 1
+
+        for result in results:
+            plots_path = f"{self.state.does_results}/{result.subdir}/{plots_subdir}"
+            for plot_dir, _, plot_files in os.walk(plots_path):
+                for plot_file in plot_files:
+                    if re.search(f".*\.({plot_exts_str})", plot_file):
+                        texts.append(f"Plot {i} for commit {result.commit}")
+                        files.append(f"{plot_dir}/{plot_file}")
+                        i += 1
 
         return texts, files
 
@@ -357,7 +360,7 @@ class DOESMaster():
         if p.returncode != 0:
             return f"Plotting failed with return code {p.returncode}.\nError:\n{p.stderr.decode()}", None, None
 
-        texts, files = self.get_plot_files(result, plots_subdir, plot_exts)
+        texts, files = self.get_plot_files([result], plots_subdir, plot_exts)
 
         return texts, None, files
 
@@ -388,6 +391,7 @@ def output_wrapper(fn, *args, **kwargs):
     cmd_stdout = sys.stdout
     sys.stdout = str_stdout = StringIO()
 
+    response = None
     success = True
     out, out_markdown = None, None
     try:
