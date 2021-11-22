@@ -190,6 +190,9 @@ Afterward, you can change the environment variable `DOES_PROJECT_DIR` to point t
 1. Add the DoES repository as a submodule to your project repository.
 
 <!-- TODO describe how to do this -->
+    ```sh
+    git submodule add git@github.com:nicolas-kuechler/doe-suite.git
+    ```
 
 2. Move to the root of the DoES repository
 
