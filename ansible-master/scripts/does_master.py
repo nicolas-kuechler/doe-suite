@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 
-import shlex
 import argparse
+import boto3
 import logging
 import os
-import tempfile
+import re
+import shlex
 import shutil
 import subprocess
 import sys
-import boto3
+import tempfile
 import uuid
-import re
 
+from datetime import datetime
 from io import StringIO
 from state import State
 
@@ -22,6 +23,12 @@ RESULTS_ZIP_NAME = "results"
 DOES_PRJ_DIR_VARIABLE = "DOES_PROJECT_DIR"
 AWS_REGION_NAME_VARIABLE = "AWS_REGION_NAME"
 AWS_INSTANCE_STATES_ALL = ["pending", "running", "shutting-down", "terminated", "stopping", "stopped"]
+
+BENCH_PROGRESS_TO_EMOJI = {
+    "running": ":gear:",
+    "finished": ":white_check_mark:",
+    "failed": ":x:",
+}
 
 
 def get_parser():
@@ -39,7 +46,7 @@ def get_parser():
         type=str)
 
     ansible_subparser.add_argument("-c", "--commit",
-        help="Commit that triggered this run", type=str)
+        help="Commit that triggered this run (manual commits do not correspond to Git commits)", type=str)
 
     ansible_subparser.add_argument("-t", "--terminate",
         help="Terminate all AWS EC2 instances that run benchmarks for the given commit",
@@ -324,11 +331,17 @@ class DOESMaster():
         self.state.update()
 
         if do_list_results:
-            # TODO: Sort them by timestamp
             if len(self.state.results) > 0:
+                results_sorted = sorted(self.state.results, key=lambda r: r.timestamp)
+
                 print("The following results are available:")
-                for result in self.state.results:
-                    print(f"\t- {result}")
+                for result in results_sorted:
+                    if not self.is_run_from_cmd:
+                        status_indicator = BENCH_PROGRESS_TO_EMOJI[result.progress]
+                        time = str(datetime.fromtimestamp(result.timestamp))
+                        print(f"\t- {result.suite} {status_indicator}:\n\t\t- time: {time}\n\t\t- ID: {result.commit}")
+                    else:
+                        print(f"\t- {result}")
             else:
                 print("No results stored")
             return

@@ -83,9 +83,11 @@ def bot_handle(cmd, say):
 
     if files_to_upload:
         post_files(cmd.channel_id, files_to_upload, text)
-    else:
+    elif mrkdwn_strs:
         mrkdown_blocks = [str_to_markdown_block(mrkdwn_str) for mrkdwn_str in mrkdwn_strs]
         say(blocks=mrkdown_blocks, text=text)
+    else:
+        say(text)
 
 #
 # Advanced message formats
