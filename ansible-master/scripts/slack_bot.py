@@ -79,17 +79,18 @@ def bot_handle(cmd, say):
         text = f"Unknown command. Try: {', '.join(KNOWN_CMDS.keys())}"
     else:
         logging.debug(f"Executing command: {cmd.cmd}")
-        text, blocks, files_to_upload = KNOWN_CMDS[cmd.cmd](cmd.args)
+        text, mrkdwn_strs, files_to_upload = KNOWN_CMDS[cmd.cmd](cmd.args)
 
     if files_to_upload:
         post_files(cmd.channel_id, files_to_upload, text)
     else:
-        say(blocks=blocks, text=text)
+        mrkdown_blocks = [str_to_markdown_block(mrkdwn_str) for mrkdwn_str in mrkdwn_strs]
+        say(blocks=mrkdown_blocks, text=text)
 
 #
 # Advanced message formats
 #
-def str_to_markdown(s):
+def str_to_markdown_block(s):
     return {
         "type": "section",
         "text": {

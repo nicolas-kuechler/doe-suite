@@ -14,7 +14,6 @@ import re
 
 from io import StringIO
 from state import State
-from slack_bot import str_to_markdown
 
 OUT_FOLDER = f"{os.environ['HOME']}/.does-master"
 LOG_FOLDER = f"{OUT_FOLDER}/logs"
@@ -56,12 +55,12 @@ def get_parser():
         action="store_true")
 
     aws_subparser.add_argument("-a", "--all",
-        help="List AWS EC2 instances that are in (one of the) specified state(s)",
+        help="Use together with list, lists all AWS EC2 instances (in any state, overwrites --state)",
         action="store_true")
 
     aws_subparser.add_argument("-s", "--state",
-        help="AWS EC2 instance state to filter for (one or more)",
-        choices=AWS_INSTANCE_STATES_ALL, nargs="+", default=["running"])
+        help="AWS EC2 instance state to filter for (one or more)", nargs="+",
+        type=lambda xs: all([x in AWS_INSTANCE_STATES_ALL for x in xs]), default=["running"])
 
     #
     # primary command: fetch
@@ -193,12 +192,17 @@ class DOESMaster():
         running_instances = ""
         for reservation in instance_desc["Reservations"]:
             for instance in reservation["Instances"]:
-                if instance["State"]["Name"] in states:
+                instance_state = instance["State"]["Name"]
+                if instance_state in states:
                     name = "-"
                     for key_vals in instance["Tags"]:
                         if key_vals["Key"] == "Name":
                             name = key_vals["Value"]
-                    instances.append({"name": name, "id": instance['InstanceId']})
+                    instances.append({
+                        "name": name, 
+                        "id": instance['InstanceId'],
+                        "state": instance_state
+                    })
 
         return instances
 
@@ -208,7 +212,8 @@ class DOESMaster():
         """
         running_instances = "Currently running AWS EC2 instances:\n"
         for instance in self.aws_get_instances(states):
-            running_instances += f"\t- name: {instance['name']}, id: {instance['id']}\n"
+            running_instances += f"\t- name: {instance['name']}, id: {instance['id']}, " +\
+                                 f"state: {instance['state']}\n"
 
         return running_instances
 
@@ -235,12 +240,17 @@ class DOESMaster():
         Handle AWS subcommand of does.
         """
 
+        if self.args.all and not self.args.list:
+            err = "Invalid argument(s), use --all together with --list"
+            logging.error(err)
+            return err, None, None
+
         if self.args.list:
             if self.args.all:
                 states = AWS_INSTANCE_STATES_ALL
             else:
                 states = self.args.state
-            return "Response:", [str_to_markdown(self.aws_currently_running(states))], None
+            return "Response:", [self.aws_currently_running(states)], None
         else:
             msg = "Received invalid command or arguments for 'aws' subcommand!"
             logging.error(msg)
@@ -441,4 +451,16 @@ if __name__ == '__main__':
     parser = get_parser()
     args = parser.parse_args()
     does = DOESMaster(args, parser, True)
-    does.handle()
+    out = does.handle()
+    if out:
+        stdout, texts, files = out
+
+        if stdout:
+            print(stdout)
+        for text in texts:
+            print(text)
+        if files and len(files) > 0:
+            print("\nAttachments:")
+            for f in files:
+                print(f"\t- {f}")
+
