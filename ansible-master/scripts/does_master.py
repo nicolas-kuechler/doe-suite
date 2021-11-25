@@ -23,6 +23,7 @@ RESULTS_ZIP_NAME = "results"
 DOES_PRJ_DIR_VARIABLE = "DOES_PROJECT_DIR"
 AWS_REGION_NAME_VARIABLE = "AWS_REGION_NAME"
 AWS_INSTANCE_STATES_ALL = ["pending", "running", "shutting-down", "terminated", "stopping", "stopped"]
+DEFAULT_PLOTS_SUBDIR = "plots"
 
 BENCH_PROGRESS_TO_EMOJI = {
     "running": ":gear:",
@@ -82,9 +83,9 @@ def get_parser():
         help="Filter for the specified commit(s)", nargs="+")
 
     fetch_subparser.add_argument("-l", "--logs",
-        help="Fetch asible master log file", action="store_true")
+        help="Fetch ansible master log file", action="store_true")
 
-    fetch_subparser.add_argument("-p", "--plots", nargs="?", const="plots", type=str,
+    fetch_subparser.add_argument("-p", "--plots", nargs="?", const=[DEFAULT_PLOTS_SUBDIR],
         help="Only fetch plots from the specified subfolder in does_results ")
 
 
@@ -97,8 +98,8 @@ def get_parser():
     plot_subparser.add_argument("-c", "--commit",
         help="Commit for which we should re-generate the plot", type=str, required=True)
 
-    plot_subparser.add_argument("-p", "--path", default="plots", type=str,
-        help="Path to the plots in does_results")
+    plot_subparser.add_argument("-p", "--path", default=["plots"], nargs="+",
+        help="Path(s) to the plots in does_results")
 
     plot_subparser.add_argument("-e", "--ext", default=["png"], type=str, nargs="+",
         help="Extensions of plots that should be posted in response")
@@ -117,13 +118,24 @@ def setup_outdir():
 
 def init_state():
     return State(STATE_PATH, f"{os.environ[DOES_PRJ_DIR_VARIABLE]}/doe-suite",
-                        f"{os.environ[DOES_PRJ_DIR_VARIABLE]}/does_results")
+                f"{os.environ[DOES_PRJ_DIR_VARIABLE]}/does_results",
+                LOG_FOLDER)
 
 class DOESMaster():
-    def __init__(self, args, parser, is_run_from_cmd):
+    """
+    Class wrapping all functionality of the does executable.
+
+    :param args: arguments of the binary after they were processed by argparse
+    :param parser: argparse parser for this binary (used to print the help page)
+    :param say: python bolt handle to reply to slack. Set this to None when the
+        command is not triggered from slack.
+    """
+
+    def __init__(self, args, parser, say):
         self.args = args
         self.parser = parser
-        self.is_run_from_cmd = is_run_from_cmd
+        self.say = say
+        self.is_run_from_cmd = say == None
 
         for var in [DOES_PRJ_DIR_VARIABLE, AWS_REGION_NAME_VARIABLE]:
             if var not in os.environ:
@@ -141,15 +153,21 @@ class DOESMaster():
         """
 
         result = self.state.add_new_result(self.args.benchmark, self.args.commit)
+        bench_log_dir = f"{LOG_FOLDER}/{result.subdir}"
 
-        p = subprocess.run([
-            "poetry",
-            "run",
-            "ansible-playbook",
-            "src/experiment-suite.yml",
-            "-e",
-            f"suite={self.args.benchmark} id={result.suite_id} is_new_run=True prj_id={self.args.commit}"
-        ], cwd=self.state.doe_suite)
+        if not self.is_run_from_cmd:
+            self.say(f"Starting benchmark for commit {result.commit}")
+
+        with open(result.stderr_file, "w+") as stderr_fp:
+            with open(result.stdout_file, "w+") as stdout_fp:
+                p = subprocess.run([
+                    "poetry",
+                    "run",
+                    "ansible-playbook",
+                    "src/experiment-suite.yml",
+                    "-e",
+                    f"suite={self.args.benchmark} id={result.suite_id} is_new_run=True prj_id={self.args.commit}"
+                ], cwd=self.state.doe_suite, stdout=stdout_fp, stderr=stderr_fp)
 
         context = f"Benchmark {self.args.benchmark} for commit {self.args.commit}"
         clear_out = ""
@@ -160,6 +178,11 @@ class DOESMaster():
         else:
             self.state.set_result_successful(self.args.commit)
             state = "SUCCESSFUL"
+
+            # If there is a plot for this benchmark, post this one instead of the success message
+            texts, _, files = self.fetch_results([result.commit], DEFAULT_PLOTS_SUBDIR)
+            if len(files) > 0:
+                return texts, None, files
         return f"{context} {state}{clear_out}", None, None
 
     def ansible_clear(self):
@@ -264,7 +287,7 @@ class DOESMaster():
             return msg, None, None
 
     # TODO: make plot extension choice available on cmd line
-    def fetch_results(self, commits, plots_subdir, plots_ext=["png"]):
+    def fetch_results(self, commits, plots_subdirs, plots_ext=["png"]):
         """
         Get the results for the specified commits
         """
@@ -272,8 +295,8 @@ class DOESMaster():
         self.state.update()
         results = [ self.state.get_result(commit) for commit in commits ]
 
-        if plots_subdir:
-            texts, files = self.get_plot_files(results, plots_subdir, plots_ext)
+        if plots_subdirs:
+            texts, files = self.get_plot_files(results, plots_subdirs, plots_ext)
             return texts, None, files
         else:
             # Gather results
@@ -297,19 +320,21 @@ class DOESMaster():
             else:
                 f"No results found for commit(s) {commits}.", None, None
 
-    def get_plot_files(self, results, plots_subdir, plot_exts):
+    def get_plot_files(self, results, plots_subdirs, plot_exts):
         plot_exts_str = ",".join(plot_exts)
         texts, files = [], []
         i = 1
 
         for result in results:
-            plots_path = f"{self.state.does_results}/{result.subdir}/{plots_subdir}"
-            for plot_dir, _, plot_files in os.walk(plots_path):
-                for plot_file in plot_files:
-                    if re.search(f".*\.({plot_exts_str})", plot_file):
-                        texts.append(f"Plot {i} for commit {result.commit}")
-                        files.append(f"{plot_dir}/{plot_file}")
-                        i += 1
+            for plots_subdir in plots_subdirs:
+                plots_path = f"{self.state.does_results}/{result.subdir}/{plots_subdir}"
+                if os.path.exists(plots_path):
+                    for plot_dir, _, plot_files in os.walk(plots_path):
+                        for plot_file in plot_files:
+                            if re.search(f".*\.({plot_exts_str})", plot_file):
+                                texts.append(f"Plot {i} for commit {result.commit}")
+                                files.append(f"{plot_dir}/{plot_file}")
+                                i += 1
 
         return texts, files
 
@@ -321,8 +346,8 @@ class DOESMaster():
         do_list_results = self.args.show
         do_fetch_logs = self.args.logs
         commits = self.args.commit
-        plots_subdir = self.args.plots
-        do_fetch_plots = plots_subdir is not None
+        plots_subdirs = self.args.plots
+        do_fetch_plots = plots_subdirs is not None
 
         if not commits and not (do_list_results or do_fetch_logs):
             parser.print_help()
@@ -347,10 +372,19 @@ class DOESMaster():
             return
 
         if do_fetch_logs:
-            # TODO
-            pass
+            texts = []
+            log_files = []
+            for commit in commits:
+                result = self.state.get_result(commit)
+
+                texts.append(f"Error log file for commit {result.commit}:")
+                log_files.append(result.stderr_file)
+                texts.append(f"Stdout log file for commit {result.commit}:")
+                log_files.append(result.stdout_file)
+
+            return texts, None, log_files
         else:
-            return self.fetch_results(commits, plots_subdir)
+            return self.fetch_results(commits, plots_subdirs)
 
     def handle_plot_cmd(self):
         """
@@ -358,7 +392,7 @@ class DOESMaster():
         """
 
         commit = self.args.commit
-        plots_subdir = self.args.path
+        plots_subdirs = self.args.path
         plot_exts = self.args.ext
 
         result = self.state.get_result(commit)
@@ -400,7 +434,7 @@ class DOESMaster():
             logging.warning(f"Unknown primary command {self.args.command}")
 
 
-def output_wrapper(fn, *args, **kwargs):
+def output_wrapper(fn, say, *args, **kwargs):
     """
     Run fn with the arguments args and kwargs and while wrapping stdout.
     We returnoutput by the following convention:
@@ -418,13 +452,12 @@ def output_wrapper(fn, *args, **kwargs):
     success = True
     out, out_markdown = None, None
     try:
-        response = fn(*args, **kwargs)
+        response = fn(say, *args, **kwargs)
     except SystemExit:
         rc = sys.exc_info()[1].code
         success = rc == 0
 
     sys.stdout = cmd_stdout
-
     if not success:
         logging.error(f"Caught system exit with return code {rc}")
         return f"ERROR: executing the function with '{args}' and '{kwargs}' failed unexpectedly " + \
@@ -434,22 +467,22 @@ def output_wrapper(fn, *args, **kwargs):
     else:
         return str_stdout.getvalue(), None, None
 
-def does_master_exec_helper(args_str, *args, **kwargs):
+def does_master_exec_helper(say, args_str, *args, **kwargs):
     parser = get_parser()
     args = parser.parse_args(shlex.split(args_str))
 
-    does = DOESMaster(args, parser, False)
+    does = DOESMaster(args, parser, say)
     return does.handle()
 
-def does_master_exec(args_str):
+def does_master_exec(args_str, say):
     """
     Parse the argument string and execute the does binary with those arguments.
     Return messages and files found by the does command to return to slack.
     """
-    return output_wrapper(does_master_exec_helper, args_str)
+    return output_wrapper(does_master_exec_helper, say, args_str)
 
-def does_fetch_results_helper(commits, plots_subdir, *args, **kwargs):
-    does = DOESMaster("", None, False)
+def does_fetch_results_helper(say, commits, plots_subdir, *args, **kwargs):
+    does = DOESMaster("", None, say)
     return does.fetch_results(commits, plots_subdir)
 
 def does_fetch_results(commits, plots_subdir):
@@ -457,13 +490,13 @@ def does_fetch_results(commits, plots_subdir):
     Fetch results for the given commits. If plots_subdir is set, only plots from there are fetched.
     Otherwise, the entire result directory is put into an archive.
     """
-    return output_wrapper(does_fetch_results_helper, commits, plots_subdir)
+    return output_wrapper(does_fetch_results_helper, None, commits, plots_subdir)
 
 
 if __name__ == '__main__':
     parser = get_parser()
     args = parser.parse_args()
-    does = DOESMaster(args, parser, True)
+    does = DOESMaster(args, parser, None)
     out = does.handle()
     if out:
         stdout, texts, files = out

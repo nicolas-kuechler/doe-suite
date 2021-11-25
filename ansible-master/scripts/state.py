@@ -27,20 +27,22 @@ class Result():
         """
         Different numbers of arguments are possible:
             - 1 argument: json string of a state
-            - 2 arguments: suite, path, commit (in this order)
-            - 3 arguments: suite, suite_id, path, commit (in this order)
+            - 3 arguments: suite, path, commit, log folder (in this order)
+            - 4 arguments: suite, suite_id, path, commit, log folder (in this order)
         """
-        if len(args) == 2 or len(args) == 3:
-            if len(args) == 2:
-                suite, commit = args
+        if len(args) == 3 or len(args) == 4:
+            if len(args) == 3:
+                suite, commit, log_folder = args
                 self.suite_id = int(time.time())
                 self.timestamp = self.suite_id
             else:
-                suite, self.suite_id, commit = args
+                suite, self.suite_id, commit, log_folder = args
                 self.timestamp = int(time.time())
 
             self.suite = suite
             self.subdir = f"{self.suite}_{self.suite_id}"
+            self.stderr_file = f"{log_folder}/{self.subdir}_stderr.log"
+            self.stdout_file = f"{log_folder}/{self.subdir}_stdout.log"
             self.commit = commit
             self.progress = "running"
         elif len(args) == 1:
@@ -50,6 +52,8 @@ class Result():
             self.suite_id = d["suite_id"]
             self.timestamp = d["timestamp"]
             self.subdir = d["subdir"]
+            self.stderr_file = d["stderr_file"]
+            self.stdout_file = d["stdout_file"]
             self.commit = d["commit"]
             self.progress = d["progress"]
         else:
@@ -62,6 +66,8 @@ class Result():
             "suite_id": self.suite_id,
             "timestamp": self.timestamp,
             "subdir": self.subdir,
+            "stderr_file": self.stderr_file,
+            "stdout_file": self.stdout_file,
             "commit": self.commit,
             "progress": self.progress
         }
@@ -85,10 +91,11 @@ class State():
        "results": { Result(), ... }
     """
 
-    def __init__(self, path, doe_suite, does_results):
+    def __init__(self, path, doe_suite, does_results, log_folder):
         self.path = path
         self.does_results = does_results
         self.init_state(doe_suite, set())
+        self.log_folder = log_folder
         self.store()
 
     def __str__(self):
@@ -130,6 +137,12 @@ class State():
             if datetime.fromtimestamp(result.timestamp) < oldest_log_timestamp:
                 logging.debug(f"Removing results for commit {result.commit}")
                 shutil.rmtree(result_path)
+
+                # Remove log files if they exist
+                for log_file in [result.stderr_file, result.stdout_file]:
+                    if os.path.exists(log_file):
+                        shutil.rmtree(log_file)
+
                 to_remove.append(result)
 
         for result in to_remove:
@@ -162,7 +175,7 @@ class State():
             fp.write(json.dumps(self.to_json()))
 
     def add_new_result(self, suite, commit):
-        new_result = Result(suite, commit)
+        new_result = Result(suite, commit, self.log_folder)
         self.results.add(new_result)
         self.store()
         return new_result
