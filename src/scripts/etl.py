@@ -104,16 +104,30 @@ def _load_available_processes():
     prj_dir = os.environ["DOES_PROJECT_DIR"]
     external_etl_dir = os.path.join(prj_dir, "does_config", "etl")
 
+    external_dirs = _find_external_processes_dir(external_etl_dir)
+
     # ensure that we can load modules from the directory
-    sys.path.append(external_etl_dir)
+    for external_dir in external_dirs:
+        sys.path.append(external_dir)
 
     # check all files in the external directory
-    for x in os.listdir(external_etl_dir):
-        parts = os.path.splitext(x)
-        if parts[1] == ".py":
-            module_name = parts[0]
-            _load_processes(module_name, extractors, transformers, loaders)
+    for external_dir in external_dirs:
+        for x in os.listdir(external_dir):
+            parts = os.path.splitext(x)
+            if parts[1] == ".py":
+                module_name = parts[0]
+                _load_processes(module_name, extractors, transformers, loaders)
     return extractors, transformers, loaders
+
+def _find_external_processes_dir(base_dir):
+    dirs = []
+    # walk over all subdirectories recursively
+    for dirpath, _, filenames in os.walk(base_dir):
+        for file in filenames:
+            if file.endswith(".py"): # only use directories with python files
+                dirs.append(dirpath)
+                break
+    return dirs
 
 def _load_processes(module_name, extractors, transformers, loaders):
 
