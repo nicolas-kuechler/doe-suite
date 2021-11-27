@@ -33,6 +33,25 @@ class Transformer(ABC):
         pass
 
 class Loader(ABC):
+
+    def get_output_dir(self, options, suite_dir):
+
+        output_dir_relative_to_suite_dir = bool(options.get("output_dir_relative_to_suite_dir", True))
+        output_dir = options.get("output_dir")
+
+        if output_dir is None:
+            path = suite_dir
+        elif output_dir_relative_to_suite_dir:
+            path = os.path.join(suite_dir, output_dir)
+        else:
+            path = output_dir
+
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+        return path
+
+
     @abstractmethod
     def load(self, df: pd.DataFrame, options: Dict, etl_info: Dict) -> None:
         pass
@@ -194,5 +213,7 @@ class RepAggTransformer(Transformer):
 ########################################################
 
 class CsvSummaryLoader(Loader):
+
     def load(self, df: pd.DataFrame, options: Dict, etl_info: Dict) -> None:
-        df.to_csv(os.path.join(etl_info["suite_dir"], f"{etl_info['pipeline']}.csv"))
+        output_dir = self.get_output_dir(options, etl_info["suite_dir"])
+        df.to_csv(os.path.join(output_dir, f"{etl_info['pipeline']}.csv"))

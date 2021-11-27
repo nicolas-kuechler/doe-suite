@@ -59,8 +59,10 @@ $ETL$:
       - name: RepAggTransformer # aggregate over all repetitions of a run and calc `mean`, `std`, etc.
         data_columns: [latency] # the names of the columns in the dataframe that contain the measurements
     loaders:
-      CsvSummaryLoader: {} # write the transformed dataframe across the whole experiment as a csv file
-      DemoLatencyPlotLoader: {} # create a plot based on project-specific plot loader
+      CsvSummaryLoader: # write the transformed detl_info["suite_dir"]ataframe across the whole experiment as a csv file
+        output_dir: "etl_results/pipeline1" # write results into an output dir
+      DemoLatencyPlotLoader: # create a plot based on project-specific plot loader
+        output_dir: "etl_results/pipeline1" # write results into an output dir
 
 
   pipeline2:

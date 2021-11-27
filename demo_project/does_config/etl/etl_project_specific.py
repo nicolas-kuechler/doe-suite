@@ -15,7 +15,8 @@ class DemoLatencyPlotLoader(PlotLoader):
     def load(self, df: pd.DataFrame, options: Dict, etl_info: Dict) -> None:
         if not df.empty:
             fig = self.plot(df)
-            self.save_plot(fig, filename="test", output_dir=etl_info["suite_dir"])
+            output_dir = self.get_output_dir(options, etl_info["suite_dir"])
+            self.save_plot(fig, filename="test", output_dir=output_dir)
 
 
     def plot(self, df):
