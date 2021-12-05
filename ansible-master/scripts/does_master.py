@@ -24,6 +24,7 @@ DOES_PRJ_DIR_VARIABLE = "DOES_PROJECT_DIR"
 AWS_REGION_NAME_VARIABLE = "AWS_REGION_NAME"
 AWS_INSTANCE_STATES_ALL = ["pending", "running", "shutting-down", "terminated", "stopping", "stopped"]
 DEFAULT_PLOTS_SUBDIR = "plots"
+DOES_BRANCH = "master"
 
 BENCH_PROGRESS_TO_EMOJI = {
     "running": ":gear:",
@@ -34,6 +35,9 @@ BENCH_PROGRESS_TO_EMOJI = {
 
 def get_parser():
     parser = argparse.ArgumentParser(description="Utility to run benchmarks on AWS using the DoE-Suite")
+
+    parser.add_argument("--log_level", help="Set the log level for logging (default: WARNING)",
+            type=str, default="WARNING")
 
     subparsers = parser.add_subparsers(dest="command")
 
@@ -121,6 +125,15 @@ def init_state():
                 f"{os.environ[DOES_PRJ_DIR_VARIABLE]}/does_results",
                 LOG_FOLDER)
 
+class Repo():
+    def __init__(self, path, branch, remote="origin"):
+        self.path = path
+        self.branch = branch
+        self.remote = remote
+
+    def __str__(self):
+        return f"Repo{{banch: {self.branch}, remote: {self.remote}, path: {self.path}}}"
+
 class DOESMaster():
     """
     Class wrapping all functionality of the does executable.
@@ -129,9 +142,11 @@ class DOESMaster():
     :param parser: argparse parser for this binary (used to print the help page)
     :param say: python bolt handle to reply to slack. Set this to None when the
         command is not triggered from slack.
-    """
+    :param repo: Repo of the benchmark source code. The newest updates
+        from that branch are pulled when a DOESMaster object is initialized.
+    /"""
 
-    def __init__(self, args, parser, say):
+    def __init__(self, args, parser, say, branch=None):
         self.args = args
         self.parser = parser
         self.say = say
@@ -145,6 +160,33 @@ class DOESMaster():
 
         setup_outdir()
         self.state = init_state()
+
+        if branch:
+            self.repo = Repo(os.environ[DOES_PRJ_DIR_VARIABLE], branch)
+        else:
+            self.repo = None
+        self.update_benchmarks()
+
+    def update_benchmarks(self):
+        """
+        Fetch updates b pulling the git repo of the benchmarks.
+        """
+        if self.repo:
+            logging.debug(f"Updating repo: {self.repo}")
+            p = subprocess.run([
+                    "git",
+                    "pull",
+                    self.repo.remote,
+                    self.repo.branch
+                ], cwd=self.repo.path, capture_output=True)
+
+            if p.stdout:
+                for line in p.stdout.decode().split("\n"):
+                    logging.debug(line)
+
+            if p.returncode != 0:
+                logging.error("Updating the benchmarking repo failed! "
+                    f"Trying to still continue.\nError:\n{p.stderr.decode()}")
 
     def ansible_do_benchmark(self):
         """
@@ -229,7 +271,7 @@ class DOESMaster():
                         if key_vals["Key"] == "Name":
                             name = key_vals["Value"]
                     instances.append({
-                        "name": name, 
+                        "name": name,
                         "id": instance['InstanceId'],
                         "state": instance_state
                     })
@@ -467,11 +509,21 @@ def output_wrapper(fn, say, *args, **kwargs):
     else:
         return str_stdout.getvalue(), None, None
 
+def set_log_level(args):
+    if args.log_level:
+        numeric_level = getattr(logging, args.log_level.upper(), None)
+
+        if not isinstance(numeric_level, int):
+            raise ValueError('Invalid log level: %s' % loglevel)
+
+        logging.basicConfig(level=numeric_level)
+
 def does_master_exec_helper(say, args_str, *args, **kwargs):
     parser = get_parser()
     args = parser.parse_args(shlex.split(args_str))
+    set_log_level(args)
 
-    does = DOESMaster(args, parser, say)
+    does = DOESMaster(args, parser, say, DOES_BRANCH)
     return does.handle()
 
 def does_master_exec(args_str, say):
@@ -482,7 +534,7 @@ def does_master_exec(args_str, say):
     return output_wrapper(does_master_exec_helper, say, args_str)
 
 def does_fetch_results_helper(say, commits, plots_subdir, *args, **kwargs):
-    does = DOESMaster("", None, say)
+    does = DOESMaster("", None, say, DOES_BRANCH)
     return does.fetch_results(commits, plots_subdir)
 
 def does_fetch_results(commits, plots_subdir):
@@ -496,7 +548,8 @@ def does_fetch_results(commits, plots_subdir):
 if __name__ == '__main__':
     parser = get_parser()
     args = parser.parse_args()
-    does = DOESMaster(args, parser, None)
+    set_log_level(args)
+    does = DOESMaster(args, parser, None, DOES_BRANCH)
     out = does.handle()
     if out:
         stdout, texts, files = out
