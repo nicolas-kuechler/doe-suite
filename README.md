@@ -485,7 +485,7 @@ When we use the `level-list` format or the mixed format, then we have the `facto
 
 For each suite design you can optionally configure multiple ETL pipelines to process result files.
 
-The reason for this is that between experiments from different domains, there are a lot of common steps which can be covered by shared implementations
+The reason for this is that between experiments from different domains, there are a lot of common steps which can be covered by shared implementations.
 For example, experiments may report results in a CSV and hence extracting this CSV file from the results folder structure is a common step.
 In case an experiment has some unique requirements, a project can define its own extractors, transformers, and loaders.
 
@@ -508,6 +508,7 @@ All the `loaders`specified in the ETL config of the suite design, receive the re
 
 <!-- TODO could list the available defaults or provide link to find them-->
 
+:warning: The ETL scripts can be structured in folders, however all paths must be relative to the `etl` folder. More information is in the [troubleshooting](./docs/troubleshooting.md).
 
 ## More Documentation
 More documentation can be found [here](./docs).

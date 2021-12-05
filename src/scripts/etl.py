@@ -108,11 +108,19 @@ def _load_available_processes():
     sys.path.append(external_etl_dir)
 
     # check all files in the external directory
-    for x in os.listdir(external_etl_dir):
-        parts = os.path.splitext(x)
-        if parts[1] == ".py":
-            module_name = parts[0]
-            _load_processes(module_name, extractors, transformers, loaders)
+    for subdir, dirs, files in os.walk(external_etl_dir):
+        module_path_prefix = ""
+        rel_subdir_path = os.path.relpath(subdir, external_etl_dir)
+        if rel_subdir_path not in [".", "./"]:
+            # Quick hack to transform paths to module imports, assumes reasonable names
+            module_path_prefix = rel_subdir_path.replace("./", "").replace("/", ".") + "."
+
+        for file in files:
+            parts = os.path.splitext(file)
+            if parts[1] == ".py":
+                module_path = module_path_prefix + parts[0]
+                _load_processes(module_path, extractors, transformers, loaders)
+
     return extractors, transformers, loaders
 
 def _load_processes(module_name, extractors, transformers, loaders):
@@ -234,7 +242,7 @@ def _parse_file(path: str, file:str, extractors: List[Dict]) -> List[Dict]:
 
     # if no extractor found
     if not has_match:
-        raise ValueError(f"file={file} matches no extractor (path={path})")
+        raise ValueError(f"file={file} matches no extractor (path={path}), extractors={extractors}")
 
     return d_lst
 

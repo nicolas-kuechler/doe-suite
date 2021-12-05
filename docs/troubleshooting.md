@@ -33,3 +33,31 @@ aws ec2 describe-images --image-ids ami-05c26ae4789875080 --query "Images[0].Blo
 ```
 
 This one needs to be specified in the [group_vars](../group_vars).
+
+## ETL Script Folder Structure and Imports
+
+Consider the following folder structure in `src/scripts/etl`:
+```
+plotting/
+    my_plot.py
+    utils.py
+custom_loader.py
+```
+Where `my_plot.py` imports the plotting utilities from `utils.py`.
+
+### Error
+
+Getting the following error in the ETL scripts when using a nested folder structure:
+
+> ModuleNotFoundError: No module named 'utils'
+
+### Possible reason
+
+The ETL scripts can be structured in folders, however all paths must be relative to the `etl` folder. In the example structure from above, we need the following imports:
+```python
+# custom_loader.py
+import plotting.my_plot
+
+# plotting/my_plot.py
+import plotting.utils
+```
