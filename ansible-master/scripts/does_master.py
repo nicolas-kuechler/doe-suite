@@ -176,6 +176,7 @@ class DOESMaster():
             p = subprocess.run([
                     "git",
                     "pull",
+                    "--recurse-submodules",
                     self.repo.remote,
                     self.repo.branch
                 ], cwd=self.repo.path, capture_output=True)
