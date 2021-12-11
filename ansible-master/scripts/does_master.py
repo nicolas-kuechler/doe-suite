@@ -460,7 +460,7 @@ class DOESMaster():
         if p.returncode != 0:
             return f"Plotting failed with return code {p.returncode}.\nError:\n{p.stderr.decode()}", None, None
 
-        texts, files = self.get_plot_files([result], plots_subdir, plot_exts)
+        texts, files = self.get_plot_files([result], plots_subdirs, plot_exts)
 
         return texts, None, files
 
@@ -557,8 +557,9 @@ if __name__ == '__main__':
 
         if stdout:
             print(stdout)
-        for text in texts:
-            print(text)
+        if texts:
+            for text in texts:
+                print(text)
         if files and len(files) > 0:
             print("\nAttachments:")
             for f in files:
