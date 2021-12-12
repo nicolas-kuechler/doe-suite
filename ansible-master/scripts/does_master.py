@@ -396,6 +396,10 @@ class DOESMaster():
         plots_subdirs = self.args.plots
         do_fetch_plots = plots_subdirs is not None
 
+        if do_be_verbose and not do_list_results:
+            print("-v is only supported for -s")
+            return
+
         if not commits and not (do_list_results or do_fetch_logs):
             parser.print_help()
             return
@@ -408,16 +412,16 @@ class DOESMaster():
 
                 print("The following results are available:")
                 for result in results_sorted:
-                    verbose_info = ""
-                    if do_be_verbose:
-                        verbose_info = f", suite ID: {result.suite_id}"
-
                     if not self.is_run_from_cmd:
+                        verbose_info = ""
+                        if do_be_verbose:
+                            verbose_info = f"\n\t\t- Suite ID: {result.suite_id}"
+
                         status_indicator = BENCH_PROGRESS_TO_EMOJI[result.progress]
                         time = str(datetime.fromtimestamp(result.timestamp))
                         print(f"\t- {result.suite} {status_indicator}:\n\t\t- time: {time}\n\t\t- ID: {result.commit}{verbose_info}")
                     else:
-                        print(f"\t- {result}{verbose_info}")
+                        print(f"\t- {result}")
             else:
                 print("No results stored")
             return
