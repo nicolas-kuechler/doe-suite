@@ -8,6 +8,8 @@ StartLimitBurst=5
 Environment=HOME={{ ansible_master_home }}
 EnvironmentFile=/etc/environment
 Type=simple
+User={{ ansible_master_user }}
+Group={{ ansible_master_group }}
 ExecStart=/usr/bin/env python3 {{ ansible_master_does_dir }}/ansible-master/scripts/slack_bot.py
 StandardOutput=file:/var/log/slack-bot.log
 StandardError=inherit
