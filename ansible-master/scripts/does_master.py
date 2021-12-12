@@ -83,6 +83,9 @@ def get_parser():
     fetch_subparser.add_argument("-s", "--show",
         help="Show information on results", action="store_true")
 
+    fetch_subparser.add_argument("-v", "--verbose",
+        help="Show more information. Use together with -s.", action="store_true")
+
     fetch_subparser.add_argument("-c", "--commit",
         help="Filter for the specified commit(s)", nargs="+")
 
@@ -388,6 +391,7 @@ class DOESMaster():
 
         do_list_results = self.args.show
         do_fetch_logs = self.args.logs
+        do_be_verbose = self.args.verbose
         commits = self.args.commit
         plots_subdirs = self.args.plots
         do_fetch_plots = plots_subdirs is not None
@@ -404,12 +408,16 @@ class DOESMaster():
 
                 print("The following results are available:")
                 for result in results_sorted:
+                    verbose_info = ""
+                    if do_be_verbose:
+                        verbose_info = f", suite ID: {result.suite_id}"
+
                     if not self.is_run_from_cmd:
                         status_indicator = BENCH_PROGRESS_TO_EMOJI[result.progress]
                         time = str(datetime.fromtimestamp(result.timestamp))
-                        print(f"\t- {result.suite} {status_indicator}:\n\t\t- time: {time}\n\t\t- ID: {result.commit}")
+                        print(f"\t- {result.suite} {status_indicator}:\n\t\t- time: {time}\n\t\t- ID: {result.commit}{verbose_info}")
                     else:
-                        print(f"\t- {result}")
+                        print(f"\t- {result}{verbose_info}")
             else:
                 print("No results stored")
             return
@@ -564,4 +572,3 @@ if __name__ == '__main__':
             print("\nAttachments:")
             for f in files:
                 print(f"\t- {f}")
-
