@@ -141,7 +141,7 @@ class State():
                 # Remove log files if they exist
                 for log_file in [result.stderr_file, result.stdout_file]:
                     if os.path.exists(log_file):
-                        shutil.rmtree(log_file)
+                        os.remove(log_file)
 
                 to_remove.append(result)
 
