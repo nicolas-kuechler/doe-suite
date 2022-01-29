@@ -467,7 +467,7 @@ class DOESMaster():
             "--id",
             str(result.suite_id)
 
-        ], cwd=self.state.doe_suite)
+        ], cwd=self.state.doe_suite, capture_output=True)
 
         if p.returncode != 0:
             return f"Plotting failed with return code {p.returncode}.\nError:\n{p.stderr.decode()}", None, None
