@@ -215,8 +215,6 @@ class FactorAggTransformer(Transformer):
     """
 
     def transform(self, df: pd.DataFrame, options: Dict) -> pd.DataFrame:
-        # TODO [nku] test and remove
-        #return df
         if df.empty:
             return df
 
@@ -225,9 +223,12 @@ class FactorAggTransformer(Transformer):
 
         agg_functions = options.get("agg_functions", ['mean', 'min', 'max', 'std', 'count'])
 
+        # To configure size of the 'tail' to calculate the mean over
+        custom_tail_length = options.get("custom_tail_length", 5)
+
         # custom agg functions
         custom_agg_methods_available = {
-            "custom_tail": self.custom_tail
+            "custom_tail": self.custom_tail_build(custom_tail_length)
         }
         for fun in agg_functions.copy():
             for method, call in custom_agg_methods_available.items():
@@ -265,9 +266,11 @@ class FactorAggTransformer(Transformer):
 
         return df
 
-    def custom_tail(self, data):
-        # print("data", data, data.tail(5).mean())
-        return data.tail(5).mean()
+    def custom_tail_build(self, custom_tail_length):
+        def custom_tail(data):
+            return data.tail(custom_tail_length).mean()
+
+        return custom_tail
 
 
 
