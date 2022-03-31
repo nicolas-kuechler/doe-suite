@@ -82,8 +82,8 @@
 
   - name: Create results and scratch directories (per-host)
     ansible.builtin.shell: |
-      mkdir -m755 -p {{ '{' }}{{ jobs_grouped | last | map(attribute='exp_working_dir') | map('regex_replace', '^(.*)$', '\1/scratch') | join(',') }}{{ '}' }}
-      mkdir -m755 -p {{ '{' }}{{ jobs_grouped | last | map(attribute='exp_working_dir') | map('regex_replace', '^(.*)$', '\1/results') | join(',') }}{{ '}' }}
+      mkdir -m755 -p {{ '{' }}{{ jobs_grouped | last | map(attribute='exp_working_dir') | map('regex_replace', '^(.*)$', '\1/scratch') | join(',') }},{{ '}' }}
+      mkdir -m755 -p {{ '{' }}{{ jobs_grouped | last | map(attribute='exp_working_dir') | map('regex_replace', '^(.*)$', '\1/results') | join(',') }},{{ '}' }}
     delegate_to: "{{ jobs_grouped | first }}" # first entry in group
     loop: "{{ exp_jobs_to_enqueue | groupby('host_info.public_dns_name') }}"
     loop_control:
