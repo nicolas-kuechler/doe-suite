@@ -34,7 +34,8 @@
 
     - name: Manually load variables for ansible_controller
       include_vars:
-        file: "{{ external_group_vars_dir }}/ansible_controller/main.yml"
+        dir: "{{ external_group_vars_dir }}/ansible_controller"
+        ignore_unknown_extensions: True
 
     - name: Setup AWS VPC
       include_role:

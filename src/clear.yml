@@ -4,7 +4,10 @@
   hosts: localhost
 
   tasks:
-  - include_vars: "{{ external_group_vars_dir }}/all/main.yml"
+  - include_vars:
+      dir: "{{ external_group_vars_dir }}/all"
+      ignore_unknown_extensions: True
+
 
   - name: Template dynamic inventory config file
     template:

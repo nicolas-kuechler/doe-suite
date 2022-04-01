@@ -17,7 +17,8 @@
   block:
   - name: Loop over different host types and load group vars from file.
     include_vars:
-      file: "{{ external_group_vars_dir }}/{{ host_type }}/main.yml"
+      dir: "{{ external_group_vars_dir }}/{{ host_type }}"
+      ignore_unknown_extensions: True
       name: host_type_specific_vars
     loop: "{{ host_types.keys() }}"
     loop_control:

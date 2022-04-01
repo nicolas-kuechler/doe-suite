@@ -13,8 +13,9 @@
         msg: "Project Directory: {{ does_project_dir }}"
       tags: [print_action]
 
-
-    - include_vars: "{{ external_group_vars_dir }}/all/main.yml"
+    - include_vars:
+        dir: "{{ external_group_vars_dir }}/all"
+        ignore_unknown_extensions: True
 
 ##########################################################################
 #   Load Experiment State and Setup AWS                                  #
@@ -76,7 +77,9 @@
   tasks:
 
   - name: Load group_vars from non-standard location
-    include_vars: "{{ external_group_vars_dir }}/all/main.yml"
+    include_vars:
+      dir: "{{ external_group_vars_dir }}/all"
+      ignore_unknown_extensions: True
 
   - name: Execute init roles (incl. common roles for all hosts)
     include_role:
