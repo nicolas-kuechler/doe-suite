@@ -165,6 +165,7 @@
     - name: Remove AWS VPC
       include_role:
         name: suite-aws-vpc-delete
+      when: exp_base.skip_vpc_delete is undefined or  exp_base.skip_vpc_delete == false
 
     # cleanup aws if suite is finished (unless the explicit flag is set to keep the aws environment)
     when: awsclean | default(true) | bool and is_suite_finished

@@ -22,3 +22,4 @@
   - name: Clear VPC
     include_role:
       name: suite-aws-vpc-delete
+    when: exp_base.skip_vpc_delete is undefined or  exp_base.skip_vpc_delete == false
