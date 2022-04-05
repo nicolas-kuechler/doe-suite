@@ -32,13 +32,17 @@ def main(suite, suite_id):
         # extract data from
         df = extract(suite=suite, suite_id=suite_id, suite_dir=suite_dir, experiments=pipeline["experiments"], extractors=extractors)
 
-        # apply transformers sequentially
-        for x in transformers:
-            df = x["transformer"].transform(df, options=x["options"])
+        try:
+            # apply transformers sequentially
+            for x in transformers:
+                df = x["transformer"].transform(df, options=x["options"])
 
-        # execute all loaders on df
-        for x in loaders:
-            x["loader"].load(df, options=x["options"], etl_info=etl_info)
+            # execute all loaders on df
+            for x in loaders:
+                x["loader"].load(df, options=x["options"], etl_info=etl_info)
+        except:
+            print(f"An error occurred in pipeline {pipeline_name}!", etl_info)
+            raise
 
 
 
