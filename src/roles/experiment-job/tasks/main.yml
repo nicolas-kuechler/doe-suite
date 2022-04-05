@@ -99,6 +99,8 @@
     loop_control:
         loop_var: job
 
+    # TODO [nku] here support also templating other files based on job -> some general templates folder maybe?
+
     ###################################################################
     #  Enqueue all Jobs                                               #
     ###################################################################

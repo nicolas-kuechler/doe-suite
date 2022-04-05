@@ -31,6 +31,7 @@
     cidr: "{{ exp_base.vpc_subnet_cidr }}"
     az: "{{ exp_base.aws_region }}a"
     region: "{{ exp_base.aws_region }}"
+    map_public: yes
     resource_tags:
       Name: "{{ exp_base.vpc_subnet_name }}"
   register: public_subnet_client
@@ -88,4 +89,29 @@
       - proto: tcp
         ports: 22
         cidr_ip: 0.0.0.0/0
+
+- name: Create ENI(s)
+  amazon.aws.ec2_eni:
+    subnet_id: "{{ exp_base.vpc_subnet_id }}"
+    name: "{{ my_eni.name }}"
+    description: "{{ my_eni.desc }}"
+    region: "{{ exp_base.aws_region }}"
+    security_groups: "{{ exp_base.sg_name }}"
+    state: present
+    delete_on_termination: false # don't delete when instance is terminated
+  register: eni
+  loop:  "{{ exp_base.eni }}"
+  loop_control:
+    loop_var: my_eni
+  when: exp_base.eni is defined
+
+- name: add available eni to exp_base
+  set_fact:
+    exp_base: "{{ exp_base | combine({'eni': eni | json_query(my_query) }, recursive=true) }}"
+  vars:
+    my_query: "results[].{name: interface.name, id: interface.id, mac_address: interface.mac_address}"
+  when: exp_base.eni is defined
+
+
 - debug: msg="exp base config= {{ exp_base }}"
+  #tags: [print_action]

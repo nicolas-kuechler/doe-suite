@@ -53,12 +53,12 @@
     key_name: '{{ ec2config.key_name }}'
     image_id: '{{ ec2config.ec2_image_id }}'
     region: '{{ ec2config.aws_region }}'
-    security_group: '{{ ec2config.sg_name }}'
+    security_groups:  "{{ ec2config.custom_eni is defined | ternary([], [ec2config.sg_name]) }} "  #ec2config.sg_name "{{ omit }}" #
     vpc_subnet_id: '{{ ec2config.vpc_subnet_id }}'
     wait: no
     purge_tags: yes
     network:
-      assign_public_ip: yes
+      "{{ ec2config.custom_eni[my_host['idx']] is defined | ternary({'interfaces': [ec2config.custom_eni[my_host['idx']]]}, {'assign_public_ip': True}) }}"
     volumes:
       - device_name: /dev/sda1
         ebs:
@@ -122,6 +122,7 @@
       exp_name: "{{ tag_assignment.exp_name }}"
       is_controller: "{{ tag_assignment.is_controller }}"
       check_status: "{{ tag_assignment.check_status }}"
+      idx: "{{ tag_assignment.exp_host_type_idx }}" # also update idx because tag_assignment orders by instance id
       Name: "{{ name_tag | truncate(252, killwords=True, end='...', leeway=3) }}" # truncate because aws has a limit of 255 chars for a tag
   vars:
     name_tag: "{'prj_id': {{ prj_id }}, 'suite': {{ suite }}, 'exp_name': {{ tag_assignment.exp_name }}, 'host_type': {{ tag_assignment.host_type }}, 'is_controller': {{ tag_assignment.is_controller }}, 'check_status': {{ tag_assignment.check_status }} }"
