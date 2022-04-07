@@ -184,7 +184,7 @@ def extract(suite:str, suite_id: str, suite_dir: str, experiments: List[str], ex
                 host_types = _list_dir_only(rep_dir)
 
                 try:
-                    config = _load_config_yaml(path=rep_dir, file="config.json")
+                    config = _load_config_json(path=rep_dir, file="config.json")
                 except FileNotFoundError:
                     continue
 
@@ -252,9 +252,14 @@ def _parse_file(path: str, file:str, extractors: List[Dict]) -> List[Dict]:
 
     return d_lst
 
-def _load_config_yaml(path, file="config.json"):
+def _load_config_yaml(path, file):
     with open(os.path.join(path, file)) as file:
         config = yaml.load(file, Loader=yaml.FullLoader)
+    return config
+
+def _load_config_json(path, file):
+    with open(os.path.join(path, file)) as file:
+        config = json.load(file)
     return config
 
 def _list_dir_only(path):
@@ -273,5 +278,7 @@ if __name__ == "__main__":
     parser.add_argument("--suite", type=str, required=True)
     parser.add_argument("--id", type=str, required=True)
     args = parser.parse_args()
+
+    # TODO [nku] add support for --id last
 
     main(suite=args.suite, suite_id=args.id)
