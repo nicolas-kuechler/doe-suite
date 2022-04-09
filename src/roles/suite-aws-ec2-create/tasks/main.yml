@@ -43,6 +43,29 @@
         res
 
 
+# Network Interfaces
+
+- name: find existing eni
+  amazon.aws.ec2_eni_info:
+    filters:
+      vpc-id: "{{ exp_base.vpc_id }}"
+  register: ec2_eni_info
+
+- name: Collect infos on ec2 instances (filter by prj_id and suite tags)
+  community.aws.ec2_instance_info:
+      region: "{{ exp_base.aws_region }}"
+      filters:
+        instance-state-name: [ "pending", "running" ]
+        "tag:prj_id": "{{ prj_id }}"
+        "tag:suite": "{{ suite }}"
+  register: ec2_instance_info
+
+- set_fact:
+    eni_assignment: "{{ ec2_eni_info | to_eni_assignment(ec2_instance_info, host_types, host_type_specific_vars) }}"
+
+#- debug:
+#    var: eni_assignment
+
 #######################################################################
 # Create EC2 Instances for all host_types
 ######################################################################
@@ -53,12 +76,11 @@
     key_name: '{{ ec2config.key_name }}'
     image_id: '{{ ec2config.ec2_image_id }}'
     region: '{{ ec2config.aws_region }}'
-    security_groups:  "{{ ec2config.custom_eni is defined | ternary([], [ec2config.sg_name]) }} "  #ec2config.sg_name "{{ omit }}" #
+    security_groups:  "{{ ec2config.attach_eni | default(False) | ternary([], [ec2config.sg_name]) }} "  #ec2config.sg_name "{{ omit }}" #
     vpc_subnet_id: '{{ ec2config.vpc_subnet_id }}'
     wait: no
     purge_tags: yes
-    network:
-      "{{ ec2config.custom_eni[my_host['idx']] is defined | ternary({'interfaces': [ec2config.custom_eni[my_host['idx']]]}, {'assign_public_ip': True}) }}"
+    network: "{{ my_host | to_network(eni_assignment) }}"
     volumes:
       - device_name: /dev/sda1
         ebs:
@@ -89,6 +111,7 @@
   loop: "{{ host_types.keys() | product(range(max_n_sum|int)) | map('tuple2dict', keys=['host_type', 'idx']) }}"
   loop_control:
     loop_var: my_host
+
 
 #######################################################################
 # Assign instances to experiments and define role in experiments

@@ -62,6 +62,7 @@ class Loader(ABC):
 class PlotLoader(Loader):
 
     def save_plot(self, fig: plt.Figure, filename: str, output_dir: str, use_tight_layout: bool = True, output_filetypes: List[str] = ['pdf', 'png']):
+        plt.tight_layout()
         for ext in output_filetypes:
             full_filename = f"{output_dir}/{filename}.{ext}"
 
