@@ -112,7 +112,6 @@
   loop_control:
     loop_var: my_host
 
-
 #######################################################################
 # Assign instances to experiments and define role in experiments
 # (e.g., instance is controller)
@@ -145,7 +144,6 @@
       exp_name: "{{ tag_assignment.exp_name }}"
       is_controller: "{{ tag_assignment.is_controller }}"
       check_status: "{{ tag_assignment.check_status }}"
-      idx: "{{ tag_assignment.exp_host_type_idx }}" # also update idx because tag_assignment orders by instance id
       Name: "{{ name_tag | truncate(252, killwords=True, end='...', leeway=3) }}" # truncate because aws has a limit of 255 chars for a tag
   vars:
     name_tag: "{'prj_id': {{ prj_id }}, 'suite': {{ suite }}, 'exp_name': {{ tag_assignment.exp_name }}, 'host_type': {{ tag_assignment.host_type }}, 'is_controller': {{ tag_assignment.is_controller }}, 'check_status': {{ tag_assignment.check_status }} }"
