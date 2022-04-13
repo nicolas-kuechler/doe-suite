@@ -24,15 +24,10 @@
   hosts: localhost
 
   tasks:
-    - name: Template dynamic inventory config file
-      # we do this because we want to have the project id as an inventory filter (such that only ec2 instances with a corresponding tag are visible)
-      template:
-        src: resources/inventory/aws_ec2.yml.j2
-        dest: inventory/aws_ec2.yml
-        mode: 0755
-      vars:
-        prj_clear: False # controls whether to also filter for the suite or not (for a clear we want to include all instances of the project independent of the suite)
-        is_ansible_controller: False
+    - name: prepare dynamic inventory
+      include_role:
+        name: suite-cloud-inventory-setup
+        tasks_from: "{{ 'suite-cloud-inventory-setup' | multiplex_tasks(cloud) }}"
 
     - name: resolve suite_id, load and validate suite design, fill default values, and prepare variables
       include_role:
