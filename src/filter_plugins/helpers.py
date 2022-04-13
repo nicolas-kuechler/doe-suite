@@ -2,7 +2,7 @@ from collections.abc import Iterable
 import os
 import re
 from ansible import constants as ansible_constants
-
+from ansible import errors
 
 def _flatten(tuple):
 
@@ -108,10 +108,10 @@ def multiplex_tasks(role, cloud):
                 if os.path.isdir(os.path.join(directory, role))]
     if len(role_dir) == 0:
         # throw error
-        raise AnsibleFilterError("No role with name %s found in directories %s",
-                                 role, ",".join(role_dir))
+        raise errors.AnsibleFilterError("No role with name %s found in directories %s" %
+                                        (role, ", ".join(roles_path)))
     elif len(role_dir) > 1:
-        raise AnsibleFilterError("Duplicate roles found: %s",
+        raise errors.AnsibleFilterError("Duplicate roles found: %s" %
                                  ",".join(role_dir))
 
     role_dir = role_dir[0]

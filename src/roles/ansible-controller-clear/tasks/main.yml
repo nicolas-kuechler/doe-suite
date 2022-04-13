@@ -37,4 +37,5 @@
 
 - name: Remove AWS VPC
   ansible.builtin.include_role:
-    name: suite-aws-vpc-delete
+    name: suite-cloud-vpc-delete
+    tasks_from: aws

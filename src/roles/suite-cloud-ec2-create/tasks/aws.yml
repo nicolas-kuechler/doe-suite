@@ -135,7 +135,8 @@
 
 - name: Terminate all instances that are not assigned but have the matching prj_id and suite tag
   include_role:
-    name: suite-aws-ec2-delete
+    name: suite-cloud-ec2-delete
+    tasks_from: aws
   vars:
     filter_by_suite: True
     instance_ids_in_use: "{{ tag_assignment_lst | json_query('[*].instance_id') }}"

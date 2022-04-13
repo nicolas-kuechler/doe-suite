@@ -20,9 +20,11 @@
 
   - name: Clear EC2 instances
     include_role:
-      name: suite-aws-ec2-delete
+      name: suite-cloud-ec2-delete
+      tasks_from: "{{ 'suite-cloud-ec2-delete' | multiplex_tasks(cloud) }}"
 
   - name: Clear VPC
     include_role:
       name: suite-aws-vpc-delete
+      tasks_from: "{{ 'suite-cloud-vpc-delete' | multiplex_tasks(cloud) }}"
     when: exp_base.skip_vpc_delete is undefined or  exp_base.skip_vpc_delete == false

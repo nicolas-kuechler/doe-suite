@@ -52,13 +52,13 @@
 
     - name: Setup AWS VPC
       include_role:
-        name: suite-aws-vpc-create
-        tasks_from: "{{ 'suite-aws-vpc-create' | multiplex_tasks(cloud) }}"
+        name: suite-cloud-vpc-create
+        tasks_from: "{{ 'suite-cloud-vpc-create' | multiplex_tasks(cloud) }}"
 
     - name: Setup AWS EC2 instances
       include_role:
-        name: suite-aws-ec2-create
-        tasks_from: "{{ 'suite-aws-ec2-create' | multiplex_tasks(cloud) }}"
+        name: suite-cloud-ec2-create
+        tasks_from: "{{ 'suite-cloud-ec2-create' | multiplex_tasks(cloud) }}"
 
     - name: above
       assert:
@@ -86,6 +86,7 @@
   - name: Execute init roles (incl. common roles for all hosts)
     include_role:
       name: "{{ role_name }}"
+      tasks_from: "{{ role_name | multiplex_tasks(cloud) }}"
     loop: "{{ setup_roles }}"
     loop_control:
       loop_var: role_name
@@ -165,13 +166,13 @@
 
     - name: Cleanup AWS
       include_role:
-        name: suite-aws-ec2-delete
-        tasks_from: "{{ 'suite-aws-ec2-delete' | multiplex_tasks(cloud) }}"
+        name: suite-cloud-ec2-delete
+        tasks_from: "{{ 'suite-cloud-ec2-delete' | multiplex_tasks(cloud) }}"
 
     - name: Remove AWS VPC
       include_role:
-        name: suite-aws-vpc-delete
-        tasks_from: "{{ 'suite-aws-vpc-delete' | multiplex_tasks(cloud) }}"
+        name: suite-cloud-vpc-delete
+        tasks_from: "{{ 'suite-cloud-vpc-delete' | multiplex_tasks(cloud) }}"
       when: exp_base.skip_vpc_delete is undefined or  exp_base.skip_vpc_delete == false
 
     # cleanup aws if suite is finished (unless the explicit flag is set to keep the aws environment)
