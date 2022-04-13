@@ -34,6 +34,6 @@ Here we describe some task-specific variables that must be defined.
 | Variable        | Contents   |
 |-----------------|-----|
 | suite_hosts_lst | list of all instances with their id and other relevant infos (+ public and private dns names), ` [{"instance_id": X, "exp_name": X, "is_controller": X, "host_type": X, "exp_host_type_idx": X, "exp_host_type_n": X, "init_roles": X, "check_status": X, "public_dns_name": X, "private_dns_name": X}, ...]`    |
-|                 |     |
+| setup_roles     |     |
 |                 |     |
 

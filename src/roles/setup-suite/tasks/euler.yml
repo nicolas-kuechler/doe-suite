@@ -1,0 +1,14 @@
+---
+
+# This role is always executed an ensures that the task spooler is installed and the code repository is downloaded.
+
+- debug:
+    msg: "-> setup suite"
+  tags: [print_action]
+
+- name: Update Code from Git remote repository
+  git:
+    repo: "{{ git_remote_repository }}"
+    dest: "{{ remote.dir }}/code"
+    accept_hostkey: yes
+    force: yes

@@ -8,14 +8,18 @@
     msg: "-> testing connection with Euler {{ groups }}"
   tags: [print_action]
 
-- name: Refresh dynamic inventory
-  meta: refresh_inventory
+#- name: Refresh dynamic inventory
+#  meta: refresh_inventory
+#
+#- pause:
+#    seconds: 5
 
-- pause:
-    seconds: 5
+- name: Define public dns
+  set_fact:
+    public_dns_hostname: "{{ groups['euler'][0] }}"
 
 - name: Test connection with Euler
-  delegate_to: "{{ groups['euler'][0] }}"
+  delegate_to: "{{ public_dns_hostname }}"
   wait_for_connection:
     connect_timeout: 3
     timeout: 320
@@ -39,15 +43,25 @@
   vars:
     instance_infos:
       - instance_id: euler
-        tags: []
+        tags:
+          host_type: small # how to fix? host_types
+          idx: 0
 
+- debug:
+    var: tag_assignment_lst
+
+- set_fact:
+    suite_hosts_lst: []
 
 - name: enrich host list with public_dns_name and private_dns_name
   set_fact:
-    suite_hosts_lst: "{{ suite_hosts_lst + [tag_assignment | combine({'public_dns_name': public_dns_lookup[tag_assignment.instance_id], 'private_dns_name': private_dns_lookup[tag_assignment.instance_id]})] }}"
+    suite_hosts_lst: "{{ suite_hosts_lst + [tag_assignment | combine({'public_dns_name': public_dns_hostname, 'private_dns_name': None})] }}"
     # list of all instances with their id and other relevant infos (+ public and private dns names)
     # [{"instance_id": X, "exp_name": X, "is_controller": X, "host_type": X, "exp_host_type_idx": X, "exp_host_type_n": X, "init_roles": X, "check_status": X, "public_dns_name": X, "private_dns_name": X}, ...]
 
   loop: "{{ tag_assignment_lst }}"
   loop_control:
     loop_var: tag_assignment
+
+- debug:
+    var: suite_hosts_lst
