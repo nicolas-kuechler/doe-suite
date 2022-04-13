@@ -36,7 +36,7 @@
 
     - name: resolve suite_id, load and validate suite design, fill default values, and prepare variables
       include_role:
-        name: suite-load-pre-aws
+        name: suite-load-pre-cloud-setup
 
     - assert:
         that:
@@ -53,10 +53,12 @@
     - name: Setup AWS VPC
       include_role:
         name: suite-aws-vpc-create
+        tasks_from: "{{ 'suite-aws-vpc-create' | multiplex_tasks(cloud) }}"
 
     - name: Setup AWS EC2 instances
       include_role:
         name: suite-aws-ec2-create
+        tasks_from: "{{ 'suite-aws-ec2-create' | multiplex_tasks(cloud) }}"
 
     - name: above
       assert:
@@ -102,7 +104,7 @@
   tasks:
     - name: extending the experiment config + for new suite create the job lists
       include_role:
-        name: suite-load-post-aws
+        name: suite-load-post-cloud-setup
 
     - debug:
         msg: "running experiment jobs for experiment {{ exp_name }}"
@@ -164,10 +166,12 @@
     - name: Cleanup AWS
       include_role:
         name: suite-aws-ec2-delete
+        tasks_from: "{{ 'suite-aws-ec2-delete' | multiplex_tasks(cloud) }}"
 
     - name: Remove AWS VPC
       include_role:
         name: suite-aws-vpc-delete
+        tasks_from: "{{ 'suite-aws-vpc-delete' | multiplex_tasks(cloud) }}"
       when: exp_base.skip_vpc_delete is undefined or  exp_base.skip_vpc_delete == false
 
     # cleanup aws if suite is finished (unless the explicit flag is set to keep the aws environment)
