@@ -1,0 +1,10 @@
+all:
+  children:
+    euler:
+      hosts:
+        login.euler.ethz.ch:
+           ansible_user: {{ euler_user }}
+    is_controller_yes:
+      hosts:
+        login.euler.ethz.ch:
+           ansible_user: {{ euler_user }}
