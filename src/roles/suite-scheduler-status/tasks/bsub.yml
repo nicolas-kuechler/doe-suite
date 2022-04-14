@@ -1,0 +1,45 @@
+---
+- assert:
+    that:
+      - exp_name is defined
+
+
+- name: Get bjobs
+  command:
+    cmd: bjobs -w
+  register: bjobs_result
+- set_fact:
+    bjobs_result: "{{ bjobs_result }}"
+- debug:
+    msg: "{{ bjobs_result.stdout_lines[1:] }}"
+
+- debug:
+    msg: "Running: {{ lsf_job_ids_running }}, pending: {{ lsf_job_ids_pending }}, force: {{ force_refresh | default(false) }}"
+
+- name: Get status of jobs lsf_job_ids_unfinished (using bjobs)
+  vars:
+    lines: "{{ bjobs_result.stdout_lines[1:] }}"
+  set_fact:
+    # jobs that were in lsf_job_ids_unfinished but are finished now
+    #    lsf_job_ids_finished: "{{ lsf_job_ids_running }}" # PLACEHOLDER
+
+    # jobs that are currently running (i.e. not pending) of the jobs from lsf_job_ids_unfinished
+    lsf_job_ids_running: "{{ lines | map('regex_search', '^([0-9]*) [a-zA-Z]*[ ]*RUN', '\\1') | flatten | intersect(lsf_job_ids_unfinished) }}" # PLACEHOLDER
+
+    # jobs that are currently pending (i.e. wait in queue) of the jobs from lsf_job_ids_unfinished
+    #    lsf_job_ids_pending: [] # PLACEHOLDER
+    lsf_job_ids_pending: "{{ lines | map('regex_search', '^([0-9]*) [a-zA-Z]*[ ]*PEND', '\\1') | flatten | intersect(lsf_job_ids_unfinished) }}"
+  when: (not force_refresh | default(true)) and lsf_job_ids_unfinished | length > 0
+
+
+#- name: Get status of job
+#  # Note: if the number of tries are exceeded, the task raises an error which stops this role and is caught in the parent
+#  tsp_info:
+#  register: tsp_result
+#  until: (tsp_result.tasks | tsp_job_finished(job_id_to_wait_for)) | bool
+#  retries: "{{ job_n_tries }}"
+#  delay: "{{ job_check_wait_time }}"
+#  delegate_to: "{{ host }}"
+#  loop: "{{ groups[exp_name] | intersect(groups['check_status_yes']) }}" # only check status of jobs for host_types with 'check_status' == true
+#  loop_control:
+#    loop_var: host
