@@ -128,6 +128,19 @@ def multiplex_tasks(role, cloud):
         return "main"
 
 
+def safe_job_info_string(job_info):
+    """
+    Transforms job_info into a safe string that can be read by external systems
+
+    :type job_info: dict
+    """
+    # transforms job info into safe string
+    order = ["suite", "suite_id", "exp_name", "exp_run", "exp_run_rep"]
+    safe_elements = [f"{item}_{job_info[item]}" for item in order]
+
+    return "__".join(safe_elements)
+
+
 class FilterModule(object):
     ''' jinja2 filters '''
 
@@ -136,5 +149,6 @@ class FilterModule(object):
             'tuple2flat2dict': tuple2flat2dict,
             'tuple2dict': tuple2dict,
             'collect_items2dict': collect_items2dict,
-            'multiplex_tasks': multiplex_tasks
+            'multiplex_tasks': multiplex_tasks,
+            'safe_job_info_string': safe_job_info_string
         }

@@ -50,7 +50,7 @@
         name: suite-cloud-vpc-create
         tasks_from: "{{ 'suite-cloud-vpc-create' | multiplex_tasks(cloud) }}"
 
-    - name: Setup AWS EC2 instances
+    - name: Setup cloud instances
       include_role:
         name: suite-cloud-ec2-create
         tasks_from: "{{ 'suite-cloud-ec2-create' | multiplex_tasks(cloud) }}"
@@ -88,10 +88,17 @@
   strategy: free
   tasks:
 
-  - name: Load group_vars from non-standard location
-    include_vars:
-      dir: "{{ external_group_vars_dir }}/all"
-      ignore_unknown_extensions: True
+#  - name: Load group_vars from non-standard location
+#    include_vars:
+#      dir: "{{ external_group_vars_dir }}/all"
+#      ignore_unknown_extensions: True
+  - name: Load group variables for host
+    include_role:
+      name: load-group-vars
+    vars:
+      groups_to_load:
+        - all
+        - "{{ host_type }}"
 
   - name: Execute init roles (incl. common roles for all hosts)
     include_role:

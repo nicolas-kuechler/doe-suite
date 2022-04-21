@@ -1,6 +1,7 @@
 
 import json, os
 
+# from ...filter_plugins.helpers import safe_job_info_string
 
 
 def tsp_job_finished(tsp_tasks, job_id):
@@ -88,6 +89,37 @@ def jobid2workingdir(job_id, base):
     return exp_working_dir
 
 
+def bsub_jobs_finished(queued_jobs, bjobs):
+    """
+    Determines newly finished tasks.
+
+    :param queued_jobs:
+    :param bjob_tasks:
+    :return: job from queued_jobs
+    """
+    # TODO: Somehow import this from global helpers file, as this is duplicated code
+    def safe_job_info_string(job_info):
+        """
+        Transforms job_info into a safe string that can be read by external systems
+
+        :type job_info: dict
+        """
+        # transforms job info into safe string
+        order = ["suite", "suite_id", "exp_name", "exp_run", "exp_run_rep"]
+        safe_elements = [f"{item}_{job_info[item]}" for item in order]
+
+        return "__".join(safe_elements)
+
+    queued_or_running_labels = [bjob["label"] for bjob in bjobs]
+
+    for queued_job in queued_jobs:
+        safe_id = safe_job_info_string(queued_job)
+
+        if safe_id not in queued_or_running_labels:
+            # job has finished
+            return queued_job
+
+    return ''
 
 
 class FilterModule(object):
@@ -96,6 +128,7 @@ class FilterModule(object):
     def filters(self):
         return {
             "tsp_job_finished": tsp_job_finished,
+            "bsub_jobs_finished": bsub_jobs_finished,
             "get_tsp_task_id": get_tsp_task_id,
             "to_job_schedule_lst": to_job_schedule_lst,
             "jobid2workingdir": jobid2workingdir,
