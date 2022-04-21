@@ -5,16 +5,15 @@
       - exp_jobs_to_enqueue is defined
       - exp_name is defined
 
-- name: deb
-  debug:
-    msg: "{{ exp_jobs_to_enqueue }}"
+#- name: deb
+#  debug:
+#    msg: "{{ exp_jobs_to_enqueue }}"
 
 - name: schedule the job on leonhard using bsub
   vars:
     experiment_name: "{{ job.job_info | safe_job_info_string }}"
     output_file: "{{ job.exp_working_dir }}/results/stdout.log"
     error_file: "{{ job.exp_working_dir }}/results/stderr.log"
-#    config: "{{ host_type_specific_vars[job['host_info']['host_type']] | combine( exp_base ) }}"
   register: bsub_output
   shell: |
     source /etc/profile

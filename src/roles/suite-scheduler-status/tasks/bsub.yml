@@ -1,4 +1,8 @@
 ---
+
+# Since bjobs runs multiple jobs in parallel, we ignore `job_id_to_wait_for`.
+# This script waits for any of the active jobs to complete and then sets job_id_to_wait_for as one of the completed jobs.
+
 - assert:
     that:
       - exp_name is defined
