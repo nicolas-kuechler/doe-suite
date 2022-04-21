@@ -29,10 +29,10 @@ def main(suite, suite_id):
 
         extractors, transformers, loaders = load_selected_processes(pipeline["extractors"], pipeline["transformers"], pipeline["loaders"])
 
-        # extract data from
-        df = extract(suite=suite, suite_id=suite_id, suite_dir=suite_dir, experiments=pipeline["experiments"], extractors=extractors)
+        try:    
+            # extract data from
+            df = extract(suite=suite, suite_id=suite_id, suite_dir=suite_dir, experiments=pipeline["experiments"], extractors=extractors)
 
-        try:
             # apply transformers sequentially
             for x in transformers:
                 df = x["transformer"].transform(df, options=x["options"])
