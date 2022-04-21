@@ -229,7 +229,8 @@
     delegate_to: localhost
     ansible.builtin.shell:
       cmd: python scripts/etl.py --suite {{ suite }} --id {{ suite_id }}
-
+    ignore_errors: true
+    
   vars:
   - remote_results_dir: "{{ job_id_to_wait_for | jobid2workingdir(remote.results_dir) + '/results' }}"
   - local_results_dir_base: "{{ job_id_to_wait_for | jobid2workingdir(local.results_dir) }}"
