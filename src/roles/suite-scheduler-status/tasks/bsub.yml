@@ -7,6 +7,10 @@
 #  debug:
 #    msg: "{{ exp_job_ids_queued }}"
 
+- name: Store job_id that system wants us to wait for
+  set_fact:
+    system_job_id: "{{ job_id_to_wait_for }}"
+
 - name: Get bjobs
   bjobs_info:
   register: bjobs_result
@@ -18,3 +22,8 @@
 #   Set job_id_to_wait_for to the jsonified version of job_info
 - set_fact:
     job_id_to_wait_for: "{{ exp_job_ids_queued | bsub_jobs_finished(bjobs_result.tasks) }}"
+
+- name: Override the job id to wait until finished + update state
+  set_fact:
+    exp_job_ids_queued: "{{ exp_job_ids_queued + [system_job_id] | difference([job_id_to_wait_for]) }}"
+    exp_job_ids_running: "{{ [job_id_to_wait_for] }}"
