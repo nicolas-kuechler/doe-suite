@@ -6,6 +6,10 @@
     that:
     - exp_base is defined
 
+- name: Assert that only a single host type is defined in experiments
+  debug:
+    msg: "No-op for now"
+
 - name: Template dynamic inventory config file
   # we do this because we want to have the project id as an inventory filter (such that only ec2 instances with a corresponding tag are visible)
   template:
