@@ -1,0 +1,30 @@
+# ETL Processing
+Instructions for defining ETL pipelines, and descriptions of base components
+
+## Transformers
+### Factor-dependent transformers
+We are often interested in output differences split out by the different factor values for each run.
+Instead of manually specifying what columns we are interested in, some transformers support the use of the `$FACTORS$`
+tag in the ETL design files, which will automatically be expanded to the factor columns of the experiment.
+
+The ETL pipeline provides the per-experiment factor information to the transformers in the dataframe as additional
+information.
+On the transformer side, the `Transformer` base class provides the `_expand_factors` helper
+to automatically expand `$FACTORS$` into the right values.
+An example is provided below.
+
+```yaml
+transformers:
+- name: FactorAggTransformer
+  data_columns:
+  - accuracy
+  - total_time
+  factor_columns:
+  - exp_name
+  - audit
+  - $FACTORS$ # will be expanded to factor_columns of the experiment
+```
+
+The `$FACTORS$` tag must still be explicitly provided by the experiment designer, so this functionality is entirely opt-in.
+
+For an example, see `FactorAggTransformer`.
