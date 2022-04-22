@@ -247,7 +247,7 @@ class FactorAggTransformer(Transformer):
 
         data_columns = options.get("data_columns")
         # here, we get factor_columns
-        factor_columns = self.expand_factors(df, options.get("factor_columns"))
+        factor_columns = self._expand_factors(df, options.get("factor_columns"))
         agg_functions = options.get("agg_functions", ['mean', 'min', 'max', 'std', 'count'])
 
         # To configure size of the 'tail' to calculate the mean over
