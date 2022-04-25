@@ -35,32 +35,25 @@ def run_multi_suite(config_name, return_df=False):
         extractors, transformers, loaders = load_selected_processes(pipeline["extractors"], pipeline["transformers"], pipeline["loaders"])
 
         experiments_df = pd.DataFrame()
-        for experiment_full in experiments:
+        for suite, experiments in experiments.items():
 
-            experiment_components = experiment_full.split(":")
-            assert len(experiment_components) > 1, f"Experiments must be specified with a `suite:` prefix!" \
-                                                   f"\nExperiment: {experiment_full}"
-            suite = experiment_components[0]
-            experiment = experiment_components[1]
+            experiment_suite_id_map = _extract_experiments_suite(suite, experiments, suite_id_map)
+            for experiment, suite_id in experiment_suite_id_map.items():
 
-            if suite not in suite_id_map.keys():
-                raise ValueError(f"No suite id specified for {suite}! Specify in $SUITE_ID$")
+                suite_dir = os.path.join(results_dir, f"{suite}_{suite_id}")
+                suite_design = _load_config_yaml(suite_dir, file="suite_design.yml")
+                etl_info = {
+                    "suite": suite, "suite_id": suite_id, "pipeline": pipeline_name, "experiments": [experiment], "suite_dir": suite_dir
+                }
 
-            suite_id = suite_id_map[suite]
-            suite_dir = os.path.join(results_dir, f"{suite}_{suite_id}")
-            suite_design = _load_config_yaml(suite_dir, file="suite_design.yml")
-            etl_info = {
-                "suite": suite, "suite_id": suite_id, "pipeline": pipeline_name, "experiments": [experiment], "suite_dir": suite_dir
-            }
+                try:
+                    # extract data from
+                    df = extract(suite=suite, suite_id=suite_id, suite_dir=suite_dir, experiments=[experiment], base_experiments=suite_design, extractors=extractors)
 
-            try:
-                # extract data from
-                df = extract(suite=suite, suite_id=suite_id, suite_dir=suite_dir, experiments=[experiment], base_experiments=suite_design, extractors=extractors)
-
-                experiments_df = experiments_df.append(df)
-            except:
-                print(f"An error occurred in extractor from pipeline {pipeline_name}!", etl_info)
-                raise
+                    experiments_df = experiments_df.append(df)
+                except:
+                    print(f"An error occurred in extractor from pipeline {pipeline_name}!", etl_info)
+                    raise
 
         df = experiments_df
         etl_info = {
@@ -83,6 +76,19 @@ def run_multi_suite(config_name, return_df=False):
         # for use in jupyter notebooks
         return df
 
+
+def _extract_experiments_suite(suite, experiments, suite_id_map):
+    """
+
+    :return: dict Experiment to suite mapping
+    """
+    if isinstance(experiments, list):
+        # all have same suite
+        return {experiment: suite_id_map[suite] for experiment in experiments}
+    elif isinstance(experiments, dict):
+        return experiments
+    else:
+        raise ValueError(f"Experiments must be a list or dict!")
 
 if __name__ == "__main__":
 
