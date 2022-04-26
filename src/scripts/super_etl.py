@@ -26,6 +26,7 @@ def run_multi_suite(config_name, return_df=False):
     etl_config = pipeline_design["$ETL$"]
     suite_id_map = pipeline_design["$SUITE_ID$"]
 
+    output_dfs = {}
     # go over pipelines and run them
     for pipeline_name, pipeline in etl_config.items():
 
@@ -68,13 +69,16 @@ def run_multi_suite(config_name, return_df=False):
             # execute all loaders on df
             for x in loaders:
                 x["loader"].load(df, options=x["options"], etl_info=etl_info)
+
+            if return_df:
+                output_dfs[pipeline_name] = df
         except:
             print(f"An error occurred in pipeline {pipeline_name}!", etl_info)
             raise
 
     if return_df:
         # for use in jupyter notebooks
-        return df
+        return output_dfs
 
 
 def _extract_experiments_suite(suite, experiments, suite_id_map):

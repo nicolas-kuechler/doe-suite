@@ -28,3 +28,29 @@ transformers:
 The `$FACTORS$` tag must still be explicitly provided by the experiment designer, so this functionality is entirely opt-in.
 
 For an example, see `FactorAggTransformer`.
+
+# Super ETL
+
+## Config changes
+- Experiments are objects now
+
+Doe suite also supports the definition of suite-transcending (super-suite) ETL pipelines that
+combines experiments from multiple suites, which we refer to as super ETL.
+
+### Jupyter Notebook support
+The below code snippet can be used to use an ETL pipeline in a notebook for quick debugging and analysis.
+The ETL's loaders are skipped and instead the DataFrame is returned (that would have been processed by the loaders).
+Simply call `super_etl.run_multi_suite("pipeline.yml", return_df=True)` to return the dataframe.
+
+Full example
+```jupyterpython
+%env DOES_PROJECT_DIR= # place correct dir here
+import sys
+import os
+sys.path.insert(0, os.path.abspath('doe-suite/src/scripts'))
+import super_etl
+
+df = super_etl.run_multi_suite("pipeline.yml", return_df=True)
+
+# inspect df
+```
