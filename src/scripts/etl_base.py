@@ -263,7 +263,7 @@ class FactorAggTransformer(Transformer):
         # group_by all except `rep` and `data_columns`
         group_by_cols = factor_columns
         agg_d = {data_col: agg_functions for data_col in data_columns}
-        df = df.groupby(group_by_cols).agg(agg_d).reset_index()
+        df = df.groupby(group_by_cols, dropna=False).agg(agg_d).reset_index()
 
         # flatten columns
         df.columns = ["_".join(v) if v[1] else v[0] for v in df.columns.values]
@@ -299,5 +299,5 @@ class LatexTableLoader(Loader):
         if df.empty:
             print("LatexTableLoader: DataFrame is empty so not creating an output file.")
 
-        with open(os.path.join(etl_info["suite_dir"], f"{etl_info['pipeline']}.txt")) as file:
+        with open(os.path.join(etl_info["suite_dir"], f"{etl_info['pipeline']}.txt"), 'w') as file:
             df.to_latex(buf=file)
