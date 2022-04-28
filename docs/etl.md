@@ -30,12 +30,65 @@ The `$FACTORS$` tag must still be explicitly provided by the experiment designer
 For an example, see `FactorAggTransformer`.
 
 # Super ETL
+Doe suite supports the definition of suite-transcending (super-suite) ETL pipelines that
+combines experiments from multiple suites, which we refer to as super ETL.
 
 ## Config changes
-- Experiments are objects now
+There are two changes compared to a regular ETL pipeline.
+First is is the `experiments` key.
+`experiment` now contains a dict of suites with a list of the experiments of those suites to include.
+Note that the other keys of the pipeline `transformers`, `loaders` and `extractors` stay the same and can therefore often be easily copy-pasted.
 
-Doe suite also supports the definition of suite-transcending (super-suite) ETL pipelines that
-combines experiments from multiple suites, which we refer to as super ETL.
+```yaml
+$ETL$:
+  pipeline_name:
+    experiments:
+      suite_1: [ exp_1 ]
+      suite_2: [ exp_2, exp_3 ]
+    ...transformers, loaders, extractors etc.
+```
+
+The second change is that the runs must be specified to load data from in the form of the `suite_id`.
+The `suite_id` can be specified per-suite and per-experiment.
+Specifying suite ids per-suite:
+```yaml
+$SUITE_ID$:
+  suite_1: 1648453067
+  suite_2: 1651052734
+```
+
+Experiment-specific suite ids
+```yaml
+$SUITE_ID$:
+  suite_1: 1648453067
+  suite_2:
+    exp_1: 1651052734
+    exp_2: 1651052743
+```
+
+Use the `$DEFAULT$` key to specify a default:
+```yaml
+$SUITE_ID$:
+  suite_1: 1648453067
+  suite_2:
+    $DEFAULT$: 1651052734
+    exp_2: 1651052743
+```
+
+Full example:
+```yaml
+$SUITE_ID$:
+  suite_1: 1648453067
+  suite_2: 1651052734
+  
+$ETL$:
+  pipeline_name:
+    experiments:
+      suite_1: [ exp_1 ]
+      suite_2: [ exp_2, exp_3 ]
+    ...transformers, loaders, extractors etc.
+
+```
 
 ### Jupyter Notebook support
 The below code snippet can be used to use an ETL pipeline in a notebook for quick debugging and analysis.
