@@ -83,16 +83,25 @@ def run_multi_suite(config_name, return_df=False):
 
 def _extract_experiments_suite(suite, experiments, suite_id_map):
     """
-
+    :param experiments list of experiments
+    :param suite_id_map dict can be a dict of (suite, suite_id), or (suite, dict) where dict is a dict of experiment-level id
     :return: dict Experiment to suite mapping
     """
-    if isinstance(experiments, list):
-        # all have same suite
-        return {experiment: suite_id_map[suite] for experiment in experiments}
-    elif isinstance(experiments, dict):
-        return experiments
+    suite_ids = suite_id_map[suite]
+
+    if isinstance(suite_ids, str) or isinstance(suite_ids, int):
+        # suite-wide id
+        return {
+            experiment: suite_ids for experiment in experiments
+        }
+    elif isinstance(suite_ids, dict):
+        # dict { experiment: id }
+        default = suite_ids.get('$DEFAULT$', None)
+        return {
+            experiment: suite_ids.get(experiment, default) for experiment in experiments
+        }
     else:
-        raise ValueError(f"Experiments must be a list or dict!")
+        raise ValueError(f"Suite ids must be a value or dict!")
 
 if __name__ == "__main__":
 
