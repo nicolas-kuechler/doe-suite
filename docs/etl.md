@@ -33,6 +33,20 @@ For an example, see `FactorAggTransformer`.
 Doe suite supports the definition of suite-transcending (super-suite) ETL pipelines that
 combines experiments from multiple suites, which we refer to as super ETL.
 
+Pipeline configs are defined in `does_config/super_etl` and can be run similar to regular etl, using 
+
+```bash
+poetry run python src/super_etl.py --config_name pipeline.yml
+```
+
+The default option is to place results in `does_results/super_etl`.
+This may be overridden using the `output_path` option to specify a base directory for outputs.
+In the base directory, subdirectories per-pipeline and per-config file can be created using `output_dir_config_name_disabled`
+and `output_dir_pipeline`.
+The default is to create a directory for each config file, but not for each pipeline as generally the output files have the pipeline name.
+This translates to `output_dir_config_name_disabled=False` and `output_dir_pipeline=True`.
+
+
 ## Config changes
 There are two changes compared to a regular ETL pipeline.
 First is is the `experiments` key.

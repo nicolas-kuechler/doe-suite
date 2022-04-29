@@ -7,7 +7,9 @@ from typing import List, Dict
 from etl import _load_config_yaml, load_selected_processes, extract
 
 
-def run_multi_suite(config_name, return_df=False):
+def run_multi_suite(config_name: str,
+                    output_path: str, flag_output_dir_config_name: bool = True, flag_output_dir_pipeline: bool = True,
+                    return_df=False):
 
     if "DOES_PROJECT_DIR" not in os.environ:
         raise ValueError(f"env variable: DOES_PROJECT_DIR not set")
@@ -56,22 +58,30 @@ def run_multi_suite(config_name, return_df=False):
                     print(f"An error occurred in extractor from pipeline {pipeline_name}!", etl_info)
                     raise
 
+        output_dir = _get_output_dir_name(prj_dir, output_path,
+                                          config_name, pipeline_name,
+                                          flag_output_dir_config_name, flag_output_dir_pipeline)
+        # ensure dir exists
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
         df = experiments_df
         etl_info = {
             "suite": None, "suite_id": None, "pipeline": pipeline_name, "experiments": experiments,
-            "suite_dir": config_dir # overwrite output dir to super etl dir
+            "suite_dir": output_dir # overwrite output dir to super etl dir
         }
         try:
             # apply transformers sequentially
             for x in transformers:
                 df = x["transformer"].transform(df, options=x["options"])
 
-            # execute all loaders on df
-            for x in loaders:
-                x["loader"].load(df, options=x["options"], etl_info=etl_info)
-
             if return_df:
                 output_dfs[pipeline_name] = df
+            else:
+                # execute all loaders on df
+                for x in loaders:
+                    x["loader"].load(df, options=x["options"], etl_info=etl_info)
+
         except:
             print(f"An error occurred in pipeline {pipeline_name}!", etl_info)
             raise
@@ -103,10 +113,38 @@ def _extract_experiments_suite(suite, experiments, suite_id_map):
     else:
         raise ValueError(f"Suite ids must be a value or dict!")
 
+
+def _get_output_dir_name(prj_dir: str, output_path: str,
+                         config_name: str, pipeline_name: str,
+                         flag_output_dir_config_name: bool, flag_output_dir_pipeline: bool) -> str:
+    """Generates output directory based on options and current pipeline."""
+    if not os.path.isabs(output_path):
+        # assume we want to be relative to DOES_PROJECT_DIR
+        output_path = os.path.join(prj_dir, output_path)
+
+    if flag_output_dir_config_name:
+        config_prefix_regex = r"^(.*)\.yml$"
+        config_prefix = re.match(config_prefix_regex, config_name).group(1)
+        assert config_prefix is not None, f"Filename {config_name} has invalid format and cant be extracted!"
+        output_path = os.path.join(output_path, config_prefix)
+
+    if flag_output_dir_pipeline:
+        output_path = os.path.join(output_path, pipeline_name)
+
+    return output_path
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="")
     parser.add_argument("--config", type=str, required=True)
+    parser.add_argument("--output_path", type=str, default="does_results/super_etl", required=False)
+    parser.add_argument("--output_dir_config_name_disabled", action='store_true',
+                        help="Whether to output in a subdirectory with the name of the super_etl config file.")
+    parser.add_argument("--output_dir_pipeline", action='store_false',
+                        help="Whether to output in a subdirectory with the name of the pipeline.")
     args = parser.parse_args()
 
-    run_multi_suite(config_name=args.config)
+    run_multi_suite(config_name=args.config,
+                    output_path=args.output_path,
+                    flag_output_dir_config_name=not args.output_dir_config_name_disabled,
+                    flag_output_dir_pipeline=not args.output_dir_pipeline)
