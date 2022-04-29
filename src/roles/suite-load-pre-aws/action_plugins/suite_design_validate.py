@@ -18,15 +18,15 @@ except ImportError:
     display = Display()
 
 class UniqueKeyLoader(yaml.SafeLoader):
-        def construct_mapping(self, node, deep=False):
-            mapping = []
-            for key_node, value_node in node.value:
-                key = self.construct_object(key_node, deep=deep)
-                if key in mapping:
-                    raise AssertionError(f"duplicate key={key}")
-                mapping.append(key)
+    def construct_mapping(self, node, deep=False):
+        mapping = []
+        for key_node, value_node in node.value:
+            key = self.construct_object(key_node, deep=deep)
+            if key in mapping:
+                raise AssertionError(f"duplicate key={key}")
+            mapping.append(key)
 
-            return super().construct_mapping(node, deep)
+        return super().construct_mapping(node, deep)
 
 
 def nested_dict_iter(nested, path=[]):
@@ -38,10 +38,25 @@ def nested_dict_iter(nested, path=[]):
         else:
             yield path_c, value
 
+
+def _set_nested_value(base, path, value, overwrite=False):
+
+    d = base
+    for i, k in enumerate(path):
+
+        if k not in d:
+            if i == len(path)-1: # last
+                d[k] = value
+            else:
+                d[k] = {}
+        elif overwrite and i == len(path)-1: # last + overwrite
+            d[k] = value
+
+        d = d[k]
+
 class ActionModule(ActionBase):
 
     TRANSFERS_FILES = False
-
 
     keywords = {
             "general": ["state", "suite_design", "$FACTOR$", 'is_controller_yes', 'is_controller_no', 'check_status_yes', 'check_status_no', 'localhost'],
@@ -69,6 +84,7 @@ class ActionModule(ActionBase):
         dest = module_args["dest"]
 
         dirs = {
+            "designvars": module_args["prj_designvars_dir"],
             "groupvars": module_args["prj_groupvars_dir"],
             "roles": module_args["prj_roles_dir"]
         }
@@ -85,14 +101,12 @@ class ActionModule(ActionBase):
         try:
             with open(src) as f:
                 design_raw = yaml.load(f, Loader=UniqueKeyLoader)
-
                 self._validate_and_default_suite(prj_id=prj_id, suite=suite, design_raw=design_raw, dirs=dirs)
 
             with open(dest, 'w+') as f:
                 yaml.dump(design_raw, f)
 
         except AssertionError as e:
-
             raise ValueError("duplicate keys (experiment names)")
 
 
@@ -104,9 +118,12 @@ class ActionModule(ActionBase):
         exp_names = []
 
 
+        suite_vars = design_raw.get("$SUITE_VARS$", {})
+        del design_raw["$SUITE_VARS$"]
+
         host_type_names = []
         for key, exp in design_raw.items():
-            if key == "$ETL$":
+            if key in ["$ETL$"]:
                 continue
             exp_names.append(key)
 
@@ -143,7 +160,7 @@ class ActionModule(ActionBase):
             if key == "$ETL$":
                 self._validate_etl_pipeline(etl_pipelines=value)
             else:
-                self._validate_and_default_experiment(value, dirs)
+                self._validate_and_default_experiment(value, dirs, suite_vars)
 
         return True
 
@@ -174,7 +191,7 @@ class ActionModule(ActionBase):
                 if load_config is None:
                     raise ValueError(f"loader={load_name} cannot be null -> use {{}} for no options")
 
-    def _validate_and_default_experiment(self, exp_raw, dirs):
+    def _validate_and_default_experiment(self, exp_raw, dirs, suite_vars):
 
         exp_keywords = self.keywords["exp"]
         exp_keywords_required = ["n_repetitions", "host_types"]
@@ -208,6 +225,12 @@ class ActionModule(ActionBase):
         if "factor_levels" not in exp_raw:
             exp_raw["factor_levels"] = [{}]
 
+        # set suite vars (if not present in exp_base)
+        self._include_vars(exp_raw["base_experiment"], suite_vars)
+
+        # load external vars (marked with $INCLUDE_VARS$)
+        self._load_external_vars(exp_raw["base_experiment"], dirs["designvars"])
+
         # handle host_types
         for host_type_name, host_type_raw in exp_raw["host_types"].items():
             self._validate_and_default_host_type(host_type_name, host_type_raw, dirs)
@@ -218,6 +241,25 @@ class ActionModule(ActionBase):
         # check factor levels
         self._validate_factor_levels(exp_raw["factor_levels"], expected_factor_paths)
 
+    def _load_external_vars(self, conf, external_dir):
+
+        for path, value in nested_dict_iter(conf.copy()):
+
+            if path[-1] == "$INCLUDE_VARS$":
+                d = conf
+                for p in path[:-1]:
+                    d = d[p]
+
+                del d["$INCLUDE_VARS$"]
+
+                # value is the path relative to external dir
+                with open(f"{external_dir}/{value}", "r") as f:
+                    vars = yaml.load(f, Loader=yaml.SafeLoader)
+                self._include_vars(d, vars)
+
+    def _include_vars(self, base, vars):
+        for path, value in nested_dict_iter(vars):
+            _set_nested_value(base, path, value)
 
 
     def _validate_and_default_host_type(self, host_type_name, host_type_raw, dirs):
@@ -314,6 +356,9 @@ class ActionModule(ActionBase):
 
         """
 
+
+
+
     def _validate_base_experiment(self, base_experiment_raw):
         factors = []
         #extract `path`of all factors from base experiment
@@ -324,7 +369,28 @@ class ActionModule(ActionBase):
                 factors.append(path)
 
             if path[-1] == "$FACTOR$":
-                if not isinstance(value, list):
+                if isinstance(value, str):
+                    # add support for the range syntax in factors
+                    # range(start, stop, step)
+                    s3 = re.search(r"^range\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$", value.strip())
+                    # range(start, stop)
+                    s2 = re.search(r"^range\(\s*(\d+)\s*,\s*(\d+)\s*\)$", value.strip())
+                    # range(stop)
+                    s1 = re.search(r"^range\(\s*(\d+)\s*\)$", value.strip())
+
+                    if s3 is not None:
+                        value_ext = list(range(int(s3.group(1)), int(s3.group(2)), int(s3.group(3))))
+                        _set_nested_value(base=base_experiment_raw, path=path, value=value_ext, overwrite=True)
+                    elif s2 is not None:
+                        value_ext = list(range(int(s2.group(1)), int(s2.group(2))))
+                        _set_nested_value(base=base_experiment_raw, path=path, value=value_ext, overwrite=True)
+                    elif s1 is not None:
+                        value_ext = list(range(int(s1.group(1))))
+                        _set_nested_value(base=base_experiment_raw, path=path, value=value_ext, overwrite=True)
+                    else:
+                        raise ValueError(f"if $FACTOR$ is the key, the only allowed string is the range syntax")
+
+                elif not isinstance(value, list):
                     raise ValueError(f"if $FACTOR$ is the key, then the value must be a list of levels used in the cross product (path={path} value={value})")
 
         return factors
