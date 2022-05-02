@@ -1,10 +1,12 @@
 
 # SUPER ETL demo file.
-# While this file does not demo it, multiple outputs from different suites can be combined here.
-# This file is just to give an idea on the syntax
+# More details can be found in `docs/etl.md`
+#
+# Super ETL also supports multiple outputs from different suites can be combined here, but this file does not demo that functionality.
 
 $SUITE_ID$:
-  example02-single: # ENTER CONCRETE SUITE ID HERE
+  example02-single: #00000001 # SUITE ID
+
   # ... if more suites exist, other ids
 
 $ETL$:

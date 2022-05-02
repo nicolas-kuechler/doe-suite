@@ -209,7 +209,7 @@ class RepAggTransformer(Transformer):
         return df
 
 
-class FactorAggTransformer(Transformer):
+class GroupByAggTransformer(Transformer):
 
     """
     Transformer to aggregate over specified factors of the same experiment run.
@@ -245,7 +245,7 @@ class FactorAggTransformer(Transformer):
             return df
             # raise ValueError(f"RepAggTransformer: data_columns={data_columns} must be in df_columns={df.columns.values}")
         if not set(factor_columns).issubset(df.columns.values):
-            raise ValueError(f"FactorAggTransformer: factor_columns={factor_columns} must be in df_columns={df.columns.values}")
+            raise ValueError(f"GroupByAggTransformer: factor_columns={factor_columns} must be in df_columns={df.columns.values}")
 
         # ensure that all data_columns are numbers
         df[data_columns] = df[data_columns].apply(pd.to_numeric)

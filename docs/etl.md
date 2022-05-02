@@ -15,7 +15,7 @@ An example is provided below.
 
 ```yaml
 transformers:
-- name: FactorAggTransformer
+- name: GroupByAggTransformer
   data_columns:
   - accuracy
   - total_time
@@ -25,9 +25,8 @@ transformers:
   - $FACTORS$ # will be expanded to factor_columns of the experiment
 ```
 
-The `$FACTORS$` tag must still be explicitly provided by the experiment designer, so this functionality is entirely opt-in.
-
-For an example, see `FactorAggTransformer`.
+The `$FACTORS$` tag must be explicitly provided as a column value to be expanded to the experiment factors.
+For an example, see `GroupByAggTransformer`.
 
 # Super ETL
 Doe suite supports the definition of suite-transcending (super-suite) ETL pipelines that
