@@ -19,7 +19,7 @@ transformers:
   data_columns:
   - accuracy
   - total_time
-  factor_columns:
+  groupby_columns:
   - exp_name
   - audit
   - $FACTORS$ # will be expanded to factor_columns of the experiment

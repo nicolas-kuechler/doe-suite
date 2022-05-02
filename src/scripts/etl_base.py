@@ -214,7 +214,7 @@ class GroupByAggTransformer(Transformer):
     """
     Transformer to aggregate over specified factors of the same experiment run.
 
-    GroupBy `factor_columns` of df.
+    GroupBy `groupby_columns` of df.
     Afterward, apply specified aggregate functions `agg_functions` on the `data_columns`.
     """
 
@@ -224,7 +224,7 @@ class GroupByAggTransformer(Transformer):
 
         data_columns = options.get("data_columns")
         # here, we get factor_columns
-        factor_columns = expand_factors(df, options.get("factor_columns"))
+        groupby_columns = expand_factors(df, options.get("groupby_columns"))
         agg_functions = options.get("agg_functions", ['mean', 'min', 'max', 'std', 'count'])
 
         # To configure size of the 'tail' to calculate the mean over
@@ -244,8 +244,8 @@ class GroupByAggTransformer(Transformer):
         if not set(data_columns).issubset(df.columns.values):
             return df
             # raise ValueError(f"RepAggTransformer: data_columns={data_columns} must be in df_columns={df.columns.values}")
-        if not set(factor_columns).issubset(df.columns.values):
-            raise ValueError(f"GroupByAggTransformer: factor_columns={factor_columns} must be in df_columns={df.columns.values}")
+        if not set(groupby_columns).issubset(df.columns.values):
+            raise ValueError(f"GroupByAggTransformer: groupby_columns={groupby_columns} must be in df_columns={df.columns.values}")
 
         # ensure that all data_columns are numbers
         df[data_columns] = df[data_columns].apply(pd.to_numeric)
@@ -261,7 +261,7 @@ class GroupByAggTransformer(Transformer):
         df = df.astype(hashable_types)
 
         # group_by all except `rep` and `data_columns`
-        group_by_cols = factor_columns
+        group_by_cols = groupby_columns
         agg_d = {data_col: agg_functions for data_col in data_columns}
         df = df.groupby(group_by_cols, dropna=False).agg(agg_d).reset_index()
 
