@@ -99,7 +99,18 @@ $ETL$:
     experiments:
       suite_1: [ exp_1 ]
       suite_2: [ exp_2, exp_3 ]
-    ...transformers, loaders, extractors etc.
+    extractors:
+      JsonExtractor: {} # with default file_regex
+      ErrorExtractor: {} # if a non-empty file exists matching the default regex -> then we throw an error using the ErrorExtractor
+      IgnoreExtractor: {} # since we want that each file is processed by an extractor, we provide the IgnoreExtractor which can be used to ignore certain files. (e.g., stdout)
+    transformers:
+      - name: RepAggTransformer # aggregate over all repetitions of a run and calc `mean`, `std`, etc.
+        data_columns: [latency] # the names of the columns in the dataframe that contain the measurements
+    loaders:
+      CsvSummaryLoader: # write the transformed detl_info["suite_dir"]ataframe across the whole experiment as a csv file
+        output_dir: "etl_results/pipeline1" # write results into an output dir
+      DemoLatencyPlotLoader: # create a plot based on project-specific plot loader
+        output_dir: "etl_results/pipeline1" # write results into an output dir
 
 ```
 
