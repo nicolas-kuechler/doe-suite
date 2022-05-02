@@ -38,23 +38,25 @@ Pipeline configs are defined in `does_config/super_etl` and can be run similar t
 poetry run python src/super_etl.py --config_name pipeline.yml
 ```
 
+#### Custom output location
 The default option is to place results in `does_results/super_etl`.
 This may be overridden using the `output_path` option to specify a base directory for outputs.
+In the following example, a pipeline named `pipeline` outputs a file `plot.pdf` defined in `config.yml`.
 ```bash
-poetry run python src/super_etl.py --config_name {config}.yml --output_path {absolute_or_relative_path}
-# Output in: absolute_or_relative_path/{config}/*
+poetry run python src/super_etl.py --config_name config.yml --output_path {paper_dir}
+# (Over)writes: paper_dir/config/plot.pdf
 ```
 In the base directory, subdirectories per-pipeline and per-config file can be created using `--output_dir_config_name_disabled`
 and `output_dir_pipeline`.
 ```bash
-poetry run python src/super_etl.py --config_name pipeline.yml --output_path {absolute_or_relative_path} --output_dir_config_name_disabled
-# Output in: absolute_or_relative_path/*
+poetry run python src/super_etl.py --config_name config.yml --output_path {paper_dir} --output_dir_config_name_disabled
+# (Over)writes: paper_dir/plot.pdf
 
-poetry run python src/super_etl.py --config_name pipeline.yml --output_path {absolute_or_relative_path} --output_dir_pipeline
-# Output in: absolute_or_relative_path/{config}/{pipeline}/*
+poetry run python src/super_etl.py --config_name config.yml --output_path {paper_dir} --output_dir_pipeline
+# (Over)writes: paper_dir/config/pipeline/plot.pdf
 
-poetry run python src/super_etl.py --config_name pipeline.yml --output_path {absolute_or_relative_path} --output_dir_config_name_disabled --output_dir_pipeline
-# Output in: absolute_or_relative_path/{pipeline}/*
+poetry run python src/super_etl.py --config_name config.yml --output_path {paper_dir} --output_dir_config_name_disabled --output_dir_pipeline
+# (Over)writes: paper_dir/pipeline/plot.df
 ```
 The default is to create a directory for each config file, but not for each pipeline as generally the output files have the pipeline name.
 This translates to `output_dir_config_name_disabled=False` and `output_dir_pipeline=True`.
