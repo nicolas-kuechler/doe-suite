@@ -8,11 +8,11 @@
     msg: "-> testing connection with Euler {{ groups }}"
   tags: [print_action]
 
-#- name: Refresh dynamic inventory
-#  meta: refresh_inventory
-#
-#- pause:
-#    seconds: 5
+- name: Refresh dynamic inventory
+  meta: refresh_inventory
+
+- pause:
+    seconds: 5
 
 - name: Define public dns
   set_fact:

@@ -6,13 +6,34 @@
     msg: "-> setup suite"
   tags: [print_action]
 
-- name: Update repositories cache and install required packages
-  become: True
-  apt:
-    pkg:
-    - task-spooler
-    update_cache: yes
+- name: Install task spooler
+  block:
+    - name: Install task spooler from package manager
+      become: True
+      apt:
+        pkg:
+        - task-spooler
+        update_cache: yes
+  rescue:
+    - name: Manually build task spooler (0. ensure git is installed)
+      become: True
+      ansible.builtin.package:
+        name: git
+        state: present
+    - name: Manually build task spooler (1. clone git repo)
+      become: True
+      git:
+        repo: "https://github.com/thomaspreece/task-spooler"
+        dest: "task-spooler"
+        accept_hostkey: yes
+        force: yes
 
+    - name: Manually build task spooler (2. build)
+      ansible.builtin.shell: |
+        cd task-spooler
+        make
+        sudo make install
+        ./post_setup.sh || true
 
 # Use ssh-agent to get code from Git Remote Repository:
 #

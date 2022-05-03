@@ -24,6 +24,10 @@
   hosts: localhost
 
   tasks:
+    - name: clear dynamic inventory files (must end with .yml)
+      file: path={{ item }} state=absent
+      with_fileglob: inventory/*.yml
+
     - name: prepare dynamic inventory
       include_role:
         name: suite-cloud-inventory-setup
