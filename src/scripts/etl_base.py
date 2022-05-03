@@ -1,10 +1,13 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict
+
+import numpy as np
 import pandas as pd
 import warnings, yaml, json, csv, os
 from dataclasses import dataclass, field, is_dataclass
 import matplotlib.pyplot as plt
 
+from etl_util import expand_factors
 
 @dataclass
 class Extractor(ABC):
@@ -28,6 +31,7 @@ class Extractor(ABC):
         pass
 
 class Transformer(ABC):
+
     @abstractmethod
     def transform(self, df: pd.DataFrame, options: Dict) -> pd.DataFrame:
         pass
@@ -205,12 +209,12 @@ class RepAggTransformer(Transformer):
         return df
 
 
-class FactorAggTransformer(Transformer):
+class GroupByAggTransformer(Transformer):
 
     """
     Transformer to aggregate over specified factors of the same experiment run.
 
-    GroupBy `factor_columns` of df.
+    GroupBy `groupby_columns` of df.
     Afterward, apply specified aggregate functions `agg_functions` on the `data_columns`.
     """
 
@@ -219,8 +223,8 @@ class FactorAggTransformer(Transformer):
             return df
 
         data_columns = options.get("data_columns")
-        factor_columns = options.get("factor_columns")
-
+        # here, we get factor_columns
+        groupby_columns = expand_factors(df, options.get("groupby_columns"))
         agg_functions = options.get("agg_functions", ['mean', 'min', 'max', 'std', 'count'])
 
         # To configure size of the 'tail' to calculate the mean over
@@ -240,8 +244,8 @@ class FactorAggTransformer(Transformer):
         if not set(data_columns).issubset(df.columns.values):
             return df
             # raise ValueError(f"RepAggTransformer: data_columns={data_columns} must be in df_columns={df.columns.values}")
-        if not set(factor_columns).issubset(df.columns.values):
-            raise ValueError(f"FactorAggTransformer: factor_columns={factor_columns} must be in df_columns={df.columns.values}")
+        if not set(groupby_columns).issubset(df.columns.values):
+            raise ValueError(f"GroupByAggTransformer: groupby_columns={groupby_columns} must be in df_columns={df.columns.values}")
 
         # ensure that all data_columns are numbers
         df[data_columns] = df[data_columns].apply(pd.to_numeric)
@@ -257,9 +261,9 @@ class FactorAggTransformer(Transformer):
         df = df.astype(hashable_types)
 
         # group_by all except `rep` and `data_columns`
-        group_by_cols = factor_columns
+        group_by_cols = groupby_columns
         agg_d = {data_col: agg_functions for data_col in data_columns}
-        df = df.groupby(group_by_cols).agg(agg_d).reset_index()
+        df = df.groupby(group_by_cols, dropna=False).agg(agg_d).reset_index()
 
         # flatten columns
         df.columns = ["_".join(v) if v[1] else v[0] for v in df.columns.values]
@@ -295,5 +299,5 @@ class LatexTableLoader(Loader):
         if df.empty:
             print("LatexTableLoader: DataFrame is empty so not creating an output file.")
 
-        with open(os.path.join(etl_info["suite_dir"], f"{etl_info['pipeline']}.txt")) as file:
+        with open(os.path.join(etl_info["suite_dir"], f"{etl_info['pipeline']}.txt"), 'w') as file:
             df.to_latex(buf=file)

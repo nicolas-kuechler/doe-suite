@@ -14,7 +14,7 @@ def main(suite, suite_id):
     suite_dir = os.path.join(results_dir, f"{suite}_{suite_id}")
 
     # load etl_config by loading suite design file
-    suite_design =  _load_config_yaml(suite_dir, file="suite_design.yml")
+    suite_design = _load_config_yaml(suite_dir, file="suite_design.yml")
     if "$ETL$" not in suite_design:
         # we don't have an ETL config => don't run it
         return
@@ -31,7 +31,7 @@ def main(suite, suite_id):
 
         try:    
             # extract data from
-            df = extract(suite=suite, suite_id=suite_id, suite_dir=suite_dir, experiments=pipeline["experiments"], extractors=extractors)
+            df = extract(suite=suite, suite_id=suite_id, suite_dir=suite_dir, experiments=pipeline["experiments"], base_experiments=suite_design, extractors=extractors)
 
             # apply transformers sequentially
             for x in transformers:
@@ -168,7 +168,7 @@ def _load_processes(module_name, extractors, transformers, loaders):
 # Extractor                                                                #
 ############################################################################
 
-def extract(suite:str, suite_id: str, suite_dir: str, experiments: List[str], extractors: List[Dict]) -> pd.DataFrame:
+def extract(suite:str, suite_id: str, suite_dir: str, experiments: List[str], base_experiments: Dict, extractors: List[Dict]) -> pd.DataFrame:
     res_lst = []
 
     existing_exps = _list_dir_only(suite_dir)
@@ -178,6 +178,7 @@ def extract(suite:str, suite_id: str, suite_dir: str, experiments: List[str], ex
     for exp in exps_filtered:
         exp_dir = os.path.join(suite_dir, exp)
         runs = _list_dir_only(exp_dir)
+        factor_columns = _parse_factors(base_experiments[exp])
 
         for run in runs:
             run_dir = os.path.join(exp_dir, run)
@@ -213,7 +214,8 @@ def extract(suite:str, suite_id: str, suite_dir: str, experiments: List[str], ex
                             "run": int(run.split("_")[-1]),
                             "rep": int(rep.split("_")[-1]),
                             "host_type": host_type,
-                            "host_idx": host_idx
+                            "host_idx": host_idx,
+                            "factor_columns": factor_columns
                         }
 
                         for file in files:
@@ -255,6 +257,37 @@ def _parse_file(path: str, file:str, extractors: List[Dict]) -> List[Dict]:
         raise ValueError(f"file={file} matches no extractor (path={path})")
 
     return d_lst
+
+def _parse_factors(experiment: Dict) -> list:
+    """
+    Parses factors in experiment. Loosely based on `suite_design_extend.py`.
+    :param experiment:
+    :return: list of factors
+    """
+
+    # Stolen from `suite_design_extend.py`
+    def _nested_dict_iter(nested, p=[]):
+        for key, value in nested.items():
+            if isinstance(value, dict):
+                yield from _nested_dict_iter(value, p=p + [key])
+            else:
+                yield key, value, p
+
+    factor_columns = []
+    for k, v, path in _nested_dict_iter(experiment['base_experiment']):
+        # k: the key (i.e. the name of the config option, unless it's a factor, than the content is just $FACTOR$)
+        # v: the value or a list of levels in case it's a factor
+        # path: to support nested config dicts, path keep tracks of all the parent nodes of k (empty if it is on the top level)
+
+        if k == "$FACTOR$":
+            # inline factor
+            factor = path[-1]
+            factor_columns.append(factor)
+        elif v == "$FACTOR$":
+            # factor defined in factor_levels
+            factor_columns.append(k)
+
+    return factor_columns
 
 def _load_config_yaml(path, file="config.json"):
     with open(os.path.join(path, file)) as file:
