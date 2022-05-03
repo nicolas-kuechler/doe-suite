@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict
+from typing import List, Dict, Any
 
 import numpy as np
 import pandas as pd
@@ -277,6 +277,35 @@ class GroupByAggTransformer(Transformer):
         return custom_tail
 
 
+class FilterColumnTransformer(Transformer):
+    """
+    Simple transformer to filter dataframe by column values.
+
+    Accepts key-value pairs in `filters` option.
+
+    This transformer is simple for now, only accepts discrete values and does not do any type handling.
+    Options:
+        - filters: dict of filters
+        - allow_empty_result: bool whether to throw an error when the dataframe becomes empty as result of the filter.
+            Defaults to False.
+    """
+
+    def transform(self, df: pd.DataFrame, options: Dict) -> pd.DataFrame:
+
+        filters: dict[str, Any] = options.get('filters', {})
+        allow_empty_result: bool = options.get('allow_empty_result', False)
+
+        if len(filters.keys()) == 0:
+            return df
+        if not set(filters.keys()).issubset(df.columns.values):
+            raise ValueError(f"FilterColumnTransformer: filters={filters.keys()} must be in df_columns={df.columns.values}")
+
+        for key, value in filters.items():
+            df = df[df[key] == value]
+
+        if df.empty and not allow_empty_result:
+            raise ValueError(f"FilterColumnTransformer: resulting dataframe after filters is empty! This is probably not supposed to happen")
+        return df
 
 ########################################################
 # Loaders                                              #

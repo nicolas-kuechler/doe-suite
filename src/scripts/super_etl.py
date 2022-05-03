@@ -8,7 +8,7 @@ from etl import _load_config_yaml, load_selected_processes, extract
 
 
 def run_multi_suite(config_name: str,
-                    output_path: str, flag_output_dir_config_name: bool = True, flag_output_dir_pipeline: bool = True,
+                    output_path: str = "does_results/super_etl", flag_output_dir_config_name: bool = True, flag_output_dir_pipeline: bool = True,
                     return_df=False):
 
     if "DOES_PROJECT_DIR" not in os.environ:
