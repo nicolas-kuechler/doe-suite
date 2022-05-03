@@ -6,6 +6,11 @@
     msg: "-> setup suite"
   tags: [print_action]
 
+- name: check task spooler executable is present
+  shell: "which tsp"
+  register: tsp_installed_which
+  ignore_errors: true
+
 - name: Install task spooler
   block:
     - name: Install task spooler from package manager
@@ -15,12 +20,17 @@
         - task-spooler
         update_cache: yes
   rescue:
-    - name: Manually build task spooler (0. ensure git is installed)
+    - name: Manually build task spooler (1. ensure git is installed)
       become: True
       ansible.builtin.package:
-        name: git
+        name:
+          - git
+          - gcc
+          - make
+          - pkgconfig
         state: present
-    - name: Manually build task spooler (1. clone git repo)
+
+    - name: Manually build task spooler (3. clone git repo)
       become: True
       git:
         repo: "https://github.com/thomaspreece/task-spooler"
@@ -28,12 +38,13 @@
         accept_hostkey: yes
         force: yes
 
-    - name: Manually build task spooler (2. build)
+    - name: Manually build task spooler (4. build)
       ansible.builtin.shell: |
         cd task-spooler
         make
         sudo make install
         ./post_setup.sh || true
+  when: tsp_installed_which.rc != 0
 
 # Use ssh-agent to get code from Git Remote Repository:
 #

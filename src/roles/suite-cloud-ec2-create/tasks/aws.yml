@@ -55,12 +55,13 @@
     region: '{{ ec2config.aws_region }}'
     security_group: '{{ ec2config.sg_name }}'
     vpc_subnet_id: '{{ ec2config.vpc_subnet_id }}'
+    instance_role: '{{ ec2config.instance_role | default(None) }}'
     wait: no
     purge_tags: yes
     network:
       assign_public_ip: yes
     volumes:
-      - device_name: /dev/sda1
+      - device_name: '{{ volume_root_device_name | default("/dev/sda1") }}'
         ebs:
           volume_type: gp2
           snapshot_id: '{{ ec2config.ec2_volume_snapshot }}'
