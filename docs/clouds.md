@@ -15,6 +15,10 @@ So far, we support AWS (aws) and Euler (euler, ETH compute cluster).
 
 After the transition to support for clouds, some things must be changed:
 
+`does_config/roles` now supports cloud-specific setup scripts for host types:
+
+`main.yml` runs on all hosts and acts as a fallback when no cloud-specific `{cloud}.yml` file exists.
+
 ## [For devs] Supporting additional clouds
 
 `main` represents all supported clouds except the ones that have a specific file.

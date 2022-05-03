@@ -34,6 +34,17 @@
 #    suite_hosts_lst:
 #      - instance_id: euler
 #        exp_name: test
+- name: Pick single host type
+  set_fact:
+    euler_host_type: "{{ host_types | dict2items | first | json_query('key') }}"
+
+- name: Assert that we only have a single host type
+  assert:
+    that:
+      - host_types | dict2items | length == 1
+
+- debug:
+    var: euler_host_type
 
 - name: Abuse to_tag_assignment
   set_fact:
@@ -44,7 +55,7 @@
     instance_infos:
       - instance_id: euler
         tags:
-          host_type: small # how to fix? host_types
+          host_type: "{{ euler_host_type }}" # how to fix? host_types
           idx: 0
 
 - debug:

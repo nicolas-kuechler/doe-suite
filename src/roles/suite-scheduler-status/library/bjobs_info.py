@@ -33,7 +33,7 @@ from ansible.module_utils.basic import AnsibleModule
 
 def get_tasks():
     if sys.version_info[0] == 3:
-        completed_process = subprocess.run(["bjobs", "-w"], capture_output=True).stdout
+        completed_process = subprocess.run(["bjobs", "-w"], stdout=subprocess.PIPE).stdout
     else:
         # Python 2
         completed_process = subprocess.Popen(
@@ -93,7 +93,6 @@ def run_module():
     # state with no modifications
     if module.check_mode:
         module.exit_json(**result)
-
 
     result['tasks'] = get_tasks()
 

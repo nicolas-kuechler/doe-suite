@@ -15,6 +15,13 @@
 #  debug:
 #    msg: "{{ job_id_to_wait_for }}"
 
+- name: Debug bjobs
+  bjobs_info:
+  register: bjobs_result
+- name: debug bjobs
+  debug:
+    msg: "{{ bjobs_result }}"
+
 - name: Store job_id that system wants us to wait for
   set_fact:
     system_job_id: "{{ job_id_to_wait_for }}"

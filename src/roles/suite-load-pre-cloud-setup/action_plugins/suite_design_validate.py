@@ -263,8 +263,8 @@ class ActionModule(ActionBase):
             raise ValueError("init_roles must be a list")
 
         for init_role in host_type_raw["init_roles"]:
-            role_path = os.path.join(dirs["roles"], init_role, "tasks", "main.yml")
-            if not os.path.isfile(role_path):
+            role_path = os.path.join(dirs["roles"], init_role, "tasks")
+            if not os.path.isdir(role_path):
                 raise ValueError(f"init_role={init_role} not found -> file does not exist ({role_path})")
 
         #############
