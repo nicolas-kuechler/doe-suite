@@ -6,10 +6,20 @@
     msg: "-> setup suite"
   tags: [print_action]
 
+#- name: Overwrite euler-specific variables
+#  set_fact:
+#    remote:
+#      dir: "/cluster/home/{{ euler_user }}"
+#      results_dir: "/cluster/home/{{ euler_user }}/results"
+#
+#- name: Debug check
+#  debug:
+#    msg: "{{ exp_code_dir }}"
+
+
 - name: Update Code from Git remote repository
   git:
     repo: "{{ git_remote_repository }}"
     dest: "{{ remote.dir }}/code"
     accept_hostkey: yes
     force: yes
-

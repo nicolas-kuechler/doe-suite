@@ -37,14 +37,25 @@
 - name: Pick single host type
   set_fact:
     euler_host_type: "{{ host_types | dict2items | first | json_query('key') }}"
+    debug_var: "{{ host_types | dict2items | first | json_query('value.*.n') | unique }}"
 
-- name: Assert that we only have a single host type
+- debug:
+    var: debug_var
+
+- name: Assert that we only have a single host type and that all number counts equal 1
   assert:
     that:
       - host_types | dict2items | length == 1
+      - host_types | dict2items | first | json_query('value.*.n') | unique | union([1]) | length == 1
 
-- debug:
-    var: euler_host_type
+- name: Define euler host and determine number of experiments in this host
+  set_fact:
+    euler_host_helper:
+      instance_id: euler
+      tags:
+        host_type: "{{ euler_host_type }}" # how to fix? host_types
+        idx: 0
+    euler_host_number_experiments: "{{ host_types[euler_host_type] | dict2items | length }}"
 
 - name: Abuse to_tag_assignment
   set_fact:
@@ -52,11 +63,7 @@
     # list of all instances with their id and other relevant infos
     # [{"instance_id": X, "exp_name": X, "is_controller": X, "host_type": X, "exp_host_type_idx": X, "exp_host_type_n": X, "init_roles": X, "check_status": X}, ...]
   vars:
-    instance_infos:
-      - instance_id: euler
-        tags:
-          host_type: "{{ euler_host_type }}" # how to fix? host_types
-          idx: 0
+    instance_infos: "{{ [euler_host_helper] * euler_host_number_experiments|int }} "
 
 - debug:
     var: tag_assignment_lst
