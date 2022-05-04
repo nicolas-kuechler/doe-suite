@@ -1,5 +1,17 @@
+---
 
-$SUITE_VARS$: # variables that each experiment of the suite has by default (can be overwritten)
+# Goal: Show the possibilities of including configuration options from other locations
+
+# Example Goal- Demonstrate
+# (1) using $SUITE_VARS$ for defining variable defaults that are included into each `base_experiment` unless a variable is already defined.
+#       (contents can be $FACTOR$ or constants and can include references to other run config, see (3))
+# (2) using $INCLUDE_VARS to include variable defaults defined in an external file (unless present in $SUITE_VARS$ or in the `base_experiment`)
+#       (contents can be $FACTOR$ or constants and can include references to other run config, see (3))
+# (3) self referencing other variables of the config. With `[% my_run.X %]` we can reference another variable of the run config.
+#       (referenced variables can be $FACTOR$ or constants but CANNOT include references themselves, i.e., no transitive references)
+
+
+$SUITE_VARS$: # (1) variables that each experiment of the suite has by default (can be overwritten)
 
   # nested and non-nested variables work
   hello:
@@ -14,7 +26,7 @@ $SUITE_VARS$: # variables that each experiment of the suite has by default (can 
   define_factor_cross:
     $FACTOR$: [v1, v2]
 
-  # self referencing
+  # (3) self referencing
   # with [% my_run. %] you can use other variables from the run config including factors,
   # the only exception is other variables that also use [% %] tags.
   base_arg: "--version [% my_run.define_factor_cross %] --option [% my_run.existing %]"
@@ -29,7 +41,7 @@ shared_vars: # experiment name
   base_experiment:
 
     # all variables in $SUITE_VARS$ are part of the base experiment
-    # you can further include variables from other files under `does_config/designs/design_vars`
+    # (2) you can further include variables from other files under `does_config/designs/design_vars`
     $INCLUDE_VARS$: test.yml
     # note: $SUITE_VARS$ have higher precedence compared to external $INCLUDE_VARS$
 
@@ -44,7 +56,3 @@ shared_vars: # experiment name
       $FACTOR$: [1, 2]
 
     arg1: hello [% hello.world %] # fix parameter between runs (constant)
-
-    # using the python range syntax for specifying factor ranges
-    arg3:
-      $FACTOR$: range(3) # -> [0, 1, 2]    range(1,3)-> [1,2]   range(20, 40, 10) -> [20, 30]

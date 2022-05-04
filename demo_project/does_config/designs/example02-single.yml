@@ -7,6 +7,8 @@
 #     -> can be used to pass config parameters
 #  (4) we can repeat each run configuration multiple times (`n_repetitions`).
 #  (5) an `$ETL$` pipeline can automatically process result files (e.g., extract from result structure, transform into a suited df, load a summary)
+#  (6) we can use the Python range syntax do define $FACTORS$
+
 
 # experiment with two factors: one with 4 levels and one with two levels (cross-product). We repeat each run config 3 times.
 experiment_1:
@@ -39,8 +41,10 @@ experiment_2:
     out: csv
     problem:
       opt: False
+      # (6) Python Range syntax to define factors
       size:
-        $FACTOR$: [10, 20, 30, 40, 50]
+        $FACTOR$: range(10, 35, 5) # [10, 15, 20, 25, 30]
+        # other range syntax: range(3) -> [0, 1, 2]   |   range(1,3)-> [1,2]  |  range(20, 40, 10) -> [20, 30]
 
 # (5) the suite has two etl pipelines to process results
 #      - each pipeline starts with a set of extractors, each produced result file is assigned to exactly one extractor (using a `file_regex`)
