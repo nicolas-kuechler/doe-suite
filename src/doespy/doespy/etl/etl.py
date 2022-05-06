@@ -5,13 +5,50 @@ import pandas as pd
 from typing import List, Dict
 
 
-def main(suite, suite_id):
+ETL_CUSTOM_PACKAGE = "myetl"
+
+def main(): #suite, suite_id
+
+    parser = argparse.ArgumentParser(description="")
+    parser.add_argument("--suite", type=str, required=True)
+    parser.add_argument("--id", type=str, required=True)
+    parser.add_argument("--dev", action='store_true')
+    args = parser.parse_args()
+
+    suite=args.suite
+    suite_id=args.id
 
     if "DOES_PROJECT_DIR" not in os.environ:
         raise ValueError(f"env variable: DOES_PROJECT_DIR not set")
     prj_dir = os.environ["DOES_PROJECT_DIR"]
     results_dir = os.path.join(prj_dir, "does_results")
+
+    # can search for the last suite_id
+    if suite_id == "last":
+        from glob import glob
+        try:
+            suite_ids = [int(os.path.basename(os.path.dirname(x)).split("_")[-1]) for x in glob(os.path.join(results_dir, f"{suite}*", ""))]
+            suite_id = max(suite_ids)
+        except:
+            raise ValueError(f"cannot use `--id last` because no results found in {results_dir} for suite: {suite}")
+
     suite_dir = os.path.join(results_dir, f"{suite}_{suite_id}")
+
+    # look for poetry project myetl for custom etl processors
+    etl_custom_package = os.path.join(prj_dir, "does_config", ETL_CUSTOM_PACKAGE )
+    if os.path.isdir(etl_custom_package):
+        start = "."
+        relative_path = os.path.relpath(etl_custom_package, start) # poetry requires relative path (absolute path does not work)
+
+        try:
+            if args.dev:
+                os.system(f"poetry remove {ETL_CUSTOM_PACKAGE}") # with poetry 1.2 could use poetry add --editable to ensure that changes are used
+        except:
+            pass
+
+        os.system(f"poetry add {relative_path}")
+    else:
+        print(f"no custom etl steps found: package {etl_custom_package} does not exist")
 
     # load etl_config by loading suite design file
     suite_design =  _load_config_yaml(suite_dir, file="suite_design.yml")
@@ -29,7 +66,7 @@ def main(suite, suite_id):
 
         extractors, transformers, loaders = load_selected_processes(pipeline["extractors"], pipeline["transformers"], pipeline["loaders"])
 
-        try:    
+        try:
             # extract data from
             df = extract(suite=suite, suite_id=suite_id, suite_dir=suite_dir, experiments=pipeline["experiments"], extractors=extractors)
 
@@ -97,45 +134,20 @@ def load_selected_processes(extractors_sel, transformers_sel, loaders_sel):
 
 
 def _load_available_processes():
+
     extractors = {}
     transformers = {}
     loaders = {}
 
-    # load processes in current directory
-    _load_processes("etl_base", extractors, transformers, loaders)
-
-    # load processes from external project directory (i.e., project specific steps)
-    prj_dir = os.environ["DOES_PROJECT_DIR"]
-    external_etl_dir = os.path.join(prj_dir, "does_config", "etl")
-
-    external_dirs = _find_external_processes_dir(external_etl_dir)
-
-    # ensure that we can load modules from the directory
-    for external_dir in external_dirs:
-        sys.path.append(external_dir)
-
-    # check all files in the external directory
-    for external_dir in external_dirs:
-        for x in os.listdir(external_dir):
-            parts = os.path.splitext(x)
-            if parts[1] == ".py":
-                module_name = parts[0]
-                _load_processes(module_name, extractors, transformers, loaders)
+    import pkgutil
+    for _importer, modname, _ispkg in pkgutil.walk_packages(path=None, onerror=lambda x: None):
+        if ETL_CUSTOM_PACKAGE in modname or "doespy" in modname:
+            _load_processes(modname, extractors, transformers, loaders)
     return extractors, transformers, loaders
-
-def _find_external_processes_dir(base_dir):
-    dirs = []
-    # walk over all subdirectories recursively
-    for dirpath, _, filenames in os.walk(base_dir):
-        for file in filenames:
-            if file.endswith(".py"): # only use directories with python files
-                dirs.append(dirpath)
-                break
-    return dirs
 
 def _load_processes(module_name, extractors, transformers, loaders):
 
-    from etl_base import Extractor, Transformer, Loader
+    from doespy.etl.etl_base import Extractor, Transformer, Loader
 
     module = importlib.import_module(module_name)
 
@@ -273,9 +285,9 @@ def _flatten_d(d):
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(description="")
-    parser.add_argument("--suite", type=str, required=True)
-    parser.add_argument("--id", type=str, required=True)
-    args = parser.parse_args()
+    #parser = argparse.ArgumentParser(description="")
+    #parser.add_argument("--suite", type=str, required=True)
+    #parser.add_argument("--id", type=str, required=True)
+    #args = parser.parse_args()
 
-    main(suite=args.suite, suite_id=args.id)
+    main()

@@ -1,4 +1,4 @@
-from etl_base import Extractor, Transformer, Loader, PlotLoader
+from doespy.etl.etl_base import Extractor, Transformer, Loader, PlotLoader
 import pandas as pd
 from typing import Dict, List
 import matplotlib.pyplot as plt
