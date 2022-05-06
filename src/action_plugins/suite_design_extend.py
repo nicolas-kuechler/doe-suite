@@ -7,7 +7,6 @@ __metaclass__ = type
 import copy, itertools, os, collections, argparse, re
 from ansible.utils.vars import merge_hash
 from ansible.plugins.action import ActionBase
-from collections import abc
 
 # Load the display hander to send logging to CLI or relevant display mechanism
 try:
@@ -17,14 +16,6 @@ except ImportError:
     display = Display()
 
 
-def nested_dict_iter(nested, path=[]):
-    for key, value in nested.items():
-        path_c = path + [key]
-
-        if isinstance(value, abc.Mapping):
-            yield from nested_dict_iter(value, path=path_c)
-        else:
-            yield path_c, value
 
 def _set_nested_value(base, path, value, overwrite=False):
 
@@ -89,7 +80,7 @@ def extend_suite_design(suite_design, exp_specific_vars, templar):
 
         for factor_level in exp["factor_levels"]:
 
-            # these are the list of factor_levels when $FACTOR£ is used as the key in base_experiment -> builds the cross product
+            # these are the list of factor_levels when $FACTOR$ is used as the key in base_experiment -> builds the cross product
             for cross_factor_level in cross_factor_levels:
 
                 factor_level = merge_hash(factor_level, cross_factor_level, recursive=True)
@@ -103,8 +94,12 @@ def extend_suite_design(suite_design, exp_specific_vars, templar):
 
                 my_vars = copy.deepcopy(d)
 
-                for path, value in nested_dict_iter(my_vars):
-                    if re.match(r".+\[%.+%\].+", value):
+                for _key, value, path in _nested_dict_iter(my_vars):
+
+                    if isinstance(value, str) and re.match(r".*\[%.+%\].*", value):
+                        # the replacement happens because `my_vars` itself cannot contain variables `[% %]`
+                        # instead of deleting these variables from my_vars, we replace them with ` [! !]`
+                        # these markers `[! !]` are however, never replaced by themselves.
                         value = value.replace("[%", "[!")
                         value = value.replace("%]", "!]")
                         _set_nested_value(my_vars, path, value, overwrite=True)
@@ -176,10 +171,11 @@ def extract_cross_product(base_experiment_in):
 
 def _nested_dict_iter(nested, p=[]):
     for key, value in nested.items():
+        path_c = p + [key]
         if isinstance(value, collections.abc.Mapping):
-            yield from _nested_dict_iter(value, p=p + [key])
+            yield from _nested_dict_iter(value, p=path_c)
         else:
-            yield key, value, p
+            yield key, value, path_c
 
 def _insert_config(config, key, parent_path, value):
     d = config

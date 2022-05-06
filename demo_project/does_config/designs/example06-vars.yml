@@ -29,7 +29,9 @@ $SUITE_VARS$: # (1) variables that each experiment of the suite has by default (
   # (3) self referencing
   # with [% my_run. %] you can use other variables from the run config including factors,
   # the only exception is other variables that also use [% %] tags.
-  base_arg: "--version [% my_run.define_factor_cross %] --option [% my_run.existing %]"
+  base_arg: "--version [% my_run.define_factor_cross %] --option [% my_run.existing %] abc"
+
+
 
 
 shared_vars: # experiment name
@@ -37,7 +39,7 @@ shared_vars: # experiment name
   host_types:
     small: # one instance of type `small`
       n: 1
-      $CMD$: "echo \"[% my_run.base_arg %] --[% my_run.hello.world %] [% my_run.existing_factor %] \"" # command to start experiment run
+      $CMD$: "echo \"[% my_run.base_arg %] --[% my_run.argument %] --[% my_run.define_factor %] --[% my_run.existing_factor %] \"" # command to start experiment run
   base_experiment:
 
     # all variables in $SUITE_VARS$ are part of the base experiment
@@ -55,4 +57,7 @@ shared_vars: # experiment name
     existing_factor:
       $FACTOR$: [1, 2]
 
-    arg1: hello [% hello.world %] # fix parameter between runs (constant)
+    argument: hello [% my_run.design_va_nested.arg1 %] # fix parameter between runs (constant)
+  factor_levels:
+  - define_factor: f1
+  - define_factor: f2

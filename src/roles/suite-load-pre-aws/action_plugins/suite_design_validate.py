@@ -104,7 +104,7 @@ class ActionModule(ActionBase):
                 self._validate_and_default_suite(prj_id=prj_id, suite=suite, design_raw=design_raw, dirs=dirs)
 
             with open(dest, 'w+') as f:
-                yaml.dump(design_raw, f)
+                yaml.dump(design_raw, f, sort_keys=False, width=10000)
 
         except AssertionError as e:
             raise ValueError("duplicate keys (experiment names)")
@@ -119,7 +119,9 @@ class ActionModule(ActionBase):
 
 
         suite_vars = design_raw.get("$SUITE_VARS$", {})
-        del design_raw["$SUITE_VARS$"]
+
+        if "$SUITE_VARS$" in design_raw:
+            del design_raw["$SUITE_VARS$"]
 
         host_type_names = []
         for key, exp in design_raw.items():
@@ -372,11 +374,11 @@ class ActionModule(ActionBase):
                 if isinstance(value, str):
                     # add support for the range syntax in factors
                     # range(start, stop, step)
-                    s3 = re.search(r"^range\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$", value.strip())
+                    s3 = re.search(r"^range\(\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*(-?\d+)\s*\)$", value.strip())
                     # range(start, stop)
-                    s2 = re.search(r"^range\(\s*(\d+)\s*,\s*(\d+)\s*\)$", value.strip())
+                    s2 = re.search(r"^range\(\s*(-?\d+)\s*,\s*(-?\d+)\s*\)$", value.strip())
                     # range(stop)
-                    s1 = re.search(r"^range\(\s*(\d+)\s*\)$", value.strip())
+                    s1 = re.search(r"^range\(\s*(-?\d+)\s*\)$", value.strip())
 
                     if s3 is not None:
                         value_ext = list(range(int(s3.group(1)), int(s3.group(2)), int(s3.group(3))))
@@ -388,7 +390,7 @@ class ActionModule(ActionBase):
                         value_ext = list(range(int(s1.group(1))))
                         _set_nested_value(base=base_experiment_raw, path=path, value=value_ext, overwrite=True)
                     else:
-                        raise ValueError(f"if $FACTOR$ is the key, the only allowed string is the range syntax")
+                        raise ValueError(f"if $FACTOR$ is the key, the only allowed string is the range syntax:   got=|{value}|")
 
                 elif not isinstance(value, list):
                     raise ValueError(f"if $FACTOR$ is the key, then the value must be a list of levels used in the cross product (path={path} value={value})")
