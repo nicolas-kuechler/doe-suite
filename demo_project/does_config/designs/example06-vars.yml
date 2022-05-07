@@ -1,0 +1,63 @@
+---
+
+# Goal: Show the possibilities of including configuration options from other locations
+
+# Example Goal- Demonstrate
+# (1) using $SUITE_VARS$ for defining variable defaults that are included into each `base_experiment` unless a variable is already defined.
+#       (contents can be $FACTOR$ or constants and can include references to other run config, see (3))
+# (2) using $INCLUDE_VARS to include variable defaults defined in an external file (unless present in $SUITE_VARS$ or in the `base_experiment`)
+#       (contents can be $FACTOR$ or constants and can include references to other run config, see (3))
+# (3) self referencing other variables of the config. With `[% my_run.X %]` we can reference another variable of the run config.
+#       (referenced variables can be $FACTOR$ or constants but CANNOT include references themselves, i.e., no transitive references)
+
+
+$SUITE_VARS$: # (1) variables that each experiment of the suite has by default (can be overwritten)
+
+  # nested and non-nested variables work
+  hello:
+    world: o1
+
+  # suite vars are just defaults, the base_experiments has higher precedence
+  existing: o2
+  existing_factor: o3
+
+  # defining factors
+  define_factor: $FACTOR$
+  define_factor_cross:
+    $FACTOR$: [v1, v2]
+
+  # (3) self referencing
+  # with [% my_run. %] you can use other variables from the run config including factors,
+  # the only exception is other variables that also use [% %] tags.
+  base_arg: "--version [% my_run.define_factor_cross %] --option [% my_run.existing %] abc"
+
+
+
+
+shared_vars: # experiment name
+  n_repetitions: 1
+  host_types:
+    small: # one instance of type `small`
+      n: 1
+      $CMD$: "echo \"[% my_run.base_arg %] --[% my_run.argument %] --[% my_run.define_factor %] --[% my_run.existing_factor %] \"" # command to start experiment run
+  base_experiment:
+
+    # all variables in $SUITE_VARS$ are part of the base experiment
+    # (2) you can further include variables from other files under `does_config/designs/design_vars`
+    $INCLUDE_VARS$: test.yml
+    # note: $SUITE_VARS$ have higher precedence compared to external $INCLUDE_VARS$
+
+    # Factors coming from the $SUITE_VARS$ (commented out because they are not necessary here)
+    # define_factor: $FACTOR$
+    # define_factor_cross:
+    #    $FACTOR$: [v1, v2]
+
+    # variables defined in the $SUITE_VARS$ can be overwritten in the base experiment (with non-factor and factor)
+    existing: overwrite suite_vars default
+    existing_factor:
+      $FACTOR$: [1, 2]
+
+    argument: hello [% my_run.design_va_nested.arg1 %] # fix parameter between runs (constant)
+  factor_levels:
+  - define_factor: f1
+  - define_factor: f2
