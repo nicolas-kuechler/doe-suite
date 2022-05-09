@@ -94,7 +94,7 @@ def extend_suite_design(suite_design, exp_specific_vars, templar):
 
                 my_vars = copy.deepcopy(d)
 
-                for _key, value, path in _nested_dict_iter(my_vars):
+                for key, value, path in _nested_dict_iter(my_vars):
 
                     if isinstance(value, str) and re.match(r".*\[%.+%\].*", value):
                         # the replacement happens because `my_vars` itself cannot contain variables `[% %]`
@@ -102,7 +102,8 @@ def extend_suite_design(suite_design, exp_specific_vars, templar):
                         # these markers `[! !]` are however, never replaced by themselves.
                         value = value.replace("[%", "[!")
                         value = value.replace("%]", "!]")
-                        _set_nested_value(my_vars, path, value, overwrite=True)
+                        _set_nested_value(my_vars, path + [key], value, overwrite=True)
+
 
                 with templar.set_temporary_context(variable_start_string="[%", variable_end_string="%]",
                                                     available_variables={"my_run": my_vars, **exp_vars}):
@@ -171,11 +172,12 @@ def extract_cross_product(base_experiment_in):
 
 def _nested_dict_iter(nested, p=[]):
     for key, value in nested.items():
-        path_c = p + [key]
         if isinstance(value, collections.abc.Mapping):
-            yield from _nested_dict_iter(value, p=path_c)
+            yield from _nested_dict_iter(value, p=p + [key])
         else:
-            yield key, value, path_c
+            yield key, value, p
+
+
 
 def _insert_config(config, key, parent_path, value):
     d = config
