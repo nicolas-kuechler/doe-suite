@@ -4,7 +4,10 @@
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
-import copy, itertools, os, collections, argparse, re
+import copy
+import itertools
+import collections
+import re
 from ansible.utils.vars import merge_hash
 from ansible.plugins.action import ActionBase
 
@@ -16,18 +19,20 @@ except ImportError:
     display = Display()
 
 
-
 def _set_nested_value(base, path, value, overwrite=False):
 
     d = base
     for i, k in enumerate(path):
 
-        if k not in d:
-            if i == len(path)-1: # last
+        if isinstance(d, list) and isinstance(path[i], int):
+            pass  # for lists we support just going over each value
+
+        elif k not in d:
+            if i == len(path)-1:  # last
                 d[k] = value
             else:
                 d[k] = {}
-        elif overwrite and i == len(path)-1: # last + overwrite
+        elif overwrite and i == len(path)-1:  # last + overwrite
             d[k] = value
 
         d = d[k]
@@ -56,13 +61,14 @@ class ActionModule(ActionBase):
         suite_design = module_args["suite_design"]
         exp_specific_vars = module_args["exp_specific_vars"]
 
-        result["designs"] = extend_suite_design(suite_design, exp_specific_vars, self._templar)
+        result["designs"] = extend_suite_design(
+            suite_design, exp_specific_vars, self._templar)
 
         return result
 
 
 def extend_suite_design(suite_design, exp_specific_vars, templar):
-    #print(f"exp_specific_vars={exp_specific_vars}")
+    # print(f"exp_specific_vars={exp_specific_vars}")
 
     suite_ext = {}
 
@@ -76,14 +82,16 @@ def extend_suite_design(suite_design, exp_specific_vars, templar):
 
         exp_vars = exp_specific_vars.get(exp_name, {})
 
-        base_experiment, cross_factor_levels = extract_cross_product(exp["base_experiment"])
+        base_experiment, cross_factor_levels = extract_cross_product(
+            exp["base_experiment"])
 
         for factor_level in exp["factor_levels"]:
 
             # these are the list of factor_levels when $FACTOR$ is used as the key in base_experiment -> builds the cross product
             for cross_factor_level in cross_factor_levels:
 
-                factor_level = merge_hash(factor_level, cross_factor_level, recursive=True)
+                factor_level = merge_hash(
+                    factor_level, cross_factor_level, recursive=True)
                 d = copy.deepcopy(base_experiment)
 
                 # overwrite $FACTOR$ with the concrete level of the run (via recursive merging dicts)
@@ -94,7 +102,7 @@ def extend_suite_design(suite_design, exp_specific_vars, templar):
 
                 my_vars = copy.deepcopy(d)
 
-                for key, value, path in _nested_dict_iter(my_vars):
+                for key, value, path in _nested_dict_iter(my_vars, nested_list=True):
 
                     if isinstance(value, str) and re.match(r".*\[%.+%\].*", value):
                         # the replacement happens because `my_vars` itself cannot contain variables `[% %]`
@@ -102,19 +110,22 @@ def extend_suite_design(suite_design, exp_specific_vars, templar):
                         # these markers `[! !]` are however, never replaced by themselves.
                         value = value.replace("[%", "[!")
                         value = value.replace("%]", "!]")
-                        _set_nested_value(my_vars, path + [key], value, overwrite=True)
 
+                        _set_nested_value(
+                            my_vars, path + [key], value, overwrite=True)
 
                 with templar.set_temporary_context(variable_start_string="[%", variable_end_string="%]",
-                                                    available_variables={"my_run": my_vars, **exp_vars}):
+                                                   available_variables={"my_run": my_vars, **exp_vars}):
                     d = templar.template(d)
 
                 with templar.set_temporary_context(variable_start_string="[%", variable_end_string="%]",
-                                                    available_variables={"my_run": d, **exp_vars}):
+                                                   available_variables={"my_run": d, **exp_vars}):
                     # go through all host types, take their command and apply the templating
                     for host_type in exp["host_types"].keys():
                         cmd_d = exp["host_types"][host_type]["$CMD$"]
                         d["$CMD$"][host_type] = templar.template(cmd_d)
+
+                # note: because of jinja -> the templating can only return strings and not numbers
 
                 exp_runs_ext.append(d)
 
@@ -143,8 +154,8 @@ def extract_cross_product(base_experiment_in):
             parent_path = path[:-1]
 
             # factor in experiment -> need to put placeholder `$FACTOR$` in base_experiment
-            _insert_config(base_experiment, key=factor, parent_path=parent_path, value="$FACTOR$")
-
+            _insert_config(base_experiment, key=factor,
+                           parent_path=parent_path, value="$FACTOR$")
 
             # loop over the levels and for each level add an entry with the "factor name" and the path to this factor
             factor_levels = []
@@ -166,17 +177,21 @@ def extract_cross_product(base_experiment_in):
             _insert_config(d, key=k, parent_path=path, value=v)
         cross_factor_levels.append(d)
 
-
     return base_experiment, cross_factor_levels
 
 
-def _nested_dict_iter(nested, p=[]):
+def _nested_dict_iter(nested, p=[], nested_list=False):
     for key, value in nested.items():
         if isinstance(value, collections.abc.Mapping):
             yield from _nested_dict_iter(value, p=p + [key])
+
+        elif nested_list and isinstance(value, list):
+
+            for i, v in enumerate(value):
+                yield from _nested_dict_iter(v, p=p + [key, i])
+
         else:
             yield key, value, p
-
 
 
 def _insert_config(config, key, parent_path, value):
