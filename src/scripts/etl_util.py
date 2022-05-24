@@ -43,7 +43,7 @@ def expand_factors(df: pd.DataFrame, columns: list) -> list:
 def convert_group_name_to_str(name):
     if type(name) == str:
         return name
-    elif type(name) == int:
+    elif type(name) == int or type(name) == bool:
         return str(name)
     else:
         return "_".join([f"{n}" for n in name])
