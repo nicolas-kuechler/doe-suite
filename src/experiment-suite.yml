@@ -17,6 +17,9 @@
         dir: "{{ external_group_vars_dir }}/all"
         ignore_unknown_extensions: True
 
+# TODO [nku]: here maybe load the keyname from the environment variable and then set it to exp_base.key_name or maybe just use key_name
+
+
 ##########################################################################
 #   Load Experiment State and Setup AWS                                  #
 ##########################################################################

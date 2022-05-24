@@ -52,6 +52,8 @@
     region: "{{ exp_base.aws_region }}"
   when: vpc_id != 'undefined'
 
+# TODO [nku] also delete the eni here
+
 # Delete Internet Gateway
 - name: Delete Server Internet Gateway
   community.aws.ec2_vpc_igw:
