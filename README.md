@@ -240,6 +240,8 @@ Afterward, you can change the environment variable `DOES_PROJECT_DIR` to point t
         ```
         By default, credentials should be in `~/.aws/credentials`.
 
+5.5 Install Ansible [(see instructions)](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)
+
 
 6. Install the required Ansible collections
 
