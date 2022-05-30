@@ -99,7 +99,11 @@ class JsonExtractor(Extractor):
 
     def extract(self, path: str, options: Dict) -> List[Dict]:
         with open(path, 'r') as f:
-            data = json.load(f)
+            # json.load will fail if the file is empty (for instance, if the process was killed)
+            try:
+                data = json.load(f)
+            except json.JSONDecodeError:
+                data = {}
 
         if not isinstance(data, list):
             data = [data]
