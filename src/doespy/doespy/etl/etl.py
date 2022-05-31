@@ -1,4 +1,4 @@
-import os, sys, importlib, re, warnings
+import os, sys, importlib, re, warnings, subprocess
 import yaml, json, argparse
 from inspect import getmembers
 import pandas as pd
@@ -36,16 +36,23 @@ def main(): #suite, suite_id
 
     # look for poetry project myetl for custom etl processors
     etl_custom_package = os.path.join(prj_dir, "does_config", ETL_CUSTOM_PACKAGE )
+
     if os.path.isdir(etl_custom_package):
+
+        # the relative path needs to be with respect to the pyproject.toml file but
+        # when you run a cmd in a folder poetry checks first in the folder but then later also the parents if not pyproject.toml was found
         start = "."
+        while not os.path.exists(os.path.join(start, "pyproject.toml")):
+            from pathlib import Path
+            start = Path(start).resolve().parent
+
         relative_path = os.path.relpath(etl_custom_package, start) # poetry requires relative path (absolute path does not work)
 
         try:
             if args.dev:
-                os.system(f"poetry remove {ETL_CUSTOM_PACKAGE}") # with poetry 1.2 could use poetry add --editable to ensure that changes are used
+                out = subprocess.check_output(f"poetry remove {ETL_CUSTOM_PACKAGE}", shell=True) # TODO: with poetry 1.2 could use poetry add --editable to ensure that changes are used
         except:
             pass
-
         os.system(f"poetry add {relative_path}")
     else:
         print(f"no custom etl steps found: package {etl_custom_package} does not exist")
@@ -141,6 +148,7 @@ def _load_available_processes():
 
     import pkgutil
     for _importer, modname, _ispkg in pkgutil.walk_packages(path=None, onerror=lambda x: None):
+
         if ETL_CUSTOM_PACKAGE in modname or "doespy" in modname:
             _load_processes(modname, extractors, transformers, loaders)
     return extractors, transformers, loaders

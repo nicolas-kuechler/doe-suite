@@ -222,16 +222,42 @@
     delegate_to: localhost
     local_action: "command rsync -az '{{ inventory_hostname }}:{{ remote_config_file }}' '{{ local_results_dir_base }}'"
 
-# TODO [nku] encapsulate etl processing failure (an error in etl stage must not stop the suite)-> if fail: catch, write error message to results_dir + print_tag stdout
-  - name: Run ETL pipeline over results files
-    delegate_to: localhost
-    ansible.builtin.shell:
-      cmd: python scripts/etl.py --suite {{ suite }} --id {{ suite_id }}
+  - name: Run ETL Pipeline
+    block:
+      - name: Run ETL pipeline over results files (start)
+        delegate_to: localhost
+        ansible.builtin.shell: # the --dev ensures that local changes in the etl pipelines are respected
+          cmd: python doespy/doespy/etl/etl.py --suite {{ suite }} --id {{ suite_id }} {{ previous_exec_etl is undefined | ternary('--dev', '') }}
+        when: ((current_exec_etl | int - previous_exec_etl | default(0) | int) > (etl_minimum_delay_sec|int))  or exp_job_ids_unfinished | list | length == 1
+
+      - name: update prev timestamp
+        set_fact:
+          is_exec: True
+          previous_exec_etl: "{{ current_exec_etl }}"
+        when: ((current_exec_etl | int - previous_exec_etl | default(0) | int) > (etl_minimum_delay_sec|int))  or exp_job_ids_unfinished | list | length == 1
+
+    rescue:
+      - name: Inform about etl errors
+        fail:
+          msg: "Error occured in the etl pipeline -> cannot produce results but we continue with running the experiment \n(error details: {{ etl_error_file }})"
+        ignore_errors: True
+
+      - name: Creating Error File
+        delegate_to: localhost
+        copy:
+          dest: "{{ etl_error_file }}"
+          content: "{{ ansible_failed_result | to_nice_yaml }}"
+    vars:
+    - etl_error_file: "{{ local.results_dir}}/{{ suite }}_{{ suite_id }}/ETL_ERROR.log"
+    - current_exec_etl: "{{ lookup('pipe', 'date +%s') }}"
+
 
   vars:
   - remote_results_dir: "{{ job_id_to_wait_for | jobid2workingdir(remote.results_dir) + '/results' }}"
   - local_results_dir_base: "{{ job_id_to_wait_for | jobid2workingdir(local.results_dir) }}"
   - remote_config_file: "{{ job_id_to_wait_for | jobid2workingdir(remote.results_dir) + '/config.json' }}"
+
+
 
 ###################################################################
 #  Cleanup task spooler queue                                     #
