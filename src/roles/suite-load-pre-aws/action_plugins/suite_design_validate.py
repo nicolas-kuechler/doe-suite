@@ -254,10 +254,14 @@ class ActionModule(ActionBase):
 
                 del d["$INCLUDE_VARS$"]
 
-                # value is the path relative to external dir
-                with open(f"{external_dir}/{value}", "r") as f:
-                    vars = yaml.load(f, Loader=yaml.SafeLoader)
-                self._include_vars(d, vars)
+                if isinstance(value, str):
+                    value = [value]
+
+                for external_file in value: #
+                    # value is the path relative to external dir
+                    with open(f"{external_dir}/{external_file}", "r") as f:
+                        vars = yaml.load(f, Loader=yaml.SafeLoader)
+                    self._include_vars(d, vars)
 
     def _include_vars(self, base, vars):
         for path, value in nested_dict_iter(vars):
