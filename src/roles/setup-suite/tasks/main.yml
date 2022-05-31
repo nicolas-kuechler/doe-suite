@@ -19,7 +19,7 @@
 # 1. Configure ~/.ssh/config:  (add to file and replace the key for example with aws_ppl.pem)
 #    ```
 #    Host ec2*
-#    IdentifyFile ~/.ssh/{{ exp_base.key_name }}
+#    IdentifyFile ~/.ssh/{{ ssh_key_name }}
 #    ForwardAgent yes
 #    ```
 #
@@ -28,11 +28,14 @@
 #   ssh-aadd ~/.ssh/private_key_rsa
 #
 # 3. (On a MAC, need add to keychain)
-- name: Update Code from Git remote repository
+
+- name: Update Code from Git remote repository (or multiple)
   git:
-    repo: "{{ git_remote_repository }}"
-    dest: "{{ remote.dir }}/code"
+    repo: "{{ git_repo.repo }}"
+    dest: "{{ remote.dir }}/{{ git_repo.dir }}"
     accept_hostkey: yes
     force: yes
-
-  # TODO [nku] transform such that we can clone a list of repositories
+    version: "{{ git_repo.version }}"
+  loop: "{{ git_remote_repository | git_repo_list }}"
+  loop_control:
+    loop_var: git_repo
