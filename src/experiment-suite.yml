@@ -17,6 +17,14 @@
         dir: "{{ external_group_vars_dir }}/all"
         ignore_unknown_extensions: True
 
+    - fail:
+        msg: "environment variable: DOES_PROJECT_ID_SUFFIX is not set and/or DOES_SSH_KEY_NAME is not set"
+      when: does_project_id_suffix | length == 0 or ssh_key_name | length == 0
+
+    - debug:
+        msg: "Project Id: {{ prj_id }}"
+      tags: [print_action]
+
 ##########################################################################
 #   Load Experiment State and Setup AWS                                  #
 ##########################################################################

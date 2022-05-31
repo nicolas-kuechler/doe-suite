@@ -50,7 +50,7 @@
 - name: Create EC2 Instances (only assign subset of tags yet)
   community.aws.ec2_instance:
     instance_type: '{{ ec2config.instance_type }}'
-    key_name: '{{ ec2config.key_name }}'
+    key_name: '{{ ssh_key_name }}'
     image_id: '{{ ec2config.ec2_image_id }}'
     region: '{{ ec2config.aws_region }}'
     security_group: '{{ ec2config.sg_name }}'
