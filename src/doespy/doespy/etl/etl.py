@@ -64,8 +64,15 @@ def main(): #suite, suite_id
         return
     etl_config = suite_design["$ETL$"]
 
+    # collect the names of all experiments
+    experiment_names = list(filter(lambda x: not x.startswith("$"), suite_design.keys()))
+
     # go over pipelines and run them
     for pipeline_name, pipeline in etl_config.items():
+
+
+        if pipeline["experiments"] == "*":
+            pipeline["experiments"] = experiment_names
 
         etl_info = {
             "suite": suite, "suite_id": suite_id, "pipeline": pipeline_name, "experiments": pipeline["experiments"], "suite_dir": suite_dir
