@@ -12,11 +12,18 @@ def main(): #suite, suite_id
     parser = argparse.ArgumentParser(description="")
     parser.add_argument("--suite", type=str, required=True)
     parser.add_argument("--id", type=str, required=True)
+
+    # by setting the --dev flag you ensure that local changes in the etl pipeline files are respected
     parser.add_argument("--dev", action='store_true')
+
+    # by setting the --design flag, we can make the etl pipeline be run using the etl definition in `does_config/designs`
+    # rather than the on in the results directory
+    parser.add_argument("--design", action="store_true")
     args = parser.parse_args()
 
     suite=args.suite
     suite_id=args.id
+    use_etl_from_design = args.design
 
     if "DOES_PROJECT_DIR" not in os.environ:
         raise ValueError(f"env variable: DOES_PROJECT_DIR not set")
@@ -58,7 +65,11 @@ def main(): #suite, suite_id
         print(f"no custom etl steps found: package {etl_custom_package} does not exist")
 
     # load etl_config by loading suite design file
-    suite_design = _load_config_yaml(suite_dir, file="suite_design.yml")
+    if use_etl_from_design:
+        design_dir = os.path.join(prj_dir, "does_config", "designs")
+        suite_design = _load_config_yaml(design_dir, file=f"{suite}.yml")
+    else:
+        suite_design = _load_config_yaml(suite_dir, file="suite_design.yml")
     if "$ETL$" not in suite_design:
         # we don't have an ETL config => don't run it
         return
