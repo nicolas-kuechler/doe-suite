@@ -6,8 +6,13 @@ import pandas as pd
 import warnings, yaml, json, csv, os
 from dataclasses import dataclass, field, is_dataclass
 import matplotlib.pyplot as plt
+import sys
 
 from etl_util import expand_factors
+
+# via https://stackoverflow.com/a/14981125
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
 
 @dataclass
 class Extractor(ABC):
@@ -103,6 +108,7 @@ class JsonExtractor(Extractor):
             try:
                 data = json.load(f)
             except json.JSONDecodeError:
+                eprint(f"Could not decode file with path {path} as json, replaced with empty json file")
                 data = {}
 
         if not isinstance(data, list):
