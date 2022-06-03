@@ -9,14 +9,14 @@
 #  debug:
 #    msg: "{{ exp_jobs_to_enqueue }}"
 
-- name: debug
-  debug:
-    msg: "{{ host_types }}"
-
-- name: kill
-  assert:
-    that:
-      - False
+#- name: debug
+#  debug:
+#    msg: "{{ host_types }}"
+#
+#- name: kill
+#  assert:
+#    that:
+#      - False
 
 
 - name: schedule the job on leonhard using bsub
