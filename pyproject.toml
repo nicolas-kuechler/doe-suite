@@ -15,6 +15,7 @@ PyInputPlus = "^0.2.12"
 boto3 = "^1.18.59"
 matplotlib = "^3.4.3"
 doespy = {path = "src/doespy", develop = true}
+myetl = {path = "demo_project/does_config/myetl"}
 
 
 [tool.poetry.dev-dependencies]
