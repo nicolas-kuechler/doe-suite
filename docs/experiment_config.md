@@ -44,9 +44,14 @@ Examples are in the [designs folder](../experiments/designs).
 
 #### Keywords
 
-| Keyword       | Required | Type | Short Description |
-| ------------- | ----------------- | ---- | ----------------- |
-| `experiments`   | yes               | dict | Dictionary of experiments that belong to an experiment _suite_. The keys are the (unique) experiment names and the values the experiment configurations. |
+A suite design is a dict (YAML object) of experiments. The keys of the dict are the (unique) experiment names of the suite. 
+In addition, there are special keywords that start with a `$` and are used to configure the suite. 
+
+| Keyword                   | Required          | Type | Short Description |
+| ------------------------- | ----------------- | ---- | ----------------- |
+| `<< experiment_name >>`   | yes               | dict | Definition of an [experiment](#experiment-keywords) of the suite (suite can have multiple experiments). |
+| `$ETL$`                   | no (default: {})  | dict | Definition of ETL pipeline for processing results (e.g, generate plot). |
+| `$SUITE_VARS$`            | no (default: {})  | dict | Definition of default variables that are available in all experiments of the suite. |
 
 ##### Experiment Keywords
 
@@ -64,6 +69,7 @@ Examples are in the [designs folder](../experiments/designs).
 | Keyword       | Required | Type  | Short Description |
 | ------------- | ----------------- | ----- | ----------------- |
 | `n`           | yes               | int   | Number of EC2 instances |
+| `$CMD$`       | yes               | dict  | Dictionary of hosts with their run starting commands. |
 | `check_status` | no (default: True) | bool | Boolean set to true when the status of this host type should be checked when evaluating whether a job finished |
 | `init_role`   | no (default: [])  | str or list | One or more Ansible role(s) that are run for hosts of this type during the initial setup. A single role can be specified as string, multiple roles need to use list notation. |
 
@@ -71,10 +77,12 @@ Examples are in the [designs folder](../experiments/designs).
 
 `base_experiment` contains variable definitions and the commands to start the experiment run. By convention, global variables for all host types are stored directly as key/value pairs.
 
-| Keyword       | Required | Type  | Short Description |
-| ------------- | ----------------- | ----- | ----------------- |
-| `host_vars`   | no                | dict  | Defines variables for the different host types here. |
-| `$CMD$`       | yes               | dict  | Dictionary of hosts with their run starting commands. |
+| Keyword         | Required | Type         | Short Description |
+| -------------   | -------- | ------------ | ----------------- |
+| `$INCLUDE_VARS$`| no       | str or list  | Load default variables from a file in `does_config/designs/design_vars`.|
+| `host_vars`     | no       | dict         | Defines variables for the different host types here. |
+
+
 
 Note, it is only a convention to group variables by host type. In practice, e.g., also a host of type "client" can use variables from "server".
 The `$CMD$` property can also be defined as a factor: `$FACTOR$` and then `$CMD$` needs to be defined in `factor_levels`.
@@ -90,8 +98,8 @@ The number of dictionaries defines the number of runs for the experiment. Each d
 The `$CMD$` property in `base_experiment` contains for each host type the starting command of the software artifact (e.g., command to start the benchmark software).
 
 Within a command, there are two different types of variables available:
-- `{{ }}`: these are global variables defined within the experiment suite
-- `[% %]`: these are variables that correspond to factors of the current run. In most cases, they have the form `[% my_run.* %]`. If there is a factor `a` (i.e., `base_experiment: a: $FACTOR$`), then the variable `[% my_run.a %]` refers to the level of this factor in the respective run.
+- `{{ }}`: these are global variables from `group_vars/all`
+- `[% %]`: these are variables that correspond to factors or other  of the current run. In most cases, they have the form `[% my_run.* %]`. If there is a factor `a` (i.e., `base_experiment: a: $FACTOR$`), then the variable `[% my_run.a %]` refers to the level of this factor in the respective run.
 
 There are two options on how to pass configurations to the artefact with a command:
 - Pass factor levels as command line arguments (e.g., use the factor `a` as an argument to echo: `echo [% my_run.a %]`).
