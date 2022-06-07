@@ -84,9 +84,11 @@
     volumes:
       - device_name: /dev/sda1
         ebs:
-          volume_type: gp2
+          volume_type: gp3
           snapshot_id: '{{ ec2config.ec2_volume_snapshot }}'
           volume_size: '{{ ec2config.ec2_volume_size }}'
+          throughput: 1000
+          iops: 10000
           delete_on_termination: True
     filters:
       tag:prj_id: "{{ prj_id }}"
