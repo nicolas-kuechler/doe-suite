@@ -376,24 +376,9 @@ class ActionModule(ActionBase):
 
             if path[-1] == "$FACTOR$":
                 if isinstance(value, str):
-                    # add support for the range syntax in factors
-                    # range(start, stop, step)
-                    s3 = re.search(r"^range\(\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*(-?\d+)\s*\)$", value.strip())
-                    # range(start, stop)
-                    s2 = re.search(r"^range\(\s*(-?\d+)\s*,\s*(-?\d+)\s*\)$", value.strip())
-                    # range(stop)
-                    s1 = re.search(r"^range\(\s*(-?\d+)\s*\)$", value.strip())
 
-                    if s3 is not None:
-                        value_ext = list(range(int(s3.group(1)), int(s3.group(2)), int(s3.group(3))))
-                        _set_nested_value(base=base_experiment_raw, path=path, value=value_ext, overwrite=True)
-                    elif s2 is not None:
-                        value_ext = list(range(int(s2.group(1)), int(s2.group(2))))
-                        _set_nested_value(base=base_experiment_raw, path=path, value=value_ext, overwrite=True)
-                    elif s1 is not None:
-                        value_ext = list(range(int(s1.group(1))))
-                        _set_nested_value(base=base_experiment_raw, path=path, value=value_ext, overwrite=True)
-                    else:
+                    # add support for the range syntax in factors
+                    if "range" not in value:
                         raise ValueError(f"if $FACTOR$ is the key, the only allowed string is the range syntax:   got=|{value}|")
 
                 elif not isinstance(value, list):
