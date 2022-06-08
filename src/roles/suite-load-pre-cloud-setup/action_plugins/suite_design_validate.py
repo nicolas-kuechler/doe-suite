@@ -325,7 +325,8 @@ class ActionModule(ActionBase):
 
             if path[-1] == "$FACTOR$":
                 if not isinstance(value, list):
-                    raise ValueError(f"if $FACTOR$ is the key, then the value must be a list of levels used in the cross product (path={path} value={value})")
+                    pass
+                    # raise ValueError(f"if $FACTOR$ is the key, then the value must be a list of levels used in the cross product (path={path} value={value})")
 
         return factors
 
