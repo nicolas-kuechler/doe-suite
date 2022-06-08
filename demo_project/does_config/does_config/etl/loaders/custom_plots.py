@@ -15,8 +15,6 @@ class DemoLatencyPlotLoader(PlotLoader):
 
     def plot(self, df):
 
-        #raise ValueError("blocker")
-
         scale_factor = 2.4
         figsize = [scale_factor * 1.618, scale_factor * 1] # [width, height] based on golden ratio
         fig = plt.figure(figsize=figsize, dpi=100)

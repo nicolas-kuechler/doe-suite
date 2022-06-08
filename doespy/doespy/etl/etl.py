@@ -5,16 +5,13 @@ import pandas as pd
 from typing import List, Dict
 
 
-ETL_CUSTOM_PACKAGE = "myetl"
+ETL_CUSTOM_PACKAGE = "does"
 
 def main(): #suite, suite_id
 
     parser = argparse.ArgumentParser(description="")
     parser.add_argument("--suite", type=str, required=True)
     parser.add_argument("--id", type=str, required=True)
-
-    # by setting the --dev flag you ensure that local changes in the etl pipeline files are respected
-    parser.add_argument("--dev", action='store_true')
 
     # by setting the --design flag, we can make the etl pipeline be run using the etl definition in `does_config/designs`
     # rather than the on in the results directory
@@ -40,29 +37,6 @@ def main(): #suite, suite_id
             raise ValueError(f"cannot use `--id last` because no results found in {results_dir} for suite: {suite}")
 
     suite_dir = os.path.join(results_dir, f"{suite}_{suite_id}")
-
-    # look for poetry project myetl for custom etl processors
-    etl_custom_package = os.path.join(prj_dir, "does_config", ETL_CUSTOM_PACKAGE )
-
-    if os.path.isdir(etl_custom_package):
-
-        # the relative path needs to be with respect to the pyproject.toml file but
-        # when you run a cmd in a folder poetry checks first in the folder but then later also the parents if not pyproject.toml was found
-        start = "."
-        while not os.path.exists(os.path.join(start, "pyproject.toml")):
-            from pathlib import Path
-            start = Path(start).resolve().parent
-
-        relative_path = os.path.relpath(etl_custom_package, start) # poetry requires relative path (absolute path does not work)
-
-        try:
-            if args.dev:
-                out = subprocess.check_output(f"poetry remove {ETL_CUSTOM_PACKAGE}", shell=True) # TODO: with poetry 1.2 could use poetry add --editable to ensure that changes are used
-        except:
-            pass
-        os.system(f"poetry add {relative_path}")
-    else:
-        print(f"no custom etl steps found: package {etl_custom_package} does not exist")
 
     # load etl_config by loading suite design file
     if use_etl_from_design:
@@ -164,11 +138,14 @@ def _load_available_processes():
     transformers = {}
     loaders = {}
 
-    import pkgutil
-    for _importer, modname, _ispkg in pkgutil.walk_packages(path=None, onerror=lambda x: None):
+    import pkgutil, warnings
+    with warnings.catch_warnings(record=True):
+        for _importer, modname, _ispkg in pkgutil.walk_packages(path=None, onerror=lambda x: None):
+            warnings.simplefilter("ignore")
+            if ETL_CUSTOM_PACKAGE in modname or "doespy" in modname:
+                _load_processes(modname, extractors, transformers, loaders)
 
-        if ETL_CUSTOM_PACKAGE in modname or "doespy" in modname:
-            _load_processes(modname, extractors, transformers, loaders)
+    # print(f"ext={len(extractors)}  trans={len(transformers)}  loaders={len(loaders)}")
     return extractors, transformers, loaders
 
 def _load_processes(module_name, extractors, transformers, loaders):

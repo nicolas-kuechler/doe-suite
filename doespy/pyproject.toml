@@ -1,22 +1,17 @@
 [tool.poetry]
-name = "doe-suite"
+name = "doespy"
 version = "0.1.0"
 description = ""
 authors = ["Nicolas Küchler <nico.kuechler@protonmail.com>"]
-# TODO [nku] after poetry update to 1.2.0, we can load .env file via plugin: https://github.com/python-poetry/poetry/issues/337
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.11"
+python = "^3.9"
 ansible = ">=2.11"
-pandas = "^1.3.3"
 PyYAML = "^6.0"
 argparse = "^1.4.0"
-PyInputPlus = "^0.2.12"
-boto3 = "^1.18.59"
-matplotlib = "^3.4.3"
-doespy = {path = "src/doespy", develop = true}
-myetl = {path = "demo_project/does_config/myetl"}
-
+pandas = "^1.4.2"
+matplotlib = "^3.5.2"
+boto3 = "^1.24.3"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
@@ -24,6 +19,11 @@ pytest = "^5.2"
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+
+[tool.poetry.scripts]
+etl = "doespy.etl.etl:main"
+
 
 # TODO [nku] after poetry update to 1.2.0, we can use scripts to call the etl using `poetry run etl` https://github.com/python-poetry/poetry/issues/241
 #[tool.poetry.scripts]
