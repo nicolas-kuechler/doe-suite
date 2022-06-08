@@ -4,7 +4,7 @@
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
-import copy, itertools, os, collections, argparse
+import copy, itertools, os, collections, argparse, re
 from ansible.utils.vars import merge_hash
 from ansible.plugins.action import ActionBase
 
@@ -14,6 +14,23 @@ try:
 except ImportError:
     from ansible.utils.display import Display
     display = Display()
+
+
+
+def _set_nested_value(base, path, value, overwrite=False):
+
+    d = base
+    for i, k in enumerate(path):
+
+        if k not in d:
+            if i == len(path)-1: # last
+                d[k] = value
+            else:
+                d[k] = {}
+        elif overwrite and i == len(path)-1: # last + overwrite
+            d[k] = value
+
+        d = d[k]
 
 
 class ActionModule(ActionBase):
@@ -39,56 +56,71 @@ class ActionModule(ActionBase):
         suite_design = module_args["suite_design"]
         exp_specific_vars = module_args["exp_specific_vars"]
 
-
-        #print(f"exp_specific_vars={exp_specific_vars}")
-
-        suite_ext = {}
-
-        for exp_name in suite_design.keys():
-
-            if exp_name == "$ETL$":
-                continue
-
-            #print(f"exp_name={exp_name}")
-
-            exp_runs_ext = []
-            exp = suite_design[exp_name]
-
-            exp_vars = exp_specific_vars.get(exp_name, {})
-
-            base_experiment, cross_factor_levels = extract_cross_product(exp["base_experiment"])
-
-            for factor_level in exp["factor_levels"]:
-
-                # these are the list of factor_levels when $FACTOR£ is used as the key in base_experiment -> builds the cross product
-                for cross_factor_level in cross_factor_levels:
-
-                    factor_level = merge_hash(factor_level, cross_factor_level, recursive=True)
-
-                    d = copy.deepcopy(base_experiment)
-
-                    # overwrite $FACTOR$ with the concrete level of the run (via recursive merging dicts)
-                    d = merge_hash(d, factor_level, recursive=True)
-
-
-                    # replace template variables in $CMD$ (from the current run + exp_specific_vars)
-                    d["$CMD$"] = {}
-
-                    with self._templar.set_temporary_context(variable_start_string="[%", variable_end_string="%]",
-                                                        available_variables={"my_run": d, **exp_vars}):
-                        # go through all host types, take their command and apply the templating
-                        for host_type in exp["host_types"].keys():
-                            cmd_d = exp["host_types"][host_type]["$CMD$"]
-                            d["$CMD$"][host_type] = self._templar.template(cmd_d)
-
-                    exp_runs_ext.append(d)
-
-            suite_ext[exp_name] = exp_runs_ext
-
-        result["designs"] = suite_ext
+        result["designs"] = extend_suite_design(suite_design, exp_specific_vars, self._templar)
 
         return result
 
+
+def extend_suite_design(suite_design, exp_specific_vars, templar):
+    #print(f"exp_specific_vars={exp_specific_vars}")
+
+    suite_ext = {}
+
+    for exp_name in suite_design.keys():
+
+        if exp_name == "$ETL$":
+            continue
+
+        exp_runs_ext = []
+        exp = suite_design[exp_name]
+
+        exp_vars = exp_specific_vars.get(exp_name, {})
+
+        base_experiment, cross_factor_levels = extract_cross_product(exp["base_experiment"])
+
+        for factor_level in exp["factor_levels"]:
+
+            # these are the list of factor_levels when $FACTOR$ is used as the key in base_experiment -> builds the cross product
+            for cross_factor_level in cross_factor_levels:
+
+                factor_level = merge_hash(factor_level, cross_factor_level, recursive=True)
+                d = copy.deepcopy(base_experiment)
+
+                # overwrite $FACTOR$ with the concrete level of the run (via recursive merging dicts)
+                d = merge_hash(d, factor_level, recursive=True)
+
+                # replace template variables in $CMD$ (from the current run + exp_specific_vars)
+                d["$CMD$"] = {}
+
+                my_vars = copy.deepcopy(d)
+
+                for key, value, path in _nested_dict_iter(my_vars):
+
+                    if isinstance(value, str) and re.match(r".*\[%.+%\].*", value):
+                        # the replacement happens because `my_vars` itself cannot contain variables `[% %]`
+                        # instead of deleting these variables from my_vars, we replace them with ` [! !]`
+                        # these markers `[! !]` are however, never replaced by themselves.
+                        value = value.replace("[%", "[!")
+                        value = value.replace("%]", "!]")
+                        _set_nested_value(my_vars, path + [key], value, overwrite=True)
+
+
+                with templar.set_temporary_context(variable_start_string="[%", variable_end_string="%]",
+                                                    available_variables={"my_run": my_vars, **exp_vars}):
+                    d = templar.template(d)
+
+                with templar.set_temporary_context(variable_start_string="[%", variable_end_string="%]",
+                                                    available_variables={"my_run": d, **exp_vars}):
+                    # go through all host types, take their command and apply the templating
+                    for host_type in exp["host_types"].keys():
+                        cmd_d = exp["host_types"][host_type]["$CMD$"]
+                        d["$CMD$"][host_type] = templar.template(cmd_d)
+
+                exp_runs_ext.append(d)
+
+        suite_ext[exp_name] = exp_runs_ext
+
+    return suite_ext
 
 
 def extract_cross_product(base_experiment_in):
@@ -144,6 +176,8 @@ def _nested_dict_iter(nested, p=[]):
             yield from _nested_dict_iter(value, p=p + [key])
         else:
             yield key, value, p
+
+
 
 def _insert_config(config, key, parent_path, value):
     d = config
