@@ -65,6 +65,7 @@
           - suite_hosts_lst is defined
           - my_suite_design is defined
 
+    # TODO [hiddely]: It seems we have to adapt this part to support multiple experiments on a single host [euler]
     - name: Set variables for different hosts
       set_fact:
         suite_id: "{{ hostvars['localhost'].suite_id }}"
