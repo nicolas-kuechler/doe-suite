@@ -1,0 +1,41 @@
+from doespy.etl.etl_base import Extractor, Transformer, Loader, PlotLoader
+import pandas as pd
+from typing import Dict, List
+import matplotlib.pyplot as plt
+
+
+class MyExtractor(Extractor):
+
+    def file_regex_default(self):
+        return ['.*\.txt$', '.*\.log$']
+
+    def extract(self, path: str, options: Dict) -> List[Dict]:
+        print(f"MyExtractor: do nothing")
+        return [{}]
+
+
+class MyTransformer(Transformer):
+    def transform(self, df: pd.DataFrame, options: Dict) -> pd.DataFrame:
+        print(f"MyTransformer: do nothing  ({df.info()})")
+        return df
+
+
+class MyLoader(Loader):
+
+    def load(self, df: pd.DataFrame, options: Dict, etl_info: Dict) -> None:
+        print(f"MyLoader: do nothing  ({df.info()})")
+        #output_dir = self.get_output_dir(options, etl_info["suite_dir"])
+
+
+class MyPlotLoader(PlotLoader):
+    def load(self, df: pd.DataFrame, options: Dict, etl_info: Dict) -> None:
+        print(f"MyPlotLoader: do nothing  ({df.info()})")
+        if not df.empty:
+            fig = self.plot(df)
+            output_dir = self.get_output_dir(options, etl_info["suite_dir"])
+            self.save_plot(fig, filename="test", output_dir=output_dir)
+
+
+    def plot(self, df):
+        fig = plt.figure()
+        return fig
