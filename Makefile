@@ -8,7 +8,13 @@ cloud?=$(DOES_CLOUD) # env variable with default (aws)
 DOES_CLOUD_STATE?=terminate
 state?=$(DOES_CLOUD_STATE) # env variable with default (terminate)
 
-install:
+
+new:
+	@if [ ! -f $(does_config_dir)/pyproject.toml ]; then \
+		cookiecutter cookiecutter-does_config -o $(DOES_PROJECT_DIR); \
+	fi
+
+install: new
 	@cd $(does_config_dir) && \
 	poetry install && \
 	poetry run ansible-galaxy install -r $(PWD)/requirements-collections.yml

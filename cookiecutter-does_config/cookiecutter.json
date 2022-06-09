@@ -6,5 +6,5 @@
     "host_ec2_ami": "<LATEST-AMI>",
     "host_ec2_volume_snapshot": "<LATEST-VOLUME-SNAPSHOT>",
     "repo": "git@github.com:nicolas-kuechler/doe-suite.git",
-    "relative_path_does_config_to_doespy": "../doe-suite/doespy"
+    "relative_path_does_config_to_doespy": "<AUTO-PATH>"
 }
