@@ -1,0 +1,10 @@
+{
+    "suite": "getting-started",
+    "host_name": "base",
+    "host_ec2_instance_type": "t2.medium",
+    "host_ec2_volume_size": 16,
+    "host_ec2_ami": "<LATEST-AMI>",
+    "host_ec2_volume_snapshot": "<LATEST-VOLUME-SNAPSHOT>",
+    "repo": "git@github.com:nicolas-kuechler/doe-suite.git",
+    "relative_path_does_config_to_doespy": "../doe-suite/doespy"
+}
