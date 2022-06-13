@@ -12,6 +12,12 @@ git_remote_repository: <<git_remote_repository>> # TODO: set remote repository (
 job_n_tries: <<job_n_tries>>   # should be max 1000 (otherwise playbook freezes -> unsure why)
 job_check_wait_time: <<job_check_wait_time>>
 
+euler_user: <<euler_user>>
+
+remote:
+  dir: "{{ '/cluster/home/' + euler_user if cloud == 'euler' else '/home/ubuntu' }}"
+  results_dir: "{{ '/cluster/scratch/' + euler_user + '/results' if cloud == 'euler' else '/home/ubuntu/results' }}"
+
 remote:
   dir: "/home/ubuntu"
   results_dir: "/home/ubuntu/results"

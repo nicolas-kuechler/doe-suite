@@ -5,3 +5,17 @@ ec2_volume_size: <<volume_size>> # TODO: choose volume size
 
 ec2_image_id: <<ec2_image_id>>
 ec2_volume_snapshot: <<snapshot_id>>
+
+
+#  TODO: Nicolas, these should have sensible defaults or something
+euler_job_minutes: 120 # individual job time
+euler_cpu_cores: 4
+euler_cpu_mem: 3072
+euler_gpu_number: 1
+euler_gpu_mem: 2000
+
+euler_user: lhidde
+euler_env: "gcc/8.2.0 python_gpu/3.9.9"
+
+euler_user: lhidde
+euler_scratch_dir: "/cluster/scratch/{{ euler_user }}"

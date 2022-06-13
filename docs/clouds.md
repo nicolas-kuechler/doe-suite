@@ -11,15 +11,32 @@ So far, we support AWS (aws) and Euler (euler, ETH compute cluster).
 | aws    | Amazon Web Services         |
 | euler  | Euler (ETH compute cluster) |
 
-## Migration guide
+## Cloud multiplexing
 
-After the transition to support for clouds, some things must be changed:
+Doe-suite can load cloud-specific functionality depending on the active cloud.
 
-`does_config/roles` now supports cloud-specific setup scripts for host types:
+For some roles, the Doe Suite will look for the cloud specific  `{cloud}.yml` file.
+If no such file exists, `main.yml` will be used as a fallback.
 
-`main.yml` runs on all hosts and acts as a fallback when no cloud-specific `{cloud}.yml` file exists.
+This cloud multiplexing is enabled for the following roles:
+- `setup-suite`
+- Any `suite-cloud-*` role
+- Any host-specific role, those in `does_config/roles/setup-*`.
 
-## [For devs] Supporting additional clouds
+## Schedulers
+We now have the concept of schedulers that handles the scheduling of jobs. 
+The default scheduler is `tsp` which will be set-up on the OS by the doe suite.
+In some cases, the cloud has its own scheduler, for example `bsub` in Euler.
+The variable `job_scheduler` is used to control which scheduler is used.
+
+We support the same type of multiplexing as for clouds.
+The Doe Suite looks for the specific scheduler implementation in the following roles:
+- `suite-scheduler-enqueue` Enqueue the pending jobs
+- `suite-scheduler-remove` Remove a finished job (unused in `bjobs`, used for `tsp`)
+- `suite-scheduler-status` Get status of a specific job
+
+
+# [For devs] Supporting additional clouds [incomplete]
 
 `main` represents all supported clouds except the ones that have a specific file.
 
