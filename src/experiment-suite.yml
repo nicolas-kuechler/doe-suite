@@ -49,7 +49,7 @@
       tags: [print_action]
       when: id == 'new'
 
-    - name: Setup AWS VPC
+    - name: Setup Cloud Network
       include_role:
         name: suite-cloud-vpc-create
         tasks_from: "{{ 'suite-cloud-vpc-create' | multiplex_tasks(cloud) }}"
@@ -191,7 +191,7 @@
         name: suite-cloud-ec2-delete
         tasks_from: "{{ 'suite-cloud-ec2-delete' | multiplex_tasks(cloud) }}"
 
-    - name: Remove AWS VPC
+    - name: Remove Cloud Network
       include_role:
         name: suite-cloud-vpc-delete
         tasks_from: "{{ 'suite-cloud-vpc-delete' | multiplex_tasks(cloud) }}"

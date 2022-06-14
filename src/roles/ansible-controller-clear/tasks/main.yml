@@ -35,7 +35,7 @@
     state: absent
   when: (ec2_instance_ids | length) > 0
 
-- name: Remove AWS VPC
+- name: Remove Cloud Networ
   ansible.builtin.include_role:
     name: suite-cloud-vpc-delete
     tasks_from: aws

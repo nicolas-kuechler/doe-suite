@@ -27,8 +27,6 @@
 - debug:
     var: host_types
 
-# TODO hly: check we are not running any experiment configurations that are illegal (eg multi-server experiments)
-
 #- name: enrich host list with euler
 #  set_fact:
 #    suite_hosts_lst:
