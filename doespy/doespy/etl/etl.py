@@ -5,6 +5,9 @@ import pandas as pd
 from typing import List, Dict
 
 
+import util
+
+
 ETL_CUSTOM_PACKAGE = "does"
 
 def main(): #suite, suite_id
@@ -29,12 +32,7 @@ def main(): #suite, suite_id
 
     # can search for the last suite_id
     if suite_id == "last":
-        from glob import glob
-        try:
-            suite_ids = [int(os.path.basename(os.path.dirname(x)).split("_")[-1]) for x in glob(os.path.join(results_dir, f"{suite}*", ""))]
-            suite_id = max(suite_ids)
-        except:
-            raise ValueError(f"cannot use `--id last` because no results found in {results_dir} for suite: {suite}")
+        suite_id = util.get_last_suite_id()
 
     suite_dir = os.path.join(results_dir, f"{suite}_{suite_id}")
 

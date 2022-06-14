@@ -8,6 +8,7 @@ cloud?=$(DOES_CLOUD) # env variable with default (aws)
 DOES_CLOUD_STATE?=terminate
 state?=$(DOES_CLOUD_STATE) # env variable with default (terminate)
 
+# TODO: potentially check for pre-requesits (poetry, cookiecutter-> only if new)
 
 new:
 	@if [ ! -f $(does_config_dir)/pyproject.toml ]; then \
@@ -20,11 +21,17 @@ install: new
 	poetry run ansible-galaxy install -r $(PWD)/requirements-collections.yml
 
 
+# add prefix if defined for playbook run cmd
+ifdef expfilter
+	myexpfilter='expfilter=$(expfilter)'
+endif
+
+# TODO [nku] include the expfilter: expfilter=experiment_1
 .PHONY: run
 run: install
 	@cd $(does_config_dir) && \
 	ANSIBLE_CONFIG=$(PWD)/ansible.cfg \
-	poetry run ansible-playbook $(PWD)/src/experiment-suite.yml -e "suite=$(suite) id=$(id)"
+	poetry run ansible-playbook $(PWD)/src/experiment-suite.yml -e "suite=$(suite) id=$(id) $(myexpfilter)"
 
 # TODO [nku] integrate them into run target when they are available
 # TODO [nku] setup + integrate experiment filter
@@ -58,6 +65,14 @@ cloud-setup:
 	@if [ $(cloud) = aws ]; then aws sts get-caller-identity > /dev/null || aws configure; fi
 	@if [ $(cloud) = leonhard ]; then echo "here would do leonhard setup"; fi
 
+test:
+	@cd $(does_config_dir) && \
+	poetry run pytest $(PWD)/doespy -q -s --suite $(suite) --id $(id)
+
+
+info:
+	@cd $(does_config_dir) && \
+	poetry run python $(PWD)/doespy/doespy/info.py
 
 # make install
 # -> ensure env variables are set

@@ -1,1 +1,2 @@
-does_results
+does_results/*
+!does_results/*_expected
