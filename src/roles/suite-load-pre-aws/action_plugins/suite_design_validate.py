@@ -83,6 +83,8 @@ class ActionModule(ActionBase):
         src = module_args["src"]
         dest = module_args["dest"]
 
+        exp_filter = module_args.get("exp_filter")
+
         dirs = {
             "designvars": module_args["prj_designvars_dir"],
             "groupvars": module_args["prj_groupvars_dir"],
@@ -101,7 +103,11 @@ class ActionModule(ActionBase):
         try:
             with open(src) as f:
                 design_raw = yaml.load(f, Loader=UniqueKeyLoader)
+
                 self._validate_and_default_suite(prj_id=prj_id, suite=suite, design_raw=design_raw, dirs=dirs)
+
+            if exp_filter is not None:
+                self._apply_experiment_re_filter(design_raw=design_raw, exp_filter=exp_filter)
 
             with open(dest, 'w+') as f:
                 yaml.dump(design_raw, f, sort_keys=False, width=10000)
@@ -112,6 +118,31 @@ class ActionModule(ActionBase):
 
         return result
 
+    def _apply_experiment_re_filter(self, design_raw, exp_filter):
+        pattern = re.compile(exp_filter)
+        filtered_out_exp_names = []
+        for exp_name in design_raw.keys():
+            if exp_name in ["$ETL$"]:
+                continue
+            if not pattern.match(exp_name):
+                filtered_out_exp_names.append(exp_name)
+
+        # delete the skipped experiments
+        for exp_name in filtered_out_exp_names:
+            del design_raw[exp_name]
+
+        etl_pipelines_to_delete = []
+        for key, pipeline in design_raw.get("$ETL$", {}).items():
+            pipeline["experiments"] = list(filter(lambda x: x not in filtered_out_exp_names, pipeline["experiments"]))
+
+            # no experiments left -> can delete etl pipeline
+            if len(pipeline["experiments"]) == 0:
+                etl_pipelines_to_delete.append(key)
+
+        # delete the surplus etl pipelines
+        for pipeline in etl_pipelines_to_delete:
+            d = design_raw["$ETL$"]
+            del d[pipeline]
 
     def _validate_and_default_suite(self, prj_id, suite, design_raw, dirs):
 
