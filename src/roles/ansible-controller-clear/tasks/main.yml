@@ -35,7 +35,7 @@
     state: absent
   when: (ec2_instance_ids | length) > 0
 
-- name: Remove Cloud Networ
+- name: Remove Cloud Network
   ansible.builtin.include_role:
     name: suite-cloud-network-delete
     tasks_from: aws
