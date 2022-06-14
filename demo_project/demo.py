@@ -1,5 +1,6 @@
 import os, sys, time, json, random, csv
 
+random.seed(1234)
 
 def main():
     print(f"cwd={os.getcwd()}")

@@ -1,5 +1,6 @@
 import argparse, time, json, random, csv, random
 
+random.seed(1234)
 
 def main():
 
