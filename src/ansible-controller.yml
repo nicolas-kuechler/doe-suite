@@ -39,7 +39,7 @@
 
     - name: Setup Cloud Network
       include_role:
-        name: suite-cloud-vpc-create
+        name: suite-cloud-network-create
         tasks_from: aws
 
     - name: Create AWS EC2 instance for ansible controller
