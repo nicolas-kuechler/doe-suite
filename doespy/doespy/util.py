@@ -44,6 +44,43 @@ def get_results_dir():
 def get_folder(suite, suite_id):
     return f"{suite}_{suite_id}"
 
+
+def find_suite_result(suite=None, id="last"):
+    if suite is None and id == "last":
+        # -> last result overall
+        max_suite_id = None
+        for res in  glob(os.path.join(get_results_dir(), "*", "")):
+
+            parts = os.path.basename(os.path.dirname(res)).split("_")
+            suite_id = parts[-1]
+            try:
+                suite_id = int(suite_id)
+                if max_suite_id is None or suite_id > max_suite_id:
+                    max_suite_id = suite_id
+                    suite = "_".join(parts[:-1]) # combine first part together (after removing id)
+            except ValueError:
+                continue
+
+        suite_id = str(max_suite_id)
+
+    elif suite is not None and id == "last":
+        # -> find  highest suite id
+        suite_id = get_last_suite_id(suite)
+
+    elif id != "last":
+        # -> search for folder with this id + compare with suite
+        res = glob(os.path.join(get_results_dir(), f"*_{id}"))
+        assert len(res) == 1
+        parts = os.path.basename(os.path.dirname(res[0])).split("_")
+        found_suite = "_".join(parts[:-1])
+        if suite is None:
+            suite = found_suite
+        else:
+            assert suite == found_suite
+        suite_id = id
+
+    return suite, suite_id
+
 def get_last_suite_id(suite):
     results_dir = get_results_dir()
 

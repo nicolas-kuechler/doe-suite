@@ -8,6 +8,18 @@ cloud?=$(DOES_CLOUD) # env variable with default (aws)
 DOES_CLOUD_STATE?=terminate
 state?=$(DOES_CLOUD_STATE) # env variable with default (terminate)
 
+# add prefix if defined for playbook run cmd
+ifdef expfilter
+	myexpfilter='expfilter=$(expfilter)'
+endif
+
+ifdef suite
+	mysuite=--suite $(suite)
+endif
+
+ifdef id
+	myid=--id $(id)
+endif
 # TODO: potentially check for pre-requesits (poetry, cookiecutter-> only if new)
 
 new:
@@ -21,10 +33,6 @@ install: new
 	poetry run ansible-galaxy install -r $(PWD)/requirements-collections.yml
 
 
-# add prefix if defined for playbook run cmd
-ifdef expfilter
-	myexpfilter='expfilter=$(expfilter)'
-endif
 
 # TODO [nku] include the expfilter: expfilter=experiment_1
 .PHONY: run
@@ -36,7 +44,7 @@ run: install
 # TODO [nku] integrate them into run target when they are available
 # TODO [nku] setup + integrate experiment filter
 run2 :
-	@echo "cloud=$(cloud)   state=$(state)"
+	@echo "cloud=$(cloud)   state=$(state)   $(myexpfilter)"
 
 run-keep: state=keep
 run-keep: run2
@@ -73,6 +81,10 @@ test:
 info:
 	@cd $(does_config_dir) && \
 	poetry run python $(PWD)/doespy/doespy/info.py
+
+status:
+	@cd $(does_config_dir) && \
+	poetry run python $(PWD)/doespy/doespy/status.py $(mysuite) $(myid)
 
 # make install
 # -> ensure env variables are set
