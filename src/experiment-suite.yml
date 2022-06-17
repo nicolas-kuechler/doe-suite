@@ -29,8 +29,8 @@
   tasks:
   - name: Set config
     set_fact:
-      any_errors_fatal_setup: "{{ lookup('ini', 'any_errors_fatal_setup', section='defaults', file='../ansible.cfg') }}"
-      any_errors_fatal_experiments: "{{ lookup('ini', 'any_errors_fatal_experiments', section='defaults', file='../ansible.cfg') }}"
+      any_errors_fatal_setup: "{{ lookup('ini', 'any_errors_fatal_setup', section='defaults', file=ansible_config_file) }}"
+      any_errors_fatal_experiments: "{{ lookup('ini', 'any_errors_fatal_experiments', section='defaults', file=ansible_config_file) }}"
 
   - name: Print any_errors_fatal
     debug:
