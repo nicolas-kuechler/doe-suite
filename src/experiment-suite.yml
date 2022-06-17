@@ -90,25 +90,43 @@
 
 - name: Setup registered host types (part 2) -> apply
   hosts: all  # intersection of hosts in project and in suite (via aws_ec2 dynamic inventory plugin)
-  strategy: linear
-  any_errors_fatal: "{{ hostvars['localhost']['any_errors_fatal_setup'] }}"
+  strategy: free
   tasks:
+  - name: Setup Part 2
+    block:
+    - name: Load group_vars from non-standard location
+      include_vars:
+        dir: "{{ external_group_vars_dir }}/all"
+        ignore_unknown_extensions: True
 
-  - name: Load group_vars from non-standard location
-    include_vars:
-      dir: "{{ external_group_vars_dir }}/all"
-      ignore_unknown_extensions: True
-
-  - name: Execute init roles (incl. common roles for all hosts)
-    include_role:
-      name: "{{ role_name }}"
-    loop: "{{ setup_roles }}"
-    loop_control:
-      loop_var: role_name
-    when: id == 'new' # only setup if it is a new experiment
-
+    - name: Execute init roles (incl. common roles for all hosts)
+      include_role:
+        name: "{{ role_name }}"
+      loop: "{{ setup_roles }}"
+      loop_control:
+        loop_var: role_name
+      when: id == 'new' # only setup if it is a new experiment
+    rescue:
+    - name: Set fact that an experiment has failed
+      set_fact:
+        failed_task: "Host name: {{ inventory_hostname }}, Task name: {{ ansible_failed_task.name }}, Action: {{ ansible_failed_task.action }}"
 
 
+- name: Check for any errors during setup, and terminate all hosts if any error is dected
+  hosts: all  # intersection of hosts in project and in suite (via aws_ec2 dynamic inventory plugin)
+  strategy: free
+  tasks:
+   # via https://stackoverflow.com/questions/64208241/how-to-get-variables-from-all-hosts-in-ansible
+  - name: Check if any host failed
+    set_fact:
+      failed_tasks: "{{ hostvars | dict2items | selectattr('value.failed_task', 'defined') | map(attribute='value.failed_task') }}"
+
+  - name: End execution if any host failed
+    fail: 
+      msg: "Setup failed on at least one host: {{ failed_tasks }}"
+    when:
+      - (failed_tasks | length>0)
+      - hostvars['localhost']['any_errors_fatal_setup']
 
 ##########################################################################
 #   Run Experiment Jobs                                                  #
