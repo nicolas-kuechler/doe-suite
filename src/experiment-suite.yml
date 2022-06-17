@@ -76,7 +76,8 @@
 
 - name: Setup registered host types (part 2) -> apply
   hosts: all  # intersection of hosts in project and in suite (via aws_ec2 dynamic inventory plugin)
-  strategy: free
+  strategy: linear
+  any_errors_fatal: true
   tasks:
 
   - name: Load group_vars from non-standard location
