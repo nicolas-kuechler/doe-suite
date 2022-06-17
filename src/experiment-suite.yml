@@ -23,6 +23,20 @@
 ##########################################################################
 #   Load Experiment State and Setup AWS                                  #
 ##########################################################################
+
+- name: Set and print configuration
+  hosts: localhost
+  tasks:
+  - name: Set config
+    set_fact:
+      any_errors_fatal_setup: "{{ lookup('ini', 'any_errors_fatal_setup', section='defaults', file='../ansible.cfg') }}"
+      any_errors_fatal_experiments: "{{ lookup('ini', 'any_errors_fatal_experiments', section='defaults', file='../ansible.cfg') }}"
+
+  - name: Print any_errors_fatal
+    debug:
+      msg: "any_errors_fatal_setup: {{ any_errors_fatal_setup }}, any_errors_fatal_experiments: {{ any_errors_fatal_experiments }}"
+
+
 - name: Load Experiment State and Setup AWS
   hosts: localhost
 
@@ -77,7 +91,7 @@
 - name: Setup registered host types (part 2) -> apply
   hosts: all  # intersection of hosts in project and in suite (via aws_ec2 dynamic inventory plugin)
   strategy: linear
-  any_errors_fatal: true
+  any_errors_fatal: "{{ hostvars['localhost']['any_errors_fatal_setup'] }}"
   tasks:
 
   - name: Load group_vars from non-standard location
