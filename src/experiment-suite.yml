@@ -114,7 +114,8 @@
 
 - name: Check for any errors during setup, and terminate all hosts if any error is dected
   hosts: all  # intersection of hosts in project and in suite (via aws_ec2 dynamic inventory plugin)
-  strategy: free
+  strategy: linear
+  any_errors_fatal: true
   tasks:
    # via https://stackoverflow.com/questions/64208241/how-to-get-variables-from-all-hosts-in-ansible
   - name: Check if any host failed
