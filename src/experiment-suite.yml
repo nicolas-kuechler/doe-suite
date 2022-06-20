@@ -107,7 +107,7 @@
         loop_var: role_name
       when: id == 'new' # only setup if it is a new experiment
     rescue:
-    - name: Set fact that an experiment has failed
+    - name: Set fact that setup has failed
       set_fact:
         failed_task: "Host name: {{ inventory_hostname }}, Task name: {{ ansible_failed_task.name }}, Action: {{ ansible_failed_task.action }}"
 
@@ -157,13 +157,18 @@
       #       -> could maybe be solved when multi-command setup with comeback of service files is implemented
       rescue:
 
+      - name: Set fact an unexpected error happened
+        set_fact:
+          failed_task: "Host name: {{ inventory_hostname }}, Task name: {{ ansible_failed_task.name }}, Action: {{ ansible_failed_task.action }}"
+        when: is_expected_error is not defined or not is_expected_error
+
       - name: handle unexpected error
         fail:
           msg: unexpected error occured in experiment = {{ exp_name }}
         when: is_expected_error is not defined or not is_expected_error
 
       # the loop until task in `experiment-job` throws an error if the number of tries are exceeded.
-      # here we catch this error and handle this gracefully. (every other error is handled by the previous task)
+      # here we catch this error and handle this gracefully. (every other error is handled by the previous tasks)
       - name: handle expected error if number of tries exceeded
         ansible.builtin.debug:
           msg: number of tries exceeded -> experiment = {{ exp_name }}

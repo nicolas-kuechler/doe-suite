@@ -30,6 +30,18 @@
     - exp_host_lst is defined # list of hosts involved in experiment
         #[{"host_type": x, "exp_host_type_idx": x, "exp_host_type_n": x, "is_controller": x, "public_dns_name": x, "private_dns_name": x}]
 
+  # via https://stackoverflow.com/questions/64208241/how-to-get-variables-from-all-hosts-in-ansible
+- name: Check if any host failed
+  set_fact:
+    failed_tasks: "{{ hostvars | dict2items | selectattr('value.failed_task', 'defined') | map(attribute='value.failed_task') }}"
+
+- name: End execution if any host failed
+  fail: 
+    msg: "Setup failed on at least one host: {{ failed_tasks }}"
+  when:
+    - (failed_tasks | length>0)
+    - hostvars['localhost']['any_errors_fatal_experiments']
+
 #- debug:
 #    var: exp_host_lst
 #
