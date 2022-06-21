@@ -7,7 +7,7 @@ import warnings, yaml, json, csv, os
 from dataclasses import dataclass, field, is_dataclass
 import matplotlib.pyplot as plt
 
-from etl_util import expand_factors
+from doespy.etl.etl_util import expand_factors
 
 @dataclass
 class Extractor(ABC):

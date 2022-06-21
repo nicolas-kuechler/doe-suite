@@ -8,6 +8,8 @@ cloud?=$(DOES_CLOUD) # env variable with default (aws)
 DOES_CLOUD_STATE?=terminate
 state?=$(DOES_CLOUD_STATE) # env variable with default (terminate)
 
+
+
 # add prefix if defined for playbook run cmd
 ifdef expfilter
 	myexpfilter='expfilter=$(expfilter)'
@@ -32,9 +34,6 @@ install: new
 	poetry install && \
 	poetry run ansible-galaxy install -r $(PWD)/requirements-collections.yml
 
-
-
-# TODO [nku] include the expfilter: expfilter=experiment_1
 .PHONY: run
 run: install
 	@cd $(does_config_dir) && \
@@ -42,9 +41,8 @@ run: install
 	poetry run ansible-playbook $(PWD)/src/experiment-suite.yml -e "suite=$(suite) id=$(id) $(myexpfilter)"
 
 # TODO [nku] integrate them into run target when they are available
-# TODO [nku] setup + integrate experiment filter
 run2 :
-	@echo "cloud=$(cloud)   state=$(state)   $(myexpfilter)"
+	@echo "suite=$(suite) id=$(id) cloud=$(cloud)   state=$(state)   $(myexpfilter)"
 
 run-keep: state=keep
 run-keep: run2
@@ -73,9 +71,7 @@ cloud-setup:
 	@if [ $(cloud) = aws ]; then aws sts get-caller-identity > /dev/null || aws configure; fi
 	@if [ $(cloud) = leonhard ]; then echo "here would do leonhard setup"; fi
 
-test:
-	@cd $(does_config_dir) && \
-	poetry run pytest $(PWD)/doespy -q -s --suite $(suite) --id $(id)
+
 
 
 info:
@@ -121,3 +117,16 @@ status:
 
 # make etl suite=example id=new
 # make etl-super config=<path>   -> other params, load defaults from super etl config?
+
+
+rescomp:
+	@cd $(does_config_dir) && \
+	poetry run pytest $(PWD)/doespy -q -s --suite $(suite) --id $(id)
+
+# matches
+test-%:
+	@make run suite=$* id=new
+	@make rescomp suite=$* id=last
+
+# TODO: can add other examples here that we want to test
+test: test-example01-minimal test-example02-single

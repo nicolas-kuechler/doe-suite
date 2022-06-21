@@ -5,7 +5,7 @@ import pandas as pd
 from typing import List, Dict
 
 
-import util
+from doespy import util
 
 
 ETL_CUSTOM_PACKAGE = "does"
@@ -32,7 +32,7 @@ def main(): #suite, suite_id
 
     # can search for the last suite_id
     if suite_id == "last":
-        suite_id = util.get_last_suite_id()
+        suite_id = util.get_last_suite_id(suite)
 
     suite_dir = os.path.join(results_dir, f"{suite}_{suite_id}")
 

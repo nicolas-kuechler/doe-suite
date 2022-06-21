@@ -1,6 +1,6 @@
 import os, yaml, argparse
 
-import util
+from doespy import util
 
 
 def display_suite_status(suite, suite_id):
