@@ -16,7 +16,7 @@
 
 - name: Define public dns
   set_fact:
-    public_dns_hostname: "{{ groups['euler'][0] }}"
+    public_dns_hostname: "{{ hostvars[groups['euler'][0]]['ansible_host'] }}"
 
 - name: Test connection with Euler
   delegate_to: "{{ public_dns_hostname }}"
@@ -43,20 +43,36 @@
       - host_types | dict2items | length == 1
       - host_types | dict2items | first | json_query('value.*.n') | unique | union([1]) | length == 1
 
-- name: Define euler host and determine number of experiments in this host
+- name: Define euler hosts
   set_fact:
-    euler_host_helper:
-      instance_id: euler
-      tags:
-        host_type: "{{ euler_host_type }}" # how to fix? host_types
-        idx: 0
-    euler_host_number_experiments: "{{ host_types[euler_host_type] | dict2items | length }}"
+    euler_host_helper: []
+
+- name: Build hosts
+  set_fact:
+    euler_host_helper: "{{ euler_host_helper + [{'instance_id': my_controller_host, 'tags': { 'host_type': euler_host_type, 'idx': my_idx } }] }}"
+  loop: "{{ groups['is_controller_yes'] }}"
+  loop_control:
+    loop_var: my_controller_host
+    index_var: my_idx
+
+#- name: Define euler host and determine number of experiments in this host
+#  set_fact:
+#    euler_host_helper:
+#      instance_id: euler
+#      tags:
+#        host_type: "{{ euler_host_type }}" # how to fix? host_types
+#        idx: 0
+#    euler_host_number_experiments: "{{ host_types[euler_host_type] | dict2items | length }}"
 
 # This assertion is not required, but current implementation doesnt support multiple experiments on the same host.
-- name: Assert that we only have one experiment in suite
-  assert:
-    that:
-      - euler_host_number_experiments | int == 1
+#- name: Assert that we only have one experiment in suite
+#  assert:
+#    that:
+#      - euler_host_number_experiments | int == 1
+
+- name: Debug
+  debug:
+    var: euler_host_helper
 
 - name: Abuse to_tag_assignment
   set_fact:
@@ -64,7 +80,7 @@
     # list of all instances with their id and other relevant infos
     # [{"instance_id": X, "exp_name": X, "is_controller": X, "host_type": X, "exp_host_type_idx": X, "exp_host_type_n": X, "init_roles": X, "check_status": X}, ...]
   vars:
-    instance_infos: "{{ [euler_host_helper] * euler_host_number_experiments|int }} "
+    instance_infos: "{{ euler_host_helper }} "
 
 - debug:
     var: tag_assignment_lst

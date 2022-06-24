@@ -23,6 +23,8 @@
     dest: "{{ remote.dir }}/code"
     accept_hostkey: yes
     force: yes
+  ignore_errors: yes
+
 
   # TODO [nku] transform such that we can clone a list of repositories
 
