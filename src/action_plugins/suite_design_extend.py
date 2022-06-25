@@ -4,7 +4,7 @@
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
-import copy, itertools, os, collections, argparse, re
+import copy, itertools, os, collections, argparse, re, yaml
 from ansible.utils.vars import merge_hash
 from ansible.plugins.action import ActionBase
 
@@ -57,6 +57,10 @@ class ActionModule(ActionBase):
         exp_specific_vars = module_args["exp_specific_vars"]
 
         result["designs"] = extend_suite_design(suite_design, exp_specific_vars, self._templar)
+
+        if "ext_design_file_output" in module_args:
+            with open(module_args["ext_design_file_output"], 'w+') as f:
+                yaml.dump(result["designs"], f, sort_keys=False, width=10000)
 
         return result
 
