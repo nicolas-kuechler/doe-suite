@@ -24,7 +24,7 @@ class MyLoader(Loader):
 
     def load(self, df: pd.DataFrame, options: Dict, etl_info: Dict) -> None:
         print(f"MyLoader: do nothing  ({df.info()})")
-        #output_dir = self.get_output_dir(options, etl_info["suite_dir"])
+        #output_dir = self.get_output_dir(options, etl_info)
 
 
 class MyPlotLoader(PlotLoader):
@@ -32,7 +32,7 @@ class MyPlotLoader(PlotLoader):
         print(f"MyPlotLoader: do nothing  ({df.info()})")
         if not df.empty:
             fig = self.plot(df)
-            output_dir = self.get_output_dir(options, etl_info["suite_dir"])
+            output_dir = self.get_output_dir(options, etl_info)
             self.save_plot(fig, filename="test", output_dir=output_dir)
 
 

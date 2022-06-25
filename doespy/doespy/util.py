@@ -41,8 +41,40 @@ def get_results_dir():
     results_dir = os.path.join(prj_dir, "does_results")
     return results_dir
 
+def get_suite_results_dir(suite, id):
+
+    # resolve logic with last and defaults if not set
+    suite, id = find_suite_result(suite=suite, id=id)
+
+    return os.path.join(get_results_dir(), get_folder(suite=suite, suite_id=id))
+
+def get_etl_results_dir(suite, id, output_dir="etl_results"):
+    results_dir = get_suite_results_dir(suite, id)
+    return os.path.join(results_dir, output_dir)
+
 def get_folder(suite, suite_id):
     return f"{suite}_{suite_id}"
+
+def from_folder(name):
+    parts = name.split("_")
+    suite_id = parts[-1]
+    suite = "_".join(parts[:-1])
+    return suite, suite_id
+
+
+def get_does_results(ignore_expected=True):
+    results_dir = get_results_dir()
+
+    does_results = []
+    for suite_run_id in os.listdir(results_dir):
+        if os.path.isdir(os.path.join(results_dir, suite_run_id)):
+            suite, suite_id = from_folder(name=suite_run_id)
+
+            if not ignore_expected or suite_id != "$expected":
+                does_results.append({"suite": suite, "suite_id": suite_id})
+
+    return does_results
+
 
 
 def find_suite_result(suite=None, id="last"):
@@ -67,16 +99,19 @@ def find_suite_result(suite=None, id="last"):
         # -> find  highest suite id
         suite_id = get_last_suite_id(suite)
 
-    elif id != "last":
+    elif id != "last" and id != "$expected":
         # -> search for folder with this id + compare with suite
         res = glob(os.path.join(get_results_dir(), f"*_{id}"))
-        assert len(res) == 1
-        parts = os.path.basename(os.path.dirname(res[0])).split("_")
+        assert len(res) == 1, res
+        parts = os.path.basename(res[0]).split("_")
         found_suite = "_".join(parts[:-1])
         if suite is None:
             suite = found_suite
         else:
-            assert suite == found_suite
+            assert suite == found_suite, f"suite={suite}   found_suite={found_suite}"
+        suite_id = id
+    else:
+        suite = suite
         suite_id = id
 
     return suite, suite_id

@@ -10,20 +10,38 @@ from doespy import util
 
 ETL_CUSTOM_PACKAGE = "does"
 
-def main(): #suite, suite_id
+def main():
 
     parser = argparse.ArgumentParser(description="")
-    parser.add_argument("--suite", type=str, required=True)
-    parser.add_argument("--id", type=str, required=True)
+    parser.add_argument("--suite", type=str, required=False)
+    parser.add_argument("--id", type=str, required=False)
+    parser.add_argument("--all", action="store_true", required=False)
 
     # by setting the --design flag, we can make the etl pipeline be run using the etl definition in `does_config/designs`
     # rather than the on in the results directory
     parser.add_argument("--design", action="store_true")
+
+    parser.add_argument("--output", type=str, default="etl_results", required=False)
+
     args = parser.parse_args()
 
-    suite=args.suite
-    suite_id=args.id
-    use_etl_from_design = args.design
+    # ensure that exactly one of --all or (--suite and --id) are set
+    if not ((args.all and args.id is None and args.suite is None) or (not args.all and args.id is not None and args.suite is not None)):
+        parser.error("either --all or --suite and --id are required but both are not possible")
+
+
+    if args.suite is not None and args.id is not None:
+        run(suite=args.suite, suite_id=args.id, use_etl_from_design=args.design, etl_output_dir=args.output)
+    elif args.all:
+        for x in util.get_does_results():
+            run(suite=x["suite"], suite_id=x["suite_id"], use_etl_from_design=args.design, etl_output_dir=args.output)
+    else:
+        raise ValueError("the xor between the options should ensure that this cannot be the case")
+
+
+def run(suite, suite_id, use_etl_from_design, etl_output_dir):
+
+    print(f"Running etl for suite={suite}  id={suite_id} ...")
 
     if "DOES_PROJECT_DIR" not in os.environ:
         raise ValueError(f"env variable: DOES_PROJECT_DIR not set")
@@ -58,7 +76,7 @@ def main(): #suite, suite_id
             pipeline["experiments"] = experiment_names
 
         etl_info = {
-            "suite": suite, "suite_id": suite_id, "pipeline": pipeline_name, "experiments": pipeline["experiments"], "suite_dir": suite_dir
+            "suite": suite, "suite_id": suite_id, "pipeline": pipeline_name, "experiments": pipeline["experiments"], "suite_dir": suite_dir, "etl_output_dir": etl_output_dir
         }
 
         extractors, transformers, loaders = load_selected_processes(pipeline["extractors"], pipeline["transformers"], pipeline["loaders"])

@@ -4,7 +4,7 @@ from inspect import getmembers
 import pandas as pd
 from typing import List, Dict
 
-from etl import _load_config_yaml, load_selected_processes, extract
+from doespy.etl.etl import _load_config_yaml, load_selected_processes, extract
 
 
 def run_multi_suite(config_name: str,

@@ -38,15 +38,24 @@ class Transformer(ABC):
 
 class Loader(ABC):
 
-    def get_output_dir(self, options, suite_dir):
+    # TODO: this is a breaking change
+    #def get_output_dir(self, options, suite_dir, etl_output_dir=None):
+    def get_output_dir(self, options, etl_info):
+
+        suite_dir = etl_info["suite_dir"]
+        etl_output_dir = etl_info["etl_output_dir"]
 
         output_dir_relative_to_suite_dir = bool(options.get("output_dir_relative_to_suite_dir", True))
         output_dir = options.get("output_dir")
 
+
+
         if output_dir is None:
-            path = suite_dir
+            # put everything relative to `etl_output_dir`,` e.g., `etl_results`
+            path = os.path.join(suite_dir, etl_output_dir) if etl_output_dir is not None else suite_dir
         elif output_dir_relative_to_suite_dir:
-            path = os.path.join(suite_dir, output_dir)
+             # put everything relative to `etl_output_dir` (if not None), e.g., `etl_results`
+            path = os.path.join(suite_dir, etl_output_dir, output_dir) if etl_output_dir is not None else os.path.join(suite_dir, output_dir)
         else:
             path = output_dir
 
@@ -316,7 +325,7 @@ class CsvSummaryLoader(Loader):
     def load(self, df: pd.DataFrame, options: Dict, etl_info: Dict) -> None:
         if df.empty:
             print("CsvSummaryLoader: DataFrame is empty so not creating an output file.")
-        output_dir = self.get_output_dir(options, etl_info["suite_dir"])
+        output_dir = self.get_output_dir(options, etl_info)
         df.to_csv(os.path.join(output_dir, f"{etl_info['pipeline']}.csv"))
 
 
