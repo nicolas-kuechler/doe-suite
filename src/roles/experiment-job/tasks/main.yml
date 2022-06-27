@@ -205,7 +205,7 @@
     delegate_to: localhost
     local_action: "command rsync -az '{{ dns_name }}:{{ remote_config_file }}' '{{ local_results_dir_base }}'"
     vars:
-      dns_name: "{{ hostvars[inventory_hostname]['ansible_host'] }}"
+      dns_name: "{{ hostvars[inventory_hostname]['public_dns_name'] }}"
 
 # TODO [nku] encapsulate etl processing failure (an error in etl stage must not stop the suite)-> if fail: catch, write error message to results_dir + print_tag stdout
   - name: Run ETL pipeline over results files
