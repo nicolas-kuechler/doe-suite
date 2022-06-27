@@ -66,6 +66,9 @@ May consist of templating a template inventory file with the relevant parameters
 | setup_roles     |     |
 |                 |     |
 
+`suite_hosts_lst` should contain a variable called `ansible_host_id` that can be used to reference the ansible host in `delegate_to`.
+For AWS this is the public_dns_name, for euler this is the instance name `euler_XX` where `XX` is the experiment id.
+
 ### Scheduler interface
 #### suite-scheduler-enqueue
 Enqueue all jobs to the remote scheduler
