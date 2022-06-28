@@ -201,10 +201,14 @@
     loop_control:
       loop_var: my_host
 
+  - name: Debug save config
+    debug:
+      var: hostvars[inventory_hostname]
+
   - name: Save the config of the job
     delegate_to: localhost
     local_action: "command rsync -az '{{ my_host.public_dns_name }}:{{ remote_config_file }}' '{{ local_results_dir_base }}'"
-    loop: "{{ exp_host_lst }}"
+    loop: "{{ exp_host_lst[:1] }}"
     loop_control:
       loop_var: my_host
 
