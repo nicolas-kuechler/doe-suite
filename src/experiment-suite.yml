@@ -23,6 +23,20 @@
 ##########################################################################
 #   Load Experiment State and Setup AWS                                  #
 ##########################################################################
+
+- name: Set and print configuration
+  hosts: localhost
+  tasks:
+  - name: Set config
+    set_fact:
+      any_errors_fatal_setup: "{{ lookup('ini', 'any_errors_fatal_setup', section='defaults', file=ansible_config_file) }}"
+      any_errors_fatal_experiments: "{{ lookup('ini', 'any_errors_fatal_experiments', section='defaults', file=ansible_config_file) }}"
+
+  - name: Print any_errors_fatal
+    debug:
+      msg: "any_errors_fatal_setup: {{ any_errors_fatal_setup }}, any_errors_fatal_experiments: {{ any_errors_fatal_experiments }}"
+
+
 - name: Load Experiment State and Setup AWS
   hosts: localhost
 
@@ -78,22 +92,42 @@
   hosts: all  # intersection of hosts in project and in suite (via aws_ec2 dynamic inventory plugin)
   strategy: free
   tasks:
+  - name: Setup Part 2
+    block:
+    - name: Load group_vars from non-standard location
+      include_vars:
+        dir: "{{ external_group_vars_dir }}/all"
+        ignore_unknown_extensions: True
 
-  - name: Load group_vars from non-standard location
-    include_vars:
-      dir: "{{ external_group_vars_dir }}/all"
-      ignore_unknown_extensions: True
-
-  - name: Execute init roles (incl. common roles for all hosts)
-    include_role:
-      name: "{{ role_name }}"
-    loop: "{{ setup_roles }}"
-    loop_control:
-      loop_var: role_name
-    when: id == 'new' # only setup if it is a new experiment
-
+    - name: Execute init roles (incl. common roles for all hosts)
+      include_role:
+        name: "{{ role_name }}"
+      loop: "{{ setup_roles }}"
+      loop_control:
+        loop_var: role_name
+      when: id == 'new' # only setup if it is a new experiment
+    rescue:
+    - name: Set fact that setup has failed
+      set_fact:
+        failed_task: "Host name: {{ inventory_hostname }}, Task name: {{ ansible_failed_task.name }}, Action: {{ ansible_failed_task.action }}"
 
 
+- name: Check for any errors during setup, and terminate all hosts if any error is dected
+  hosts: all  # intersection of hosts in project and in suite (via aws_ec2 dynamic inventory plugin)
+  strategy: linear
+  any_errors_fatal: true
+  tasks:
+   # via https://stackoverflow.com/questions/64208241/how-to-get-variables-from-all-hosts-in-ansible
+  - name: Check if any host failed
+    set_fact:
+      failed_tasks: "{{ hostvars | dict2items | selectattr('value.failed_task', 'defined') | map(attribute='value.failed_task') }}"
+
+  - name: End execution if any host failed
+    fail: 
+      msg: "Setup failed on at least one host: {{ failed_tasks }}"
+    when:
+      - (failed_tasks | length>0)
+      - hostvars['localhost']['any_errors_fatal_setup']
 
 ##########################################################################
 #   Run Experiment Jobs                                                  #
@@ -123,13 +157,18 @@
       #       -> could maybe be solved when multi-command setup with comeback of service files is implemented
       rescue:
 
+      - name: Set fact an unexpected error happened
+        set_fact:
+          failed_task: "Host name: {{ inventory_hostname }}, Task name: {{ ansible_failed_task.name }}, Action: {{ ansible_failed_task.action }}"
+        when: is_expected_error is not defined or not is_expected_error
+
       - name: handle unexpected error
         fail:
           msg: unexpected error occured in experiment = {{ exp_name }}
         when: is_expected_error is not defined or not is_expected_error
 
       # the loop until task in `experiment-job` throws an error if the number of tries are exceeded.
-      # here we catch this error and handle this gracefully. (every other error is handled by the previous task)
+      # here we catch this error and handle this gracefully. (every other error is handled by the previous tasks)
       - name: handle expected error if number of tries exceeded
         ansible.builtin.debug:
           msg: number of tries exceeded -> experiment = {{ exp_name }}
