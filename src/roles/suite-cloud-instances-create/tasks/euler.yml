@@ -37,7 +37,7 @@
     euler_host_type: "{{ host_types | dict2items | first | json_query('key') }}"
 
 # Second assertion: How to make sure only the number [1] is contained in the list: | unique | union([1]) | length
-- name: Assert that we only have a single host type and that all number counts equal 1
+- name: The Euler cloud only supports single-instance experiments. Assert that we only have a single host type and that all number counts equal 1
   assert:
     that:
       - host_types | dict2items | length == 1
@@ -54,25 +54,6 @@
   loop_control:
     loop_var: my_controller_host
     index_var: my_idx
-
-#- name: Define euler host and determine number of experiments in this host
-#  set_fact:
-#    euler_host_helper:
-#      instance_id: euler
-#      tags:
-#        host_type: "{{ euler_host_type }}" # how to fix? host_types
-#        idx: 0
-#    euler_host_number_experiments: "{{ host_types[euler_host_type] | dict2items | length }}"
-
-# This assertion is not required, but current implementation doesnt support multiple experiments on the same host.
-#- name: Assert that we only have one experiment in suite
-#  assert:
-#    that:
-#      - euler_host_number_experiments | int == 1
-
-- name: Debug
-  debug:
-    var: euler_host_helper
 
 - name: Abuse to_tag_assignment
   set_fact:
