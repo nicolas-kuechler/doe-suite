@@ -22,6 +22,9 @@ remote:
   dir: "/home/ubuntu"
   results_dir: "/home/ubuntu/results"
 
+# For demo project
+demo_project_python: "{{ 'python' if job_scheduler == 'bsub' else exp_code_dir + '/demo_project/.venv/bin/python' }}"
+
 exp_code_dir: "{{ remote.dir }}/code"
 
 local:
