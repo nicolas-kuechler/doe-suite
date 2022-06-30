@@ -2,46 +2,6 @@
 import json, os
 
 
-
-def tsp_job_finished(tsp_tasks, job_id):
-
-    """
-    return: True if their is a task in tsp_tasks with the given job_id
-    """
-
-    for task in tsp_tasks:
-
-        task_job_id = json.loads(task["label"])
-
-        if task_job_id == job_id:
-            # found matching job
-
-            if task["state"] == "running" or task["state"] ==  "queued":
-                return False
-            elif task["state"] == "finished":
-                return True
-            else:
-                raise ValueError(f"tsp task with unknown task state = {task['state']}   (task={task})")
-
-
-    raise ValueError(f"no matching job found in tsp: {job_id}   tsp_tasks={tsp_tasks}")
-
-def get_tsp_task_id(tsp_tasks, job_id):
-
-    """
-    return: the tsp id of the task with the provided job_id
-    """
-
-    for task in tsp_tasks:
-
-        task_job_id = json.loads(task["label"])
-
-        if task_job_id == job_id:
-            return task["id"]
-
-    raise ValueError(f"no matching job found in tsp: {job_id}   tsp_tasks={tsp_tasks}")
-
-
 def to_job_schedule_lst(job_ids, exp_host_lst, exp_runs_ext, working_base_dir):
 
     job_schedule_lst = []
@@ -95,8 +55,6 @@ class FilterModule(object):
 
     def filters(self):
         return {
-            "tsp_job_finished": tsp_job_finished,
-            "get_tsp_task_id": get_tsp_task_id,
             "to_job_schedule_lst": to_job_schedule_lst,
             "jobid2workingdir": jobid2workingdir,
         }

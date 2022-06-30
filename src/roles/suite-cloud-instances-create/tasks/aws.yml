@@ -55,12 +55,13 @@
     region: '{{ ec2config.aws_region }}'
     security_group: '{{ ec2config.sg_name }}'
     vpc_subnet_id: '{{ ec2config.vpc_subnet_id }}'
+    instance_role: '{{ ec2config.instance_role | default(None) }}'
     wait: no
     purge_tags: yes
     network:
       assign_public_ip: yes
     volumes:
-      - device_name: /dev/sda1
+      - device_name: '{{ volume_root_device_name | default("/dev/sda1") }}'
         ebs:
           volume_type: gp2
           snapshot_id: '{{ ec2config.ec2_volume_snapshot }}'
@@ -135,7 +136,8 @@
 
 - name: Terminate all instances that are not assigned but have the matching prj_id and suite tag
   include_role:
-    name: suite-aws-ec2-delete
+    name: suite-cloud-instances-delete
+    tasks_from: aws
   vars:
     filter_by_suite: True
     instance_ids_in_use: "{{ tag_assignment_lst | json_query('[*].instance_id') }}"
@@ -167,9 +169,9 @@
     public_dns_names: "{{ ec2_instance_info | json_query('instances[*].public_dns_name') }}"
     suite_hosts_lst: []
 
-- name: enrich host list with public_dns_name and private_dns_name
+- name: enrich host list with public_dns_name, private_dns_name and ansible_host_id
   set_fact:
-    suite_hosts_lst: "{{ suite_hosts_lst + [tag_assignment | combine({'public_dns_name': public_dns_lookup[tag_assignment.instance_id], 'private_dns_name': private_dns_lookup[tag_assignment.instance_id]})] }}"
+    suite_hosts_lst: "{{ suite_hosts_lst + [tag_assignment | combine({'public_dns_name': public_dns_lookup[tag_assignment.instance_id], 'private_dns_name': private_dns_lookup[tag_assignment.instance_id], 'ansible_host_id': public_dns_lookup[tag_assignment.instance_id]})] }}"
     # list of all instances with their id and other relevant infos (+ public and private dns names)
     # [{"instance_id": X, "exp_name": X, "is_controller": X, "host_type": X, "exp_host_type_idx": X, "exp_host_type_n": X, "init_roles": X, "check_status": X, "public_dns_name": X, "private_dns_name": X}, ...]
 
@@ -199,23 +201,3 @@
 
 - pause:
     seconds: 5
-
-
-######################################################
-# Set facts on individual hosts
-#####################################################
-
-- name: set variables on different hosts
-  set_fact:
-    suite_id: "{{ hostvars['localhost'].suite_id }}"
-    exp_name: "{{ host_info.exp_name }}"
-    host_type: "{{ host_info.host_type }}"
-    is_controller: "{{ host_info.is_controller }}"
-    exp_host_type_idx: "{{ host_info.exp_host_type_idx }}"
-    exp_host_type_n: "{{ host_info.exp_host_type_n }}"
-    setup_roles: "{{ ['setup-suite'] + hostvars['localhost'].common_roles[host_info.exp_name] + host_info.init_roles }}"
-  delegate_facts: True
-  delegate_to: "{{ host_info.public_dns_name }}"
-  loop: "{{ suite_hosts_lst }}"
-  loop_control:
-    loop_var: host_info

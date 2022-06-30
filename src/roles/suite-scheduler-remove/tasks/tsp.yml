@@ -1,0 +1,14 @@
+---
+
+- assert:
+    that:
+      - job_id_to_wait_for is defined
+      - exp_name is defined
+
+- name: Remove finished job with downloaded results from queue
+  tsp:
+    remove_task_label: "{{ job_id_to_wait_for | to_json | string }}"
+  delegate_to: "{{ host }}"
+  loop: "{{ groups[exp_name] }}"
+  loop_control:
+    loop_var: host

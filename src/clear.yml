@@ -18,11 +18,13 @@
       prj_clear: True
       is_ansible_controller: False
 
-  - name: Clear EC2 instances
+  - name: Clear cloud instances
     include_role:
-      name: suite-aws-ec2-delete
+      name: suite-cloud-instances-delete
+      tasks_from: "{{ 'suite-cloud-instances-delete' | multiplex_tasks(cloud) }}"
 
   - name: Clear VPC
     include_role:
       name: suite-aws-vpc-delete
-    when: exp_base.skip_vpc_delete is undefined or  exp_base.skip_vpc_delete == false
+      tasks_from: "{{ 'suite-cloud-network-delete' | multiplex_tasks(cloud) }}"
+    when: exp_base.skip_network_delete is undefined or  exp_base.skip_network_delete == false

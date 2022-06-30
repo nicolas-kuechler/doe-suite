@@ -1,4 +1,8 @@
 from collections.abc import Iterable
+import os
+import re
+from ansible import constants as ansible_constants
+from ansible import errors
 
 def _flatten(tuple):
 
@@ -90,6 +94,53 @@ def collect_items2dict(lst, key_name, multiset=False):
     return d
 
 
+def multiplex_tasks(role, cloud):
+    """
+
+    :type role: str
+    :type cloud: str
+    """
+    # multiplexes tasks
+    # look in {{ roles_path }}
+    roles_path = ansible_constants.DEFAULT_ROLES_PATH
+
+    role_dir = [os.path.join(directory, role) for directory in roles_path
+                if os.path.isdir(os.path.join(directory, role))]
+    if len(role_dir) == 0:
+        # throw error
+        raise errors.AnsibleFilterError("No role with name %s found in directories %s" %
+                                        (role, ", ".join(roles_path)))
+    elif len(role_dir) > 1:
+        raise errors.AnsibleFilterError("Duplicate roles found: %s" %
+                                 ",".join(role_dir))
+
+    role_dir = role_dir[0]
+    tasks_dir = os.path.join(role_dir, "tasks")
+
+    task_regex = r"^(.*)\.yml*"
+    tasks = [file[:-4] for file in os.listdir(tasks_dir) if re.match(task_regex, file)]
+
+    if cloud in tasks:
+        # if we have a specific yml file
+        return cloud
+    else:
+        # fallback to default implementation
+        return "main"
+
+
+def safe_job_info_string(job_info):
+    """
+    Transforms job_info into a safe string that can be read by external systems
+
+    :type job_info: dict
+    """
+    # transforms job info into safe string
+    order = ["suite", "suite_id", "exp_name", "exp_run", "exp_run_rep"]
+    safe_elements = [f"{item}_{job_info[item]}" for item in order]
+
+    return "__".join(safe_elements)
+
+
 class FilterModule(object):
     ''' jinja2 filters '''
 
@@ -98,4 +149,6 @@ class FilterModule(object):
             'tuple2flat2dict': tuple2flat2dict,
             'tuple2dict': tuple2dict,
             'collect_items2dict': collect_items2dict,
+            'multiplex_tasks': multiplex_tasks,
+            'safe_job_info_string': safe_job_info_string
         }
