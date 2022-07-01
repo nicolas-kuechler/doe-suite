@@ -1,0 +1,16 @@
+---
+- assert:
+    that:
+      - exp_name is defined
+
+- name: Get status of job
+  # Note: if the number of tries are exceeded, the task raises an error which stops this role and is caught in the parent
+  tsp_info:
+  register: tsp_result
+  until: (tsp_result.tasks | tsp_job_finished(job_id_to_wait_for)) | bool
+  retries: "{{ job_n_tries }}"
+  delay: "{{ job_check_wait_time }}"
+  delegate_to: "{{ host }}"
+  loop: "{{ groups[exp_name] | intersect(groups['check_status_yes']) }}" # only check status of jobs for host_types with 'check_status' == true
+  loop_control:
+    loop_var: host

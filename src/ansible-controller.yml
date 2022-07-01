@@ -37,9 +37,10 @@
         dir: "{{ external_group_vars_dir }}/ansible_controller"
         ignore_unknown_extensions: True
 
-    - name: Setup AWS VPC
+    - name: Setup Cloud Network
       include_role:
-        name: suite-aws-vpc-create
+        name: suite-cloud-network-create
+        tasks_from: aws
 
     - name: Create AWS EC2 instance for ansible controller
       include_role:

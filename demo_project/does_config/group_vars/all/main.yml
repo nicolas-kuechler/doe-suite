@@ -42,3 +42,6 @@ exp_base:
   vpc_subnet_cidr: 10.100.0.0/24
   sg_name: "{{ prj_id }}_sg"
   sg_desc: "{{ prj_id }} security group"
+
+# For demo project
+demo_project_python: "{{ 'python' if job_scheduler == 'bsub' else exp_code_dir + '/demo_project/.venv/bin/python' }}"

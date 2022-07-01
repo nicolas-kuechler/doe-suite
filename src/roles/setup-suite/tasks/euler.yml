@@ -6,12 +6,15 @@
     msg: "-> setup suite"
   tags: [print_action]
 
-- name: Update repositories cache and install required packages
-  become: True
-  apt:
-    pkg:
-    - task-spooler
-    update_cache: yes
+#- name: Overwrite euler-specific variables
+#  set_fact:
+#    remote:
+#      dir: "/cluster/home/{{ euler_user }}"
+#      results_dir: "/cluster/home/{{ euler_user }}/results"
+#
+#- name: Debug check
+#  debug:
+#    msg: "{{ exp_code_dir }}"
 
 
 # Use ssh-agent to get code from Git Remote Repository:

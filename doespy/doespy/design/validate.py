@@ -159,9 +159,9 @@ def _validate_and_default_experiment(exp_raw, dirs, suite_vars):
 
     # check that common role actually exists
     for common_role in exp_raw["common_roles"]:
-        role_path = os.path.join(dirs["roles"], common_role, "tasks", "main.yml")
-        if not os.path.isfile(role_path):
-            raise ValueError(f"common_role={common_role} not found -> file does not exist ({role_path})")
+        role_path = os.path.join(dirs["roles"], common_role, "tasks")
+        if not os.path.isdir(role_path):
+            raise ValueError(f"common_role={common_role} not found -> dir does not exist ({role_path})")
 
     if "factor_levels" not in exp_raw:
         exp_raw["factor_levels"] = [{}]
@@ -221,9 +221,9 @@ def _validate_and_default_host_type(host_type_name, host_type_raw, dirs):
 
     ############
     # Check that group vars exist
-    groupvars_path = os.path.join(dirs["groupvars"], host_type_name, "main.yml")
-    if not os.path.isfile(groupvars_path):
-        raise ValueError(f"group_vars for host_type={host_type_name} not found -> file does not exist ({groupvars_path})")
+    groupvars_path = os.path.join(dirs["groupvars"], host_type_name)
+    if not os.path.isdir(groupvars_path):
+        raise ValueError(f"group_vars for host_type={host_type_name} not found -> folder does not exist ({groupvars_path})")
 
 
     #############
@@ -250,9 +250,9 @@ def _validate_and_default_host_type(host_type_name, host_type_raw, dirs):
         raise ValueError("init_roles must be a list")
 
     for init_role in host_type_raw["init_roles"]:
-        role_path = os.path.join(dirs["roles"], init_role, "tasks", "main.yml")
-        if not os.path.isfile(role_path):
-            raise ValueError(f"init_role={init_role} not found -> file does not exist ({role_path})")
+        role_path = os.path.join(dirs["roles"], init_role, "tasks")
+        if not os.path.isdir(role_path):
+            raise ValueError(f"init_role={init_role} not found -> dir does not exist ({role_path})")
 
     #############
     # Convert $CMD$ to default structure

@@ -1,0 +1,16 @@
+all:
+  children:
+    euler:
+      hosts:
+{% for id in range(number_of_experiments|int) %}
+        euler_{{ id }}:
+          ansible_host: login.euler.ethz.ch
+          ansible_user: {{ euler_user }}
+{% endfor %}
+    is_controller_yes:
+      hosts:
+{% for id in range(number_of_experiments|int) %}
+        euler_{{ id }}:
+          ansible_host: login.euler.ethz.ch
+          ansible_user: {{ euler_user }}
+{% endfor %}

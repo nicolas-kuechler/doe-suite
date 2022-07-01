@@ -32,19 +32,18 @@
   hosts: localhost
 
   tasks:
-    - name: Template dynamic inventory config file
-      # we do this because we want to have the project id as an inventory filter (such that only ec2 instances with a corresponding tag are visible)
-      template:
-        src: resources/inventory/aws_ec2.yml.j2
-        dest: inventory/aws_ec2.yml
-        mode: 0755
-      vars:
-        prj_clear: False # controls whether to also filter for the suite or not (for a clear we want to include all instances of the project independent of the suite)
-        is_ansible_controller: False
+    - name: clear dynamic inventory files (must end with .yml)
+      file: path={{ item }} state=absent
+      with_fileglob: inventory/*.yml
 
     - name: resolve suite_id, load and validate suite design, fill default values, and prepare variables
       include_role:
-        name: suite-load-pre-aws
+        name: suite-load-pre-cloud-setup
+
+    - name: prepare dynamic inventory
+      include_role:
+        name: suite-cloud-inventory-setup
+        tasks_from: "{{ 'suite-cloud-inventory-setup' | multiplex_tasks(cloud) }}"
 
     - assert:
         that:
@@ -58,19 +57,36 @@
       tags: [print_action]
       when: id == 'new'
 
-    - name: Setup AWS VPC
+    - name: Setup Cloud Network
       include_role:
-        name: suite-aws-vpc-create
+        name: suite-cloud-network-create
+        tasks_from: "{{ 'suite-cloud-network-create' | multiplex_tasks(cloud) }}"
 
-    - name: Setup AWS EC2 instances
+    - name: Setup cloud instances
       include_role:
-        name: suite-aws-ec2-create
+        name: suite-cloud-instances-create
+        tasks_from: "{{ 'suite-cloud-instances-create' | multiplex_tasks(cloud) }}"
 
     - name: above
       assert:
         that:
-        - suite_hosts_lst is defined
-        - my_suite_design is defined
+          - suite_hosts_lst is defined
+          - my_suite_design is defined
+
+    - name: Set variables for different hosts
+      set_fact:
+        suite_id: "{{ hostvars['localhost'].suite_id }}"
+        exp_name: "{{ host_info.exp_name }}"
+        host_type: "{{ host_info.host_type }}"
+        is_controller: "{{ host_info.is_controller }}"
+        exp_host_type_idx: "{{ host_info.exp_host_type_idx }}"
+        exp_host_type_n: "{{ host_info.exp_host_type_n }}"
+        setup_roles: "{{ ['setup-suite'] + hostvars['localhost'].common_roles[host_info.exp_name] + host_info.init_roles }}"
+      delegate_facts: True
+      delegate_to: "{{ host_info.ansible_host_id }}"
+      loop: "{{ suite_hosts_lst }}"
+      loop_control:
+        loop_var: host_info
 
 
 
@@ -84,14 +100,23 @@
   strategy: free
   tasks:
 
-  - name: Load group_vars from non-standard location
-    include_vars:
-      dir: "{{ external_group_vars_dir }}/all"
-      ignore_unknown_extensions: True
+#  - name: Load group_vars from non-standard location
+#    include_vars:
+#      dir: "{{ external_group_vars_dir }}/all"
+#      ignore_unknown_extensions: True
+
+  - name: Load group variables for host
+    include_role:
+      name: load-group-vars
+    vars:
+      groups_to_load:
+        - all
+        - "{{ host_type }}"
 
   - name: Execute init roles (incl. common roles for all hosts)
     include_role:
       name: "{{ role_name }}"
+      tasks_from: "{{ role_name | multiplex_tasks(cloud) }}"
     loop: "{{ setup_roles }}"
     loop_control:
       loop_var: role_name
@@ -110,7 +135,7 @@
   tasks:
     - name: extending the experiment config + for new suite create the job lists
       include_role:
-        name: suite-load-post-aws
+        name: suite-load-post-cloud-setup
 
     - debug:
         msg: "running experiment jobs for experiment {{ exp_name }}"
@@ -142,7 +167,7 @@
 
 
 ##########################################################################
-#   Cleanup AWS (terminate instances, remove vpc)                        #
+#   Cleanup Cloud (terminate instances, remove vpc)                        #
 ##########################################################################
 
 - name: Cleanup and Utility
@@ -171,12 +196,14 @@
 
     - name: Cleanup AWS
       include_role:
-        name: suite-aws-ec2-delete
+        name: suite-cloud-instances-delete
+        tasks_from: "{{ 'suite-cloud-instances-delete' | multiplex_tasks(cloud) }}"
 
-    - name: Remove AWS VPC
+    - name: Remove Cloud Network
       include_role:
-        name: suite-aws-vpc-delete
-      when: exp_base.skip_vpc_delete is undefined or  exp_base.skip_vpc_delete == false
+        name: suite-cloud-network-delete
+        tasks_from: "{{ 'suite-cloud-network-delete' | multiplex_tasks(cloud) }}"
+      when: exp_base.skip_network_delete is undefined or  exp_base.skip_network_delete == false
 
     # cleanup aws if suite is finished (unless the explicit flag is set to keep the aws environment)
     when: awsclean | default(true) | bool and is_suite_finished

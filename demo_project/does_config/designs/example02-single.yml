@@ -19,7 +19,7 @@ experiment_1:
       init_roles: setup-small
       # runs the python script demo_latency.py within the code directory fetched from the code repository: the demo script creates a result file in csv or json
       # (3) passes arguments on the command line
-      $CMD$: "{{ exp_code_dir }}/demo_project/.venv/bin/python {{ exp_code_dir }}/demo_project/demo_latency.py --opt [% my_run.opt %] --size [% my_run.payload_size_mb %] --out [% my_run.out %]"
+      $CMD$: "{{ demo_project_python }} {{ exp_code_dir }}/demo_project/demo_latency.py --opt [% my_run.opt %] --size [% my_run.payload_size_mb %] --out [% my_run.out %]"
   base_experiment:
     out: json
     payload_size_mb:
@@ -35,7 +35,7 @@ experiment_2:
     small:
       n: 1
       init_roles: setup-small
-      $CMD$: "{{ exp_code_dir }}/demo_project/.venv/bin/python {{ exp_code_dir }}/demo_project/demo.py --config config.json" # (3) uses the config.json in the working dir of the command with the run config
+      $CMD$: "{{ demo_project_python }} {{ exp_code_dir }}/demo_project/demo.py --config config.json" # (3) uses the config.json in the working dir of the command with the run config
 
   base_experiment:
     out: csv

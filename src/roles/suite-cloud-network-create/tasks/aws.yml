@@ -29,7 +29,7 @@
     state: present
     vpc_id: "{{ exp_base.vpc_id }}"
     cidr: "{{ exp_base.vpc_subnet_cidr }}"
-    az: "{{ exp_base.aws_region }}a"
+    az: "{{ exp_base.aws_region }}{{ exp_base.aws_zone | default('a') }}"
     region: "{{ exp_base.aws_region }}"
     resource_tags:
       Name: "{{ exp_base.vpc_subnet_name }}"
