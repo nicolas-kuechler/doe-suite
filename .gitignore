@@ -13,3 +13,9 @@ Pipfile.lock
 
 # MacOS
 .DS_Store
+
+
+.vscode/targets.log
+.vscode/pinned-files.json
+.vscode/configurationCache.log
+.vscode/dryrun.log
