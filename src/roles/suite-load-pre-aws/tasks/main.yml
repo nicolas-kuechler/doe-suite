@@ -81,11 +81,8 @@
 
 - name: validate the suite design and set default values
   suite_design_validate:
-    src: "{{ local.designs_dir }}/{{ suite }}.yml"
+    suite: "{{ suite }}"
     dest: "{{ suite_design_dir }}/suite_design.yml"
-    prj_roles_dir:  "{{ external_roles_dir }}"
-    prj_groupvars_dir: "{{ external_group_vars_dir }}"
-    prj_designvars_dir: "{{ local.designs_dir }}/design_vars"
     exp_filter: "{{ expfilter | default(omit) }}"
   when: id == 'new' # only validate and resolve defaults for new (otherwise load the old already checked version)
 

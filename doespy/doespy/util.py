@@ -26,15 +26,32 @@ def get_project_id():
 
 
 def get_suite_design(suite):
-    path = os.path.join(get_config_dir(), "designs", f"{suite}")
+    path = get_suite_design_path(suite)
     with open(path, "r") as f:
         design = yaml.load(f, Loader=yaml.SafeLoader)
     return design
+
+def get_suite_design_path(suite):
+    path = os.path.join(get_config_dir(), "designs", f"{suite}.yml")
+    return path
 
 def get_config_dir():
     prj_dir = get_project_dir()
     config_dir = os.path.join(prj_dir, "does_config")
     return config_dir
+
+
+def get_suite_design_dir():
+    return os.path.join(get_config_dir(), "designs")
+
+def get_suite_design_vars_dir():
+    return os.path.join(get_suite_design_dir(), "design_vars")
+
+def get_suite_group_vars_dir():
+    return os.path.join(get_config_dir(), "group_vars")
+
+def get_suite_roles_dir():
+    return os.path.join(get_config_dir(), "roles")
 
 def get_results_dir():
     prj_dir = get_project_dir()
@@ -47,6 +64,26 @@ def get_suite_results_dir(suite, id):
     suite, id = find_suite_result(suite=suite, id=id)
 
     return os.path.join(get_results_dir(), get_folder(suite=suite, suite_id=id))
+
+
+def get_all_suite_results_dir():
+
+    results=[]
+    for res in glob(os.path.join(get_results_dir(), "*", "")):
+
+        parts = os.path.basename(os.path.dirname(res)).split("_")
+        suite_id = parts[-1]
+        suite = "_".join(parts[:-1]) # combine first part together (after removing id)
+
+        try:
+            _id_num = int(suite_id)
+            id_is_number = True
+        except ValueError:
+            id_is_number = False
+
+        results.append({"suite": suite, "suite_id": suite_id, "path": res, "id_is_number": id_is_number})
+
+    return results
 
 def get_etl_results_dir(suite, id, output_dir="etl_results"):
     results_dir = get_suite_results_dir(suite, id)

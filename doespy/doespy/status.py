@@ -40,6 +40,7 @@ def get_suite_status(dir):
         suite_status[exp]["n_jobs"] = len(state["exp_job_ids"])
         suite_status[exp]["n_jobs_unfinished"] = len(state["exp_job_ids_unfinished"])
         suite_status[exp]["n_jobs_finished"] = len(state["exp_job_ids_finished"])
+        suite_status[exp]["is_complete"] = len(state["exp_job_ids_unfinished"]) == 0
 
     return suite_status, etl_error
 

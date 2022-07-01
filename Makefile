@@ -13,6 +13,7 @@ ifdef expfilter
 	myexpfilter='expfilter=$(expfilter)'
 endif
 
+# TODO [nku] would it be possible if suite not defined and required to show available suites and take number input?
 ifdef suite
 	mysuite=--suite $(suite)
 endif
@@ -28,11 +29,21 @@ help:
 	@echo '  make run suite=<SUITE> id=<ID>                      - continue with the experiments in the suite with <ID> (often id=last)'
 	@echo '  make run suite=<SUITE> id=<ID> cloud=<CLOUD>        - run suite on non-default cloud ([aws], euler)'
 	@echo '  make run suite=<SUITE> id=<ID> expfilter=<REGEX>    - run only subset of experiments in suite where name matches the <REGEX>'
+	@echo 'Clean'
+	@echo '  make clean                                          - terminate running cloud instances belonging to the project and local cleanup'
+	@echo '  make clean-result                                   - delete all results in does_results except for one suite run per suite (the last complete)'
 	@echo 'Running ETL'
 	@echo '  make etl suite=<SUITE> id=<ID>                      - run the etl pipeline of the suite (locally) to process results (often id=last)'
+	@echo '  make etl-all                                        - run etl pipelines of all results'
+	@echo 'Clean ETL'
+	@echo '  make etl-clean suite=<SUITE> id=<ID>                - delete etl results from specific suite (can be regenerated with make etl ...)'
+	@echo '  make etl-clean-all                                  - delete etl results from all suites (can be regenerated with make etl-all)'
 	@echo 'Gather Information'
 	@echo '  make info                                           - list available suite designs'
 	@echo '  make status suite=<SUITE> id=<ID>                   - show the status of a specific suite run (often id=last)'
+	@echo 'Design of Experiment Suites'
+	@echo '  make design suite=<SUITE>                           - list all the run commands defined by the suite'
+	@echo '  make design-validate suite=<SUITE>                  - validate suite design and show with default values'
 	@echo 'Setting up a Suite'
 	@echo '  make new                                            - initialize does_config from a template'
 	@echo 'Running Tests'
@@ -77,7 +88,6 @@ install: new
 #
 #################################
 # https://patorjk.com/software/taag/#p=display&h=2&v=2&f=Small&t=RUN
-
 
 # run a all experiments in a suite
 .PHONY: run
@@ -151,19 +161,31 @@ etl-test-all:
 # https://patorjk.com/software/taag/#p=display&h=2&v=2&f=Small&t=CLEAN
 
 
-# clean the results after confirmation
-clean-res:
-	@echo -n "Are you sure to delete all the results in $(does_results_dir)? [y/N] " && read ans && [ $${ans:-N} = y ]
-	@echo deleting results
 
-# TODO: setup clean commands local -> delete python cache files
-clean-local:
+# delete surplus python files: https://gist.github.com/lumengxi/0ae4645124cd4066f676
+clean-local-py:
+	@find . -name '*.pyc' -exec rm -f {} +
+	@find . -name '*.pyo' -exec rm -f {} +
+	@find . -name '*~' -exec rm -f {} +
+	@find . -name '__pycache__' -exec rm -fr {} +
+	@find . -name '.pytest_cache' -exec rm -fr {} +
+
+# delete all incomplete results
+clean-result-incomplete:
+	@echo -n "Are you sure to delete all the incomplete results in $(does_results_dir)? [y/N] " && read ans && [ $${ans:-N} = y ]
+	@cd $(does_config_dir) && \
+	poetry run python $(PWD)/doespy/doespy/result_clean.py --incomplete
+
+# only keep one suite run per suite (the last complete)
+clean-result:
+	@echo -n "Are you sure to delete all the results in $(does_results_dir) except for the ones with the highest id? [y/N] " && read ans && [ $${ans:-N} = y ]
+	@cd $(does_config_dir) && \
+	poetry run python $(PWD)/doespy/doespy/result_clean.py --keeplast
 
 clean-cloud :
-	echo hello
+	echo execute command to clean (terminate) the cloud
 
-#
-clean: clean-local clean-cloud
+clean: clean-local-py clean-cloud
 
 
 #################################
@@ -207,3 +229,21 @@ test-%:
 
 # runs the listed suites and compares the result with the expected result under `does_results`
 test: test-example01-minimal test-example02-single
+
+
+#################################
+#   ___  ___ ___ ___ ___ _  _
+# |   \| __/ __|_ _/ __| \| |
+# | |) | _|\__ \| | (_ | .` |
+# |___/|___|___/___\___|_|\_|
+#
+#################################
+
+design:
+	@cd $(does_config_dir) && \
+	poetry run python $(PWD)/doespy/doespy/design/validate_extend.py --suite $(suite) --ignore-undefined-vars
+
+
+design-validate:
+	@cd $(does_config_dir) && \
+	poetry run python $(PWD)/doespy/doespy/design/validate_extend.py --suite $(suite) --ignore-undefined-vars --only-validate
