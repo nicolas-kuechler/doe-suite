@@ -1,0 +1,7 @@
+---
+
+instance_type: t2.medium
+ec2_volume_size: 16
+
+ec2_image_id: ami-08481eff064f39a84
+ec2_volume_snapshot: snap-0b8d7894c93b6df7a
