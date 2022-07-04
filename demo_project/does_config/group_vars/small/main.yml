@@ -5,3 +5,15 @@ ec2_volume_size: 16
 
 ec2_image_id: ami-08481eff064f39a84
 ec2_volume_snapshot: snap-0b8d7894c93b6df7a
+
+
+
+euler_job_minutes: 120 # individual job time
+euler_cpu_cores: 4
+euler_cpu_mem: 3072
+euler_gpu_number: 1
+euler_gpu_mem: 2000
+
+euler_env: "gcc/8.2.0 python_gpu/3.9.9"
+
+euler_scratch_dir: "/cluster/scratch/{{ euler_user }}"

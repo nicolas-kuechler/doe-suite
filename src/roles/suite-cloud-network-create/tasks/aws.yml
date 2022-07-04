@@ -64,7 +64,6 @@
         gateway_id: "{{ exp_base.igw_id }}"
 
 - name: Create Security Group
-  # TODO [nku] raises warning: [WARNING]: Collection ansible.netcommon does not support Ansible version 2.11.5
   amazon.aws.ec2_group:
     name: "{{ exp_base.sg_name }}"
     description: "{{ exp_base.sg_desc }}"

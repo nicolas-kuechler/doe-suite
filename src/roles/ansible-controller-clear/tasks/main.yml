@@ -7,17 +7,9 @@
         "tag:name": "{{ ansible_controller }}"
   register: ec2_instance_info
 
-# TODO: remove
-- debug:
-    msg: "ec2_instance_info: {{ ec2_instance_info }}"
-
 - name: Extract instance ids of ec2 instances to remove
   ansible.builtin.set_fact:
     ec2_instance_ids: "{{ ec2_instance_info | json_query('*.instances[*].instance_id') | list | flatten }}"
-
-# TODO: remove
-- debug:
-    msg: "ec2_instance_ids: {{ ec2_instance_ids }}"
 
 - ansible.builtin.pause:
     seconds: 10

@@ -2,11 +2,11 @@
 prj_id: example_{{ does_project_id_suffix }} #| default('', True) }}
 
 # TODO: set remote repository (code will be cloned on each remote host)
-git_remote_repository: git@github.com:nicolas-kuechler/doe-suite.git
+#git_remote_repository: git@github.com:nicolas-kuechler/doe-suite.git
 # Can also get multiple repos and with a specific branch / commit
-#git_remote_repository:
-#- repo: git@github.com:nicolas-kuechler/doe-suite.git
-#  version: main
+git_remote_repository:
+- repo: git@github.com:nicolas-kuechler/doe-suite.git
+  version: etl # TODO [nku] switch back
 #- repo: git@github.com:nicolas-kuechler/doe-suite.git
 #  version: etl
 

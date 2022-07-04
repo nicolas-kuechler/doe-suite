@@ -5,6 +5,12 @@
     "host_ec2_volume_size": 16,
     "host_ec2_ami": "<LATEST-AMI>",
     "host_ec2_volume_snapshot": "<LATEST-VOLUME-SNAPSHOT>",
+    "euler_job_minutes": 120,
+    "euler_cpu_cores": 4,
+    "euler_cpu_mem": 3072,
+    "euler_gpu_number": 1,
+    "euler_gpu_mem": 2000,
+    "euler_env": "gcc/8.2.0 python_gpu/3.9.9",
     "repo": "git@github.com:nicolas-kuechler/doe-suite.git",
     "relative_path_does_config_to_doespy": "<AUTO-PATH>"
 }

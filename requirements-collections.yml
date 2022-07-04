@@ -2,3 +2,5 @@
 collections:
 - community.general
 - community.aws
+- ansible.netcommon
+- amazon.aws
