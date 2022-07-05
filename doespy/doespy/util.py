@@ -1,6 +1,6 @@
-import os, yaml
+import os, yaml, jinja2
 from glob import glob
-from jinja2 import Environment
+
 
 def get_project_dir():
     if "DOES_PROJECT_DIR" not in os.environ:
@@ -21,15 +21,21 @@ def get_project_id():
     with open(os.path.join(get_config_dir(), "group_vars", "all", "main.yml")) as f:
         vars = yaml.load(f, Loader=yaml.SafeLoader)
 
-    prj_id = Environment().from_string(vars["prj_id"]).render(does_project_id_suffix=suffix)
+    prj_id = jinja2.Environment().from_string(vars["prj_id"]).render(does_project_id_suffix=suffix)
     return prj_id
 
 
 def get_suite_design(suite):
     path = get_suite_design_path(suite)
-    with open(path, "r") as f:
-        design = yaml.load(f, Loader=yaml.SafeLoader)
-    return design
+
+    env = jinja2.Environment(loader=jinja2.FileSystemLoader(get_suite_design_dir()), undefined=jinja2.DebugUndefined)
+
+    template = env.get_template(f"{suite}.yml")
+    template_vars = {}
+    suite_design = template.render(**template_vars)
+
+    suite_design = yaml.load(suite_design, Loader=yaml.SafeLoader)
+    return suite_design
 
 def get_suite_design_path(suite):
     path = os.path.join(get_config_dir(), "designs", f"{suite}.yml")

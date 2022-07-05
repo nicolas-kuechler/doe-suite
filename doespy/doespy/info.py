@@ -9,8 +9,6 @@ def display_info():
     print("Suites")
     print("------------------")
     for suite in sorted(get_suite_designs()):
-
-
         etl = "x" if len(get_etl_pipelines(suite)) > 0 else " "
         pad = (30 - len(suite)) * " "
         print(f"{suite} {pad}etl[{etl}]")
@@ -27,7 +25,9 @@ def get_suite_designs():
 
     designs = []
     for path in glob.glob(designs_dir):
-        designs.append(os.path.basename(path))
+
+        suite = os.path.splitext(os.path.basename(path))[0]
+        designs.append(suite)
     return designs
 
 def get_experiments(suite):
