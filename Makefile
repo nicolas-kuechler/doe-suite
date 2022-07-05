@@ -183,7 +183,9 @@ clean-result:
 	poetry run python $(PWD)/doespy/doespy/result_clean.py --keeplast
 
 clean-cloud :
-	echo execute command to clean (terminate) the cloud
+	@cd $(does_config_dir) && \
+	ANSIBLE_CONFIG=$(PWD)/ansible.cfg \
+	poetry run ansible-playbook $(PWD)/src/clear.yml
 
 clean: clean-local-py clean-cloud
 
