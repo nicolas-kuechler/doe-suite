@@ -44,4 +44,4 @@ exp_base:
   sg_desc: "{{ prj_id }} security group"
 
 # For demo project
-demo_project_python: "{{ 'python' if job_scheduler == 'bsub' else exp_code_dir + '/demo_project/.venv/bin/python' }}"
+demo_project_python: "{{ exp_code_dir + '/demo_project/.venv/bin/python' }}"

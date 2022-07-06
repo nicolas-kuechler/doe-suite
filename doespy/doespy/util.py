@@ -1,4 +1,4 @@
-import os, yaml, jinja2
+import os, yaml, jinja2, jmespath
 from glob import glob
 
 
@@ -25,10 +25,12 @@ def get_project_id():
     return prj_id
 
 
-def get_suite_design(suite):
-    path = get_suite_design_path(suite)
+def get_suite_design(suite, folder=None):
 
-    env = jinja2.Environment(loader=jinja2.FileSystemLoader(get_suite_design_dir()), undefined=jinja2.DebugUndefined)
+    if folder is None:
+        folder =  get_suite_design_dir()
+
+    env = jinja2_env(loader=jinja2.FileSystemLoader(folder), undefined=jinja2.DebugUndefined)
 
     template = env.get_template(f"{suite}.yml")
     template_vars = {}
@@ -176,3 +178,25 @@ def get_last_suite_id(suite):
         raise ValueError(f"cannot use `--id last` because no results found in {results_dir} for suite: {suite}")
 
     return str(max_suite_id)
+
+
+
+def jinja2_env(loader, undefined, variable_start_string="{{", variable_end_string="}}"):
+
+    env = jinja2.Environment(loader=loader, undefined=undefined, variable_start_string=variable_start_string, variable_end_string=variable_end_string)
+
+    def lookup(type, var):
+        if type == "env":
+            return os.environ[var]
+        else:
+            raise ValueError(f"this type of lookup is not supported: {type}  (var={var})")
+
+    env.globals['lookup'] = lookup
+
+
+    # small hack to also provide json_query functionality
+    def json_query(data, expr):
+        return jmespath.search(expr, data)
+    env.filters['json_query'] = json_query
+
+    return env

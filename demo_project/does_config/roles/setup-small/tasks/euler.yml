@@ -1,24 +1,47 @@
 ---
 
 - debug:
-    msg: "-> small only"
+    msg: "-> small only: {{ exp_host_type_idx }}"
   tags: [print_action]
 
-- name: Download install-poetry.py
-  ansible.builtin.get_url:
-    url: https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py
-    dest: /tmp/get-poetry.py
+- block:
 
-- name: Install requirements.txt
-  shell: |
-    source /etc/profile
-    source ~/.bash_profile
-    . /cluster/apps/local/env2lmod.sh
-    module load {{ euler_env }}
-    python /tmp/get-poetry.py
-    source $HOME/.poetry/env
-    poetry export -f requirements.txt --output requirements.txt
-    pip install --user -r requirements.txt
-  args:
-    chdir: "{{ exp_code_dir }}"
-    executable: /bin/bash
+    - name: Download install-poetry.py
+      ansible.builtin.get_url:
+        url:  https://install.python-poetry.org/install-poetry.py
+        dest: ~/install-poetry.py
+
+    - name: Install poetry
+      ansible.builtin.shell:
+        cmd: module load {{ euler_env }} && python  ~/install-poetry.py
+
+    # TODO: HIDDE any reason for this install via requirements.txt?
+    #- name: Install requirements.txt
+    #  shell: |
+    #    source /etc/profile
+    #    source ~/.bash_profile
+    #    . /cluster/apps/local/env2lmod.sh
+    #    module load {{ euler_env }}
+    #    python /tmp/get-poetry.py
+    #    source $HOME/.poetry/env
+    #    poetry export -f requirements.txt --output requirements.txt
+    #    pip install --user -r requirements.txt
+    #  args:
+    #    chdir: "{{ exp_code_dir }}"
+    #    executable: /bin/bash
+
+    - name: make path to poetry available in variable
+      set_fact:
+        poetry: ~/.local/bin/poetry
+
+    - name: Set config to create .venv folder in project directory
+      ansible.builtin.shell:
+        cmd: "module load {{ euler_env }} && {{ poetry }} config virtualenvs.in-project true --local"
+        chdir: "{{ exp_code_dir }}/demo_project"
+
+
+    - name: Install python packages with poetry (-> afterward can run {{ poetry }} run python demo.py)
+      ansible.builtin.shell:
+        cmd: "module load {{ euler_env }} && {{ poetry }} install"
+        chdir: "{{ exp_code_dir }}/demo_project"
+  when: exp_host_type_idx | int == 0

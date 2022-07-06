@@ -1,5 +1,7 @@
-import copy, itertools, os, collections, argparse, re, yaml, jinja2, json
+import copy, itertools, os, collections, argparse, re, yaml, jinja2, json, jmespath
 from ansible.utils.vars import merge_hash
+
+from doespy import util
 
 
 #def extend(src, exp_specific_vars, ansible_vars):
@@ -50,7 +52,8 @@ def extend(suite_design, exp_specific_vars):
                     run_config["$CMD$"][host_type] = exp["host_types"][host_type]["$CMD$"]
 
                 # resolve [% %] for specific factor level
-                env = jinja2.Environment(undefined=jinja2.StrictUndefined, variable_start_string="[%", variable_end_string="%]")
+                env = util.jinja2_env(loader=None, undefined=jinja2.StrictUndefined, variable_start_string="[%", variable_end_string="%]")
+
                 template = json.dumps(run_config)
                 while "[%" in template and "%]" in template:
                     # temporary convert to a dict

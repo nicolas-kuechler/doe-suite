@@ -18,8 +18,7 @@ def main(suite, design_files_dir=util.get_suite_design_dir(), only_validate_desi
     undefined = jinja2.DebugUndefined if ignore_undefined_vars else jinja2.StrictUndefined
 
     # load suite design and apply templating (resolve {{ }} in design)
-    env = jinja2.Environment(loader=jinja2.FileSystemLoader(design_files_dir), undefined=undefined)
-
+    env = util.jinja2_env(loader=jinja2.FileSystemLoader(design_files_dir), undefined=undefined)
     template = env.get_template(f"{suite}.yml")
     suite_design = template.render(**template_vars)
 
