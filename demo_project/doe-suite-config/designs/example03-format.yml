@@ -12,7 +12,7 @@
 
 # experiment in the pure `cross` format
 format_cross:
-  n_repetitions: 3
+  n_repetitions: 1 # no repetition
   host_types:
     small:
       n: 1
@@ -46,7 +46,7 @@ format_cross:
 
 # experiment in the pure `level list` format
 format_levellist:
-  n_repetitions: 3
+  n_repetitions: 1 # no repetition
   host_types:
     small: # use one instance
       n: 1
@@ -79,7 +79,7 @@ format_levellist:
 
 # experiment in a `mixed` format of `cross`and `level list`format
 format_mixed:
-  n_repetitions: 3
+  n_repetitions: 1 # no repetition
   host_types:
     small:
       n: 1

@@ -1,5 +1,5 @@
-does_config_dir=$(DOES_PROJECT_DIR)/does_config
-does_results_dir=$(DOES_PROJECT_DIR)/does_results
+does_config_dir=$(DOES_PROJECT_DIR)/doe-suite-config
+does_results_dir=$(DOES_PROJECT_DIR)/doe-suite-results
 
 DOES_CLOUD?=aws
 cloud?=$(DOES_CLOUD) # env variable with default (aws)
@@ -31,7 +31,7 @@ help:
 	@echo '  make run suite=<SUITE> id=<ID> expfilter=<REGEX>    - run only subset of experiments in suite where name matches the <REGEX>'
 	@echo 'Clean'
 	@echo '  make clean                                          - terminate running cloud instances belonging to the project and local cleanup'
-	@echo '  make clean-result                                   - delete all results in does_results except for one suite run per suite (the last complete)'
+	@echo '  make clean-result                                   - delete all results in doe-suite-results except for one suite run per suite (the last complete)'
 	@echo 'Running ETL'
 	@echo '  make etl suite=<SUITE> id=<ID>                      - run the etl pipeline of the suite (locally) to process results (often id=last)'
 	@echo '  make etl-all                                        - run etl pipelines of all results'
@@ -45,7 +45,7 @@ help:
 	@echo '  make design suite=<SUITE>                           - list all the run commands defined by the suite'
 	@echo '  make design-validate suite=<SUITE>                  - validate suite design and show with default values'
 	@echo 'Setting up a Suite'
-	@echo '  make new                                            - initialize does_config from a template'
+	@echo '  make new                                            - initialize doe-suite-config from a template'
 	@echo 'Running Tests'
 	@echo '  make test                                           - running all suites sequentially and comparing results to expected'
 	@echo '  make etl-test-all                                   - re-run all etl pipelines and compare results to current state (useful after update of etl step)'
@@ -62,10 +62,10 @@ help:
 #################################
 # https://patorjk.com/software/taag/#p=display&h=2&v=2&f=Small&t=SETUP
 
-# initialize a does_config from cookiecutter template (use defaults + ask user for inputs)
+# initialize a doe-suite-config from cookiecutter template (use defaults + ask user for inputs)
 new:
 	@if [ ! -f $(does_config_dir)/pyproject.toml ]; then \
-		cookiecutter cookiecutter-does_config -o $(DOES_PROJECT_DIR); \
+		cookiecutter cookiecutter-doe-suite-config -o $(DOES_PROJECT_DIR); \
 	fi
 
 # depending on`cloud` variable, check if connection can be established
@@ -199,7 +199,7 @@ clean: clean-local-py clean-cloud
 #################################
 # https://patorjk.com/software/taag/#p=display&h=2&v=2&f=Small&t=INFO
 
-# list infos about the does_config (config + designs)
+# list infos about the doe-suite-config (config + designs)
 info:
 	@cd $(does_config_dir) && \
 	poetry run python $(PWD)/doespy/doespy/info.py
@@ -228,9 +228,12 @@ rescomp:
 test-%:
 	@make run suite=$* id=new
 	@make rescomp suite=$* id=last
+# runs the listed suites and compares the result with the expected result under `doe-suite-results`
+test: test-example01-minimal test-example02-single test-example03-format test-example06-vars
+# roughly took 20 mins
 
-# runs the listed suites and compares the result with the expected result under `does_results`
-test: test-example01-minimal test-example02-single
+
+
 
 
 #################################

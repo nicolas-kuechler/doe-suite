@@ -1,3 +1,3 @@
-does_results/*
+doe-suite-results/*
 # TODO [nku] in the end comment this in
-#!does_results/*_$expected
+#!doe-suite-results/*_$expected

@@ -23,7 +23,7 @@ The general layout is as follows:
     << host_type_1 >>:
       n: << nr >>
       check_status: << boolean (optional) >>
-      init_role: << ansible-role-name >>
+      init_roles: << ansible-role-name >>
   base_experiment:
     << global_variable_1 >>: << nr, str, or $FACTOR$ >>
     host_vars:
@@ -44,8 +44,8 @@ Examples are in the [designs folder](../experiments/designs).
 
 #### Keywords
 
-A suite design is a dict (YAML object) of experiments. The keys of the dict are the (unique) experiment names of the suite. 
-In addition, there are special keywords that start with a `$` and are used to configure the suite. 
+A suite design is a dict (YAML object) of experiments. The keys of the dict are the (unique) experiment names of the suite.
+In addition, there are special keywords that start with a `$` and are used to configure the suite.
 
 | Keyword                   | Required          | Type | Short Description |
 | ------------------------- | ----------------- | ---- | ----------------- |
@@ -71,7 +71,7 @@ In addition, there are special keywords that start with a `$` and are used to co
 | `n`           | yes               | int   | Number of EC2 instances |
 | `$CMD$`       | yes               | dict  | Dictionary of hosts with their run starting commands. |
 | `check_status` | no (default: True) | bool | Boolean set to true when the status of this host type should be checked when evaluating whether a job finished |
-| `init_role`   | no (default: [])  | str or list | One or more Ansible role(s) that are run for hosts of this type during the initial setup. A single role can be specified as string, multiple roles need to use list notation. |
+| `init_roles`   | no (default: [])  | str or list | One or more Ansible role(s) that are run for hosts of this type during the initial setup. A single role can be specified as string, multiple roles need to use list notation. |
 
 ##### Base Experiment Keywords
 
@@ -79,7 +79,7 @@ In addition, there are special keywords that start with a `$` and are used to co
 
 | Keyword         | Required | Type         | Short Description |
 | -------------   | -------- | ------------ | ----------------- |
-| `$INCLUDE_VARS$`| no       | str or list  | Load default variables from a file in `does_config/designs/design_vars`.|
+| `$INCLUDE_VARS$`| no       | str or list  | Load default variables from a file in `doe-suite-config/designs/design_vars`.|
 | `host_vars`     | no       | dict         | Defines variables for the different host types here. |
 
 

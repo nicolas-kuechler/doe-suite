@@ -45,7 +45,7 @@ def get_suite_design_path(suite):
 
 def get_config_dir():
     prj_dir = get_project_dir()
-    config_dir = os.path.join(prj_dir, "does_config")
+    config_dir = os.path.join(prj_dir, "doe-suite-config")
     return config_dir
 
 
@@ -63,7 +63,7 @@ def get_suite_roles_dir():
 
 def get_results_dir():
     prj_dir = get_project_dir()
-    results_dir = os.path.join(prj_dir, "does_results")
+    results_dir = os.path.join(prj_dir, "doe-suite-results")
     return results_dir
 
 def get_suite_results_dir(suite, id):

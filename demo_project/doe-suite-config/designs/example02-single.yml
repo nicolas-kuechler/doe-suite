@@ -10,9 +10,9 @@
 #  (6) we can use the Python range syntax do define $FACTORS$ via jinja
 
 
-# experiment with two factors: one with 4 levels and one with two levels (cross-product). We repeat each run config 3 times.
+# experiment with two factors: one with 3 levels and one with 2 levels (cross-product). We repeat each run config twice.
 experiment_1:
-  n_repetitions: 3  # (4) each of the 8 run configurations is repeated 3x -> 24 jobs
+  n_repetitions: 2  # (4) each of the 6 run configurations is repeated 2x -> 12 jobs
   host_types:
     small:
       n: 1
@@ -23,14 +23,14 @@ experiment_1:
   base_experiment:
     out: json
     payload_size_mb:
-      $FACTOR$: [10, 20, 30, 40]
+      $FACTOR$: [10, 20, 30]
     opt:
       $FACTOR$: [True, False]
 
 
 # experiment with one factor, with 3 levels, and three repetitions (each)
 experiment_2:
-  n_repetitions: 3 # (4) each of the 5 run configurations is repeated 3x -> 15 jobs
+  n_repetitions: 3 # (4) each of the 3 run configurations is repeated 3x -> 9 jobs
   host_types:
     small:
       n: 1

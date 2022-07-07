@@ -1,14 +1,17 @@
 
-prj_id: example_{{ does_project_id_suffix }} #| default('', True) }}
+
 
 # TODO: set remote repository (code will be cloned on each remote host)
-#git_remote_repository: git@github.com:nicolas-kuechler/doe-suite.git
+git_remote_repository: "{{ cookiecutter.repo }}"
 # Can also get multiple repos and with a specific branch / commit
-git_remote_repository:
-- repo: git@github.com:nicolas-kuechler/doe-suite.git
-  version: etl # TODO [nku] switch back
+#git_remote_repository:
+#- repo: git@github.com:nicolas-kuechler/doe-suite.git
+#  version: main
 #- repo: git@github.com:nicolas-kuechler/doe-suite.git
 #  version: etl
+
+{% raw %}
+prj_id: example_{{ does_project_id_suffix }} #| default('', True) }}
 
 # TODO: The following parameters define how the playbook checks whether a job finished, fetches the results and starts the next job.
 # - 'job_n_tries' is the maximal number times we check the job's status before aborting
@@ -30,7 +33,7 @@ remote:
 exp_code_dir: "{{ remote.dir }}/code"
 
 local:
-  results_dir: "{{ does_project_dir }}/does_results"
+  results_dir: "{{ does_project_dir }}/doe-suite-results"
   designs_dir: "{{ does_config_dir }}/designs"
 
 exp_base:
@@ -43,5 +46,4 @@ exp_base:
   sg_name: "{{ prj_id }}_sg"
   sg_desc: "{{ prj_id }} security group"
 
-# For demo project
-demo_project_python: "{{ exp_code_dir + '/demo_project/.venv/bin/python' }}"
+{% endraw %}

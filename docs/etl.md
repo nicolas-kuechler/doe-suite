@@ -32,14 +32,14 @@ For an example, see `GroupByAggTransformer`.
 Doe suite supports the definition of suite-transcending (super-suite) ETL pipelines that
 combines experiments from multiple suites, which we refer to as super ETL.
 
-Pipeline configs are defined in `does_config/super_etl` and can be run similar to regular etl, using 
+Pipeline configs are defined in `doe-suite-config/super_etl` and can be run similar to regular etl, using
 
 ```bash
 poetry run python src/super_etl.py --config_name pipeline.yml
 ```
 
 #### Custom output location
-The default option is to place results in `does_results/super_etl`.
+The default option is to place results in `doe-suite-results/super_etl`.
 This may be overridden using the `output_path` option to specify a base directory for outputs.
 In the following example, a pipeline named `pipeline` outputs a file `plot.pdf` defined in `config.yml`.
 ```bash
@@ -109,7 +109,7 @@ Full example:
 $SUITE_ID$:
   suite_1: 1648453067
   suite_2: 1651052734
-  
+
 $ETL$:
   pipeline_name:
     experiments:
@@ -124,9 +124,9 @@ $ETL$:
         data_columns: [latency] # the names of the columns in the dataframe that contain the measurements
     loaders:
       CsvSummaryLoader: # write the transformed detl_info["suite_dir"]ataframe across the whole experiment as a csv file
-        output_dir: "etl_results/pipeline1" # write results into an output dir
+        output_dir: "pipeline1" # write results into an output dir
       DemoLatencyPlotLoader: # create a plot based on project-specific plot loader
-        output_dir: "etl_results/pipeline1" # write results into an output dir
+        output_dir: "pipeline1" # write results into an output dir
 
 ```
 

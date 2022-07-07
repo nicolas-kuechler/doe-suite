@@ -2,7 +2,7 @@
 
 TODO [nku] update documentation for developers -> can delete a lot and refer to the documentation within the role.
 
-TODO [nku] mention the logic of the ec2 dynamic inventory with the prf_id and suite filter => can use all, exp_name, check_status_yes, check_status_no, is_controller_yes, is_controller_no  
+TODO [nku] mention the logic of the ec2 dynamic inventory with the prf_id and suite filter => can use all, exp_name, check_status_yes, check_status_no, is_controller_yes, is_controller_no
 
 TODO [nku] remove mention of host_type `all`
 
@@ -47,12 +47,12 @@ To add a variable to the experiment state, do:
   host_types: {
     'client': {
       'experiment_1': {
-        'init_role': 'setup-client',
+        'init_roles': 'setup-client',
         'n': 1,
         'check_status': false
       },
       'experiment_2': {
-        'init_role': 'setup-client',
+        'init_roles': 'setup-client',
         'n': 1,
         'check_status': false
       }
@@ -96,7 +96,7 @@ To add a variable to the experiment state, do:
 An (incomplete) list of roles and their purpose:
 
 
-# TODO [nku] adjust 
+# TODO [nku] adjust
 - `experiment-aws`: General role to handle creating AWS EC2 instances.
 
 - `experiment-aws-ec2-create`: Create EC2 instances for a specific host type and experiment.

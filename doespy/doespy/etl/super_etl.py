@@ -8,14 +8,14 @@ from doespy.etl.etl import _load_config_yaml, load_selected_processes, extract
 
 
 def run_multi_suite(config_name: str,
-                    output_path: str = "does_results/super_etl", flag_output_dir_config_name: bool = True, flag_output_dir_pipeline: bool = True,
+                    output_path: str = "doe-suite-results/super_etl", flag_output_dir_config_name: bool = True, flag_output_dir_pipeline: bool = True,
                     return_df=False):
 
     if "DOES_PROJECT_DIR" not in os.environ:
         raise ValueError(f"env variable: DOES_PROJECT_DIR not set")
     prj_dir = os.environ["DOES_PROJECT_DIR"]
-    config_dir = os.path.join(prj_dir, "does_config", "super_etl")
-    results_dir = os.path.join(prj_dir, "does_results")
+    config_dir = os.path.join(prj_dir, "doe-suite-config", "super_etl")
+    results_dir = os.path.join(prj_dir, "doe-suite-results")
 
     # load etl_config by loading suite design file
     pipeline_design = _load_config_yaml(config_dir, file=config_name)
@@ -137,7 +137,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="")
     parser.add_argument("--config", type=str, required=True)
-    parser.add_argument("--output_path", type=str, default="does_results/super_etl", required=False)
+    parser.add_argument("--output_path", type=str, default="doe-suite-results/super_etl", required=False)
     parser.add_argument("--output_dir_config_name_disabled", action='store_true',
                         help="Whether to output in a subdirectory with the name of the super_etl config file.")
     parser.add_argument("--output_dir_pipeline", action='store_false',

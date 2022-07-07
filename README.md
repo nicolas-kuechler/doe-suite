@@ -104,6 +104,7 @@ Here, the `CsvSummaryLoader`stores the table in form of a csv and the `DemoLaten
 After discussing an example, the remainder of the readme is structured as follows:
 
 <!-- TABLE OF CONTENTS -->
+<!-- TODO [nku] update the ToC-->
 <details open="open">
   <summary>Table of Contents</summary>
   <ol>
@@ -138,33 +139,89 @@ After discussing an example, the remainder of the readme is structured as follow
 
 ## Cheatsheet
 
-Start the experiment suite:
-```sh
-poetry run ansible-playbook src/experiment-suite.yml -e "suite=example01-minimal id=new"
-```
+Quick reference for the most important commands.
 
-Cmd to clean:
-```sh
-TODO [nku] missing command
-```
+:warning: Ensure that the environment variable `DOES_PROJECT_DIR` points to the project directory.
 
-Configure Project:
-```sh
-TODO [nku] missing command
-```
+
+### Running Experiments
+
+Start an experiment suite:
+  ```sh
+  make run suite=example01-minimal id=new
+  ```
+
+Continue the last experiment suite:
+  ```sh
+  make run suite=example01-minimal id=last
+  ```
+
+Start an experiment suite on a specific cloud:
+  ```sh
+  make run suite=example01-minimal id=new cloud=euler
+  ```
+
+Start an experiment suite with the explicit choice (`run-keep`, `run-stop`, `run-terminate`) what to do after suite is complete:
+  ```sh
+  make run-keep suite=example01-minimal id=new
+  make run-stop suite=example01-minimal id=new
+  make run-terminate suite=example01-minimal id=new
+  ```
+
+
+
+### ETL
 
 Run ETL results pipeline:
-```sh
-TODO [nku] missing command
-```
+  ```sh
+  # can replace `id=last` with actual id, e.g., `id=1655831553`
+  make etl suite=example01-minimal id=last
+  ```
 
 
+Run Super-ETL results pipeline:
+
+# TODO:
+### Status and Info
+
+Get information about available suites and experiments:
+  ```sh
+  make info
+  ```
+
+Get progress information about the last suite run:
+  ```sh
+  # w/o suite filter (all suites)
+  make status id=last
+  ```
+
+  ```sh
+  # w/ suite filter
+  make status suite=example01-minimal id=last
+  ```
+
+
+
+
+Terminate all AWS resources:
+  ```sh
+  poetry run ansible-playbook src/clear.yml
+  ```
+
+Configure Project:
+  ```sh
+  TODO [nku] missing command
+  ```
+
+
+
+Note, instead of `id=last` it also always possible to chose an explicit `id` of a suite, e.g., `id=1655831553`.
 
 <!-- GETTING STARTED -->
 ## Getting Started
 
 To get started, the DoE-Suite provides a [demo project](demo_project) that shows the required structure to integrate DoES in an existing project.
-After completing the getting started section, it should be possible to run the [example suite designs](demo_project/does_config/designs) of the demo project.
+After completing the getting started section, it should be possible to run the [example suite designs](demo_project/doe-suite-config/designs) of the demo project.
 
 Afterward, you can change the environment variable `DOES_PROJECT_DIR` to point to your own project (instead of the demo project) and continue from there.
 
@@ -211,7 +268,7 @@ Afterward, you can change the environment variable `DOES_PROJECT_DIR` to point t
       * Configure ~/.ssh/config:  (add to file and replace the key for AWS, for example, with aws_ppl.pem)
           ```
           Host ec2*
-          IdentityFile ~/.ssh/{{ exp_base.key_name }}
+          IdentityFile ~/.ssh/{{ ssh_key_name }}
           User ubuntu
           ForwardAgent yes
           ```
@@ -267,7 +324,7 @@ Afterward, you can change the environment variable `DOES_PROJECT_DIR` to point t
 
     -->
 
-8. Try running the minimal example suite design (see [demo_project/does_config/designs/example01-minimal.yml](demo_project/does_config/designs/example01-minimal.yml))
+8. Try running the minimal example suite design (see [demo_project/doe-suite-config/designs/example01-minimal.yml](demo_project/doe-suite-config/designs/example01-minimal.yml))
 
     ```sh
     poetry run ansible-playbook src/experiment-suite.yml -e "suite=example01-minimal id=new"
@@ -281,10 +338,10 @@ Afterward, you can change the environment variable `DOES_PROJECT_DIR` to point t
 
 Before we show how to use the suite, we discuss the structure of a project that uses the doe-suite.
 
-In every project repo, we add three top level folders: `doe-suite`, `does_config`, and `does_results`.
+In every project repo, we add three top level folders: `doe-suite`, `doe-suite-config`, and `doe-suite-results`.
 The `doe-suite` folder is the doe-suite repo as a submodule.
-The `does_config` folder contains the whole configuration of how to run experiments + project specific extensions of the suite.
-In the `does_results` folder all the result files are stored.
+The `doe-suite-config` folder contains the whole configuration of how to run experiments + project specific extensions of the suite.
+In the `doe-suite-results` folder all the result files are stored.
 
 The resulting folder structure for a project looks as follows:
 (where the environment variable `DOES_PROJECT_DIR` points to)
@@ -292,7 +349,7 @@ The resulting folder structure for a project looks as follows:
 <pre><code>
 .
 ├── <b>doe-suite</b>                     # The doe-suite repo as a submodule -> can use the main branch or some specific branch with a custom extension
-├── <b>does_config</b>                   # Configuration for DoE-Suite
+├── <b>doe-suite-config</b>                   # Configuration for DoE-Suite
 │   ├── <b>designs</b>                       # Folder with suite designs that define the experiments
 │   │   ├── &ltsuite1&gt.yml
 │   │   └── &ltsuite2&gt.yml
@@ -310,7 +367,7 @@ The resulting folder structure for a project looks as follows:
 │       │   └── ...
 │       └── &ltsetup-host_type2&gt
 │           └── ...
-├── <b>does_results</b>                  # Folder (auto created by doe-suite) that contains results.
+├── <b>doe-suite-results</b>                  # Folder (auto created by doe-suite) that contains results.
 │   └── ...
 └── ...                           # <b>existing project files, i.e, artifact</b>
 </code>
@@ -325,7 +382,7 @@ To use the suite in your own project, you must follow the folder structure shown
 ### Running an Experiment Suite
 
 We run an experiment suite by starting the Ansible playbook.
-We provide the name of an experiment suite design from `does_config/designs` (e.g., `example01-minimal`), and we use `id=new` to run a new complete experiment.
+We provide the name of an experiment suite design from `doe-suite-config/designs` (e.g., `example01-minimal`), and we use `id=new` to run a new complete experiment.
 
 ```sh
 poetry run ansible-playbook src/experiment-suite.yml -e "suite=example01-minimal id=new"
@@ -333,13 +390,13 @@ poetry run ansible-playbook src/experiment-suite.yml -e "suite=example01-minimal
 
 The playbook reads the **environment variable** `DOES_PROJECT_DIR` which must point to the project folder.
 For example, when we want to run the `demo_project` then we set `DOES_PROJECT_DIR=<...>/doe-suite/demo_project`.
-Within the project folder, the suite expects that there is a `does_config` folder that controls how to run the suite.
+Within the project folder, the suite expects that there is a `doe-suite-config` folder that controls how to run the suite.
 
 When we start a new experiment suite, it receives a unique ID (epoch timestamp). Each experiment of the suite must have a unique name in the experiment design specification.
 
 The playbook periodically checks whether an experiment run is finished and then downloads the results.
 The variable `job_n_tries` controls the maximum number of times to check whether the job finished.
-In between checking, the playbook waits for `job_check_wait_time` seconds (see `does_config/group_vars/all/main.yml`).
+In between checking, the playbook waits for `job_check_wait_time` seconds (see `doe-suite-config/group_vars/all/main.yml`).
 After the number of `job_n_tries` is exceeded, the playbook aborts.
 
 Experiments that involve multiple instances (e.g., client-server experiment) require the experiment-suite playbook to start the next job after the previous finished. The consequence is that when the playbook aborts because `job_n_tries` is exceeded,  an already running job will continue to run on AWS, but the next job won't start unless the `experiment-suite.yml` playbook runs.
@@ -384,7 +441,7 @@ The experiment suite creates a matching folder structure on the localhost and th
 
 Locally, each experiment job (repetition of an experiment run with a specific config) receives a separate folder, i.e., working directory:
 
-`<DOES_PROJECT_DIR>/does_results/<SUITE>_<SUITE ID>/<EXPERIMENT>/run_<RUN>/rep_<REPETITION>`
+`<DOES_PROJECT_DIR>/doe-suite-results/<SUITE>_<SUITE ID>/<EXPERIMENT>/run_<RUN>/rep_<REPETITION>`
 
 - `RUN` is the index of the run (starts at 0)
 - `REPETITION`is the index of the repetitions (starts at 0)
@@ -398,7 +455,7 @@ In this folder, we group the involved hosts by host type and have a separate fol
 
 
 Example:
-The folder `does_results/example04-multi_1634661802/exp_client_server/run_2/rep_1/client/host_0` contains all result files from the 1st client host, from the 2nd repetition (rep starts with 0) of the 3rd run (run starts at 0) from the experiment named `exp_client_server` that is part of the suite `example04-multi` with id `1626423613`.
+The folder `doe-suite-results/example04-multi_1634661802/exp_client_server/run_2/rep_1/client/host_0` contains all result files from the 1st client host, from the 2nd repetition (rep starts with 0) of the 3rd run (run starts at 0) from the experiment named `exp_client_server` that is part of the suite `example04-multi` with id `1626423613`.
 
 The artifact (code) is executed on the remote machine in the experiment job's working directory. There are two folders in this working directory: `results` and `scratch`. Only the files in `results` are download at the end of the experiment job to the local machine.
 
@@ -421,28 +478,28 @@ For each experiment, one instance is the controller which is logically responsib
 
 ### Suite Designs by Example
 
-The experiment suite runs experiments based on `YAML` files in `does_config/designs`.
+The experiment suite runs experiments based on `YAML` files in `doe-suite-config/designs`.
 The `YAML` files represent the structure discussed above.
 We provide a series of suite designs to demonstrate the different features by example:
 
-1. [example01-minimal](demo_project/does_config/designs/example01-minimal.yml) shows the minimal suite design with a single experiment on a single host and no ETL pipeline.
+1. [example01-minimal](demo_project/doe-suite-config/designs/example01-minimal.yml) shows the minimal suite design with a single experiment on a single host and no ETL pipeline.
 
-2. [example02-single](demo_project/does_config/designs/example02-single.yml) demonstrates that:
+2. [example02-single](demo_project/doe-suite-config/designs/example02-single.yml) demonstrates that:
     *  a suite can consist of multiple experiments that are executed in parallel (here 2 experiments)
     * `init_roles` in host_type defines an ansible role to install packages etc. on a host
     * a `config.json` file with the run config is within the working directory of the `$CMD$` -> can be used to pass config parameters
     * we can repeat each run configuration multiple times (`n_repetitions`).
     * an `$ETL$` pipeline can automatically process result files (e.g., extract from result structure, transform into a suited df, load a summary)
 
-3. [example03-format](demo_project/does_config/designs/example03-format.yml) demonstrates the use of the two (three) formats for expressing factors (varying parameters).
+3. [example03-format](demo_project/doe-suite-config/designs/example03-format.yml) demonstrates the use of the two (three) formats for expressing factors (varying parameters).
 
-4. [example04-multi](demo_project/does_config/designs/example04-multi.yml) demonstrates:
+4. [example04-multi](demo_project/doe-suite-config/designs/example04-multi.yml) demonstrates:
     * an experiment involving multiple instances (e.g., client-server)
     * that `common_roles` lists roles executed on all host_types, while `init_roles` is a host_type specific role.
     * the use of the variable `exp_host_lst` in $CMD$ to get the dns name of of other instances (e.g., get dns name of server)
     * the use of `check_status`, to control when an experiment job is considered to be over. If set to `True`, then the experiment job waits until the $CMD$ stops. default(True)
 
-5. [example05-complex](demo_project/does_config/designs/example05-complex.yml) shows complex experiments with:
+5. [example05-complex](demo_project/doe-suite-config/designs/example05-complex.yml) shows complex experiments with:
     * a mix of formats
     * multiple experiments
     * running different commands on different instance
@@ -455,7 +512,7 @@ An experiment design `YAML` file consists of one or more experiments. Each exper
 - The `common_roles` variable specifies an ansible role (from `does-config/roles`)that is executed once on the initial instance set up on all host types.
 
 #### Host Types (AWS Environment)
-This section configures different host types. Each host has its own initial setup role(s) `init_roles` and `n` active instances. For each host type, we expect a folder for host type specific variables in `does_config/group_vars` and the `init_roles`must be located in `does_config/roles`.
+This section configures different host types. Each host has its own initial setup role(s) `init_roles` and `n` active instances. For each host type, we expect a folder for host type specific variables in `doe-suite-config/group_vars` and the `init_roles`must be located in `doe-suite-config/roles`.
 
 The `$CMD$` field controls the command to execute in the experiment.
 There are different options available:
@@ -473,7 +530,7 @@ We provide a helper script to add new or update host types.
 
 The `base_experiment` consists of all the configuration options.
 All configuration options that vary between runs (i.e., the factors of the experiment) are marked with the placeholder `$FACTOR$`. The remaining configuration options are filled with a constant.
-See the example [example03-format.yml](demo_project/does_config/designs/example03-format.yml) design to see the three different options of expressing factors.
+See the example [example03-format.yml](demo_project/doe-suite-config/designs/example03-format.yml) design to see the three different options of expressing factors.
 
 The  2(+1) different formats are:
 - the `cross` format which is the concise form for a cross product of all factors

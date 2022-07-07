@@ -17,7 +17,7 @@ def main():
     parser.add_argument("--id", type=str, required=False)
     parser.add_argument("--all", action="store_true", required=False)
 
-    # by setting the --design flag, we can make the etl pipeline be run using the etl definition in `does_config/designs`
+    # by setting the --design flag, we can make the etl pipeline be run using the etl definition in `doe-suite-config/designs`
     # rather than the on in the results directory
     parser.add_argument("--design", action="store_true")
 
@@ -46,7 +46,7 @@ def run(suite, suite_id, use_etl_from_design, etl_output_dir):
     if "DOES_PROJECT_DIR" not in os.environ:
         raise ValueError(f"env variable: DOES_PROJECT_DIR not set")
     prj_dir = os.environ["DOES_PROJECT_DIR"]
-    results_dir = os.path.join(prj_dir, "does_results")
+    results_dir = os.path.join(prj_dir, "doe-suite-results")
 
     # can search for the last suite_id
     if suite_id == "last":
@@ -56,7 +56,7 @@ def run(suite, suite_id, use_etl_from_design, etl_output_dir):
 
     # load etl_config by loading suite design file
     if use_etl_from_design:
-        design_dir = os.path.join(prj_dir, "does_config", "designs")
+        design_dir = os.path.join(prj_dir, "doe-suite-config", "designs")
         suite_design = _load_config_yaml(design_dir, file=f"{suite}.yml")
     else:
         suite_design = _load_config_yaml(suite_dir, file="suite_design.yml")
