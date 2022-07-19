@@ -10,7 +10,7 @@ state?=$(DOES_CLOUD_STATE) # env variable with default (terminate)
 
 # add prefix if defined for playbook run cmd
 ifdef expfilter
-	myexpfilter='expfilter=$(expfilter)'
+	myexpfilter=expfilter=$(expfilter)
 endif
 
 # TODO [nku] would it be possible if suite not defined and required to show available suites and take number input?

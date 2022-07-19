@@ -22,7 +22,7 @@ def validate(suite_design, prj_id, suite, dirs, exp_filter):
     return suite_design
 
 
-def _apply_experiment_re_filter(self, design_raw, exp_filter):
+def _apply_experiment_re_filter(design_raw, exp_filter):
     pattern = re.compile(exp_filter)
     filtered_out_exp_names = []
     for exp_name in design_raw.keys():
