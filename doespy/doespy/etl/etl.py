@@ -4,6 +4,10 @@ from inspect import getmembers
 import pandas as pd
 from typing import List, Dict
 
+from doespy.etl.steps.extractors import Extractor
+from doespy.etl.steps.transformers import Transformer
+from doespy.etl.steps.loaders import Loader
+
 
 from doespy import util
 
@@ -165,8 +169,6 @@ def _load_available_processes():
     return extractors, transformers, loaders
 
 def _load_processes(module_name, extractors, transformers, loaders):
-
-    from doespy.etl.etl_base import Extractor, Transformer, Loader
 
     module = importlib.import_module(module_name)
 

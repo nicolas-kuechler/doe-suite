@@ -109,11 +109,11 @@ def _validate_etl_pipeline(etl_pipelines):
 
     for name, config in etl_pipelines.items():
 
-        if "experiments" not in config.keys() or not isinstance(config["experiments"], list):
+        if "experiments" not in config.keys() or not (isinstance(config["experiments"], list) or config["experiments"] == "*"):
             raise ValueError(f"missing required list of experiments name={name}  config={config}")
 
         if "extractors" not in config.keys():
-            raise ValueError("missing extractors")
+            raise ValueError(f"missing extractors: {name}")
 
 
         for ext_name, ext_config in config["extractors"].items():
