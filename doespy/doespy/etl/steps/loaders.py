@@ -55,6 +55,12 @@ class PlotLoader(Loader):
             fig.savefig(full_filename, format=ext, bbox_inches=bbox_inches, pad_inches=pad_inches, dpi=dpi)
 
 
+    def default_fig(self):
+        scale_factor = 2.4
+        figsize = [scale_factor * 1.618, scale_factor * 1] # [width, height] based on golden ratio
+        fig = plt.figure(figsize=figsize, dpi=100)
+        plt.figure(fig.number)
+        return fig
 
 class CsvSummaryLoader(Loader):
 

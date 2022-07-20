@@ -13,6 +13,19 @@ class Transformer(ABC):
         pass
 
 
+class ConditionalTransformer(Transformer):
+
+    def transform(self, df: pd.DataFrame, options: Dict) -> pd.DataFrame:
+        # TODO [nku] docstring
+        col = options["col"]
+        value = options["value"]
+        dest = options.get("dest", col)
+
+        for cur, repl in value.items():
+            df.loc[df[col] == cur, dest] = repl
+
+        return df
+
 
 class RepAggTransformer(Transformer):
 

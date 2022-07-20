@@ -1,0 +1,147 @@
+square:
+  n_repetitions: 1
+  host_types:
+    small:
+      n: 1
+      init_roles: setup-small
+      $CMD$: "printf 'x: [% my_run.x %]\\ny: [% my_run.y %]' > results/coordinates.yaml"
+  base_experiment:
+    x:
+     $FACTOR$: [0, 1, 2]
+    y:
+     $FACTOR$: [0, 1, 2]
+
+
+plus:
+  n_repetitions: 1
+  host_types:
+    small:
+      n: 1
+      init_roles: setup-small
+      $CMD$: >-
+        printf 'x: [% my_run.x if my_run.orient in ['N', 'S'] else  my_run.x + my_run.dist if my_run.orient == 'E' else my_run.x - my_run.dist %]
+        \ny: [% my_run.y if my_run.orient in ['W', 'E'] else  my_run.y + my_run.dist if my_run.orient == 'N' else my_run.y - my_run.dist %]' > results/coordinates.yaml
+  base_experiment:
+    x: 8
+    y: 5
+    dist:
+      $FACTOR$: [1, 2]
+    orient:
+      $FACTOR$: ["N", "E", "S", "W"]
+
+
+triangle1:
+  # drawing a square
+  n_repetitions: 1
+  host_types:
+    small:
+      n: 1
+      init_roles: setup-small
+      $CMD$: "printf 'x: [% my_run.x %]\\ny: [% my_run.y %]' > results/coordinates.yaml"
+  base_experiment:
+    x:
+     $FACTOR$: [0, 1, 2]
+    y:
+     $FACTOR$: [3, 4]
+
+triangle2:
+# drawing individual points to make the square from triangle1 to a triangle
+  n_repetitions: 1
+  host_types:
+    small:
+      n: 1
+      init_roles: setup-small
+      $CMD$: "printf 'x: [% my_run.x %]\\ny: [% my_run.y %]' > results/coordinates.yaml"
+  base_experiment:
+    x: $FACTOR$
+    y: $FACTOR$
+
+  factor_levels:
+  - x: -1
+    y: 3
+  - x: 3
+    y: 3
+  - x: 1
+    y: 6
+
+# The goal of this design is to showcase (advanced) features of eth ETL pipeline
+#  (1)
+#  (2)
+#  ( ) use `experiments: "*"` to avoid listing all experiments
+#  ( ) use df.X syntax to directly use pandas df transformations: https://pandas.pydata.org/docs/reference/frame.html
+#  ( ) including another complete pipeline
+#      ( ) defined in a suite (current or another)
+#      ( ) defined in a template under `designs/etl_templates`
+#  ( ) including a "stage" of another pipeline (from suite / template)
+#      ( ) include extractor stage
+#      ( ) include transformer stage
+#      ( ) include loader stage
+#  ( ) use etl variables in pipeline/stage inclusion
+
+$ETL$:                                                         # Visualization of ETL Pipeline:
+  # coordinate pipelines to generate plots                     #   use `make design-validate suite=example07-etl` to see all
+  coord_square:                                                #
+    experiments: [square]                                      # ETL Pipeline: coord_square
+    extractors:                                                #--------------------------------------------------
+      YamlExtractor: {} # by default loads all .yaml files     #| YamlExtractor  ErrorExtractor  IgnoreExtractor | Extractors:
+      ErrorExtractor: {} # error stderr.log if non-empty       #--------------------------------------------------    result files to pandas df
+      IgnoreExtractor: {} # ignore stdout.log                  #                        |                          Transformers:
+    transformers:                                              #                        V                             transform df
+      - df.filter: {items: ["exp_name", "x", "y"]}             #                    df.filter
+      - df.eval: {expr: "color = 'black'"}                     #                        |
+    loaders:                                                   #                        V
+      CsvSummaryLoader: {} # writing a csv                     #                     df.eval
+      CoordinateLoader: {} # plotting a scatter plot           #                        |
+                                                               #                        V
+                                                               #       --------------------------------------
+                                                               #       | CsvSummaryLoader  CoordinateLoader |       Loaders:
+                                                               #       --------------------------------------          create results, e.g., plots
+
+
+
+  # TODO (.2) including another pipeline of a suite
+  # Here we use a pipeline defined in the same suite and select different experiments
+  # However, it is also possible to include a pipeline from another suite
+  coord_plus:
+    experiments: [plus]
+    $INCLUDE_PIPELINE$:  {suite: example07-etl, pipeline: coord_square} # show self include
+
+  coord_triangle:
+    experiments: [triangle1, triangle2]
+    $INCLUDE_PIPELINE$:  {suite: example07-etl, pipeline: coord_square}
+
+  coord_all:
+    experiments: "*"
+    extractors:
+      $INCLUDE_STEPS$: [{suite: example07-etl, pipeline: coord_square}]
+    # by including all we have a more complex color assignment -> we only include extractors + loaders and provide a custom transformer stage
+    transformers:
+        - df.filter: {items: ["exp_name", "x", "y"]}
+        - {name: ConditionalTransformer, col: "exp_name", dest: "color", value: {plus: black, square: green, triangle1: blue, triangle2: blue}}
+    loaders:
+      $INCLUDE_STEPS$: [{suite: example07-etl, pipeline: coord_square}]
+
+
+  commands:
+    $ETL_VARS$:
+      output_dir: config
+    experiments: "*"
+    $INCLUDE_PIPELINE$:  {template: config_template, pipeline: config}
+
+  commands_stage:
+
+    # the idea is that the `config` pipeline is the same as the `config_stage` pipeline. The difference is that here we show wo to import a stage individually
+    $ETL_VARS$:
+      output_dir: config
+    experiments: "*"
+    extractors:
+      $INCLUDE_STEPS$: # include a step from another pipeline (can also be from etl_template)
+        - {template: config_template, pipeline: config}
+
+    transformers:
+      # could have custom steps before
+      - $INCLUDE_STEPS$: {template: config_template, pipeline: config}  # include all steps in transformers
+      # could have custom steps after
+    loaders:
+      $INCLUDE_STEPS$:
+        - {template: config_template, pipeline: config}

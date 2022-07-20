@@ -1,0 +1,13 @@
+
+# TODO: doc
+$ETL$:
+  config:
+    extractors:
+      YamlExtractor: {} # by default loads all .yaml files
+      ErrorExtractor: {} # etl-error if stderr.log is non-empty
+      IgnoreExtractor: {} # ignore stdout.log
+    transformers:
+      - df.filter: {regex: "\\$CMD\\$"}
+    loaders:
+      CsvSummaryLoader: # write the transformed dataframe across the whole experiment as a csv file
+        output_dir: "[% output_dir %]" # write results into an output dir

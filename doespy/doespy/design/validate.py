@@ -123,7 +123,6 @@ def include_etl_vars(etl_pipeline):
 
     if "$ETL_VARS$" in etl_pipeline:
         etl_vars = etl_pipeline.pop("$ETL_VARS$")
-        print(f"etl_vars={etl_vars}")
 
         import jinja2, json
         env = util.jinja2_env(loader=None, undefined=jinja2.StrictUndefined, variable_start_string="[%", variable_end_string="%]")

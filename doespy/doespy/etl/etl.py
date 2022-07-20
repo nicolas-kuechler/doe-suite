@@ -70,8 +70,10 @@ def run(suite, suite_id, use_etl_from_design, etl_output_dir):
 
     # load etl_config by loading suite design file
     if use_etl_from_design:
-        design_dir = os.path.join(prj_dir, "doe-suite-config", "designs")
-        suite_design = _load_config_yaml(design_dir, file=f"{suite}.yml")
+        from doespy.design import validate_extend
+        suite_design, _ = validate_extend.main(suite=suite, only_validate_design=True, ignore_undefined_vars=True)
+
+
     else:
         suite_design = _load_config_yaml(suite_dir, file="suite_design.yml")
     if "$ETL$" not in suite_design:

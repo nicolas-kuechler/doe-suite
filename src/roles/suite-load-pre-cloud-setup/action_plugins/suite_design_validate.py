@@ -47,6 +47,4 @@ class ActionModule(ActionBase):
                                        template_vars=task_vars
                                        )
 
-        # print(_design)
-
         return result
