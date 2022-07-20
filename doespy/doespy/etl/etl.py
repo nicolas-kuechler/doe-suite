@@ -42,6 +42,16 @@ def main():
     else:
         raise ValueError("the xor between the options should ensure that this cannot be the case")
 
+def apply_pandas_df_transformer(df, func_name, args):
+
+    try:
+        func = getattr(df, func_name)
+
+        # apply the function on the dataframe
+        return func(**args)
+    except AttributeError:
+        raise ValueError(f"pandas.DataFrame.{func_name} not found")
+
 
 def run(suite, suite_id, use_etl_from_design, etl_output_dir):
 
@@ -91,7 +101,13 @@ def run(suite, suite_id, use_etl_from_design, etl_output_dir):
 
             # apply transformers sequentially
             for x in transformers:
-                df = x["transformer"].transform(df, options=x["options"])
+
+                if isinstance(x["transformer"], str):
+                    # possibility for df functions directly
+                    df = apply_pandas_df_transformer(df, func_name=x["transformer"], args=x["options"])
+
+                else:
+                    df = x["transformer"].transform(df, options=x["options"])
 
             # execute all loaders on df
             for x in loaders:
@@ -127,15 +143,32 @@ def load_selected_processes(extractors_sel, transformers_sel, loaders_sel):
 
     transformers = []
     for trans_sel in transformers_sel:
+        if 'name' in trans_sel:
+            if trans_sel['name'] not in transformers_avl:
+                raise ValueError(f"transformer not found: {trans_sel['name']}")
 
-        if trans_sel['name'] not in transformers_avl:
-            raise ValueError(f"transformer not found: {trans_sel['name']}")
+            d = {
+                "transformer": transformers_avl[trans_sel["name"]](),
+                "options": trans_sel,
+            }
+            transformers.append(d)
+        elif len(trans_sel.keys())==1:
+            func_name = next(iter(trans_sel))
+            args = trans_sel[func_name]
 
-        d = {
-            "transformer": transformers_avl[trans_sel["name"]](),
-            "options": trans_sel,
-        }
-        transformers.append(d)
+            match = re.search(r"df\.(.*)", func_name)
+            func_name = match.group(1)
+
+            d = {
+                "transformer": func_name,
+                "options": args,
+            }
+            transformers.append(d)
+
+        else:
+            raise ValueError(f"transformer with illegal format: {trans_sel}")
+
+
 
     loaders = []
     for name, options in loaders_sel.items():
