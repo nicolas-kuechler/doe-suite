@@ -1,6 +1,8 @@
 import yaml, os, re
 from collections import abc
 
+from doespy import util
+
 KEYWORDS = {
     "general": ["state", "$FACTOR$", 'is_controller_yes', 'is_controller_no', 'check_status_yes', 'check_status_no', 'localhost'],
     "exp": ["n_repetitions", "common_roles", "host_types", "base_experiment", "factor_levels"],
@@ -99,11 +101,133 @@ def _validate_and_default_suite(prj_id, suite, design_raw, dirs):
 
         for key, value in design_raw.items():
             if key == "$ETL$":
+                include_etl_pipelines(etl_pipelines=value)
                 _validate_etl_pipeline(etl_pipelines=value)
+
             else:
                 _validate_and_default_experiment(value, dirs, suite_vars)
 
         return True
+
+
+
+def include_etl_pipelines(etl_pipelines):
+    for name, config in etl_pipelines.items():
+        include_etl_pipeline(etl_pipeline=config)
+        include_etl_steps(etl_pipeline=config)
+        etl_pipelines[name] = include_etl_vars(etl_pipeline=config)
+
+
+
+def include_etl_vars(etl_pipeline):
+
+    if "$ETL_VARS$" in etl_pipeline:
+        etl_vars = etl_pipeline.pop("$ETL_VARS$")
+        print(f"etl_vars={etl_vars}")
+
+        import jinja2, json
+        env = util.jinja2_env(loader=None, undefined=jinja2.StrictUndefined, variable_start_string="[%", variable_end_string="%]")
+        template = json.dumps(etl_pipeline)
+        while "[%" in template and "%]" in template:
+            template = env.from_string(template)
+            template = template.render(**etl_vars)
+        etl_pipeline = json.loads(template)
+    return etl_pipeline
+
+
+
+def load_etl_steps(cfg, stage):
+    suite = etl_load_suite(cfg)
+
+    ETL_KEY = "$ETL$"
+
+    if ETL_KEY in suite and cfg["pipeline"] in suite[ETL_KEY] and stage in suite[ETL_KEY][cfg["pipeline"]]:
+        return suite[ETL_KEY][cfg["pipeline"]][stage]
+    else:
+        raise ValueError(f"pipeline {cfg['pipeline']} stage {stage} not found in {cfg}")
+
+def include_etl_steps(etl_pipeline):
+
+    KEY = "$INCLUDE_STEPS$"
+
+    for name, config in etl_pipeline.items():
+        if name in ["experiments", "$ETL_VARS$"]:
+            continue
+        elif name == "transformers":
+            steps = []
+            for step in config:
+                if KEY in step:
+                    if len(step)==1:
+                        for loaded_step in load_etl_steps(cfg=cfg, stage=name):
+                           steps.append(loaded_step)
+                    else:
+                        raise ValueError(f"{KEY} must be unique in step={step}")
+                else:
+                    steps.append(step)
+            etl_pipeline[name] = steps
+
+        elif name == "extractors" or name == "loaders":
+            if KEY in config:
+                cfg_lst = config[KEY]
+                del config[KEY]
+
+                for cfg in cfg_lst:
+                    for step_name, step_cfg in load_etl_steps(cfg=cfg, stage=name).items():
+
+                        if step_name == KEY:
+                            raise ValueError(f"cannot include etl steps recursively (cfg={cfg} stage={name} has step={step_name}")
+                        # set the step (if not already present)
+                        if step_name not in config:
+                            config[step_name] = step_cfg
+
+        else:
+            raise ValueError(f"unknown part of etl pipeline name={name}  config={config}")
+
+
+def etl_load_suite(cfg):
+
+    if "suite" in cfg:
+        if os.path.isfile(os.path.join(util.get_suite_design_dir(), f"{cfg['suite']}.yml")):
+            suite = util.get_suite_design(cfg['suite'])
+        else:
+            raise ValueError(f"ETL import failed suite={cfg['suite']} not found")
+
+    elif "template" in cfg:
+        template_dir = os.path.join(util.get_suite_design_dir(), "etl_templates")
+        if os.path.isfile(os.path.join(template_dir, f"{cfg['template']}.yml")):
+            suite = util.get_suite_design(suite=cfg['template'], folder=template_dir)
+        else:
+            raise ValueError(f"ETL import failed template={cfg['template']} not found")
+    else:
+        raise ValueError(f"wrong format: expect `suite` or `template` ({cfg})")
+
+    return suite
+
+
+
+def include_etl_pipeline(etl_pipeline):
+
+    KEY = "$INCLUDE_PIPELINE$"
+    ETL_KEY = "$ETL$"
+
+    if  KEY in etl_pipeline:
+
+        cfg=etl_pipeline[KEY]
+
+        # load entire pipeline
+        suite = etl_load_suite(cfg)
+
+        if ETL_KEY in suite and cfg["pipeline"] in suite[ETL_KEY]:
+            pipeline = suite[ETL_KEY][cfg["pipeline"]]
+            # copy pipeline except `experiments`
+            for stage_name, stage in pipeline.items():
+                if stage_name != "experiments":
+                    etl_pipeline[stage_name] = stage
+            del etl_pipeline[KEY] # delete the include entry
+        else:
+            raise ValueError(f"pipeline {cfg['pipeline']} not found in suite {cfg['suite']}")
+
+
 
 def _validate_etl_pipeline(etl_pipelines):
 
@@ -114,7 +238,6 @@ def _validate_etl_pipeline(etl_pipelines):
 
         if "extractors" not in config.keys():
             raise ValueError(f"missing extractors: {name}")
-
 
         for ext_name, ext_config in config["extractors"].items():
             if ext_config is None:

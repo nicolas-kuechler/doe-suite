@@ -47,3 +47,47 @@ def convert_group_name_to_str(name):
         return str(name)
     else:
         return "_".join([f"{n}" for n in name])
+
+
+
+def print_etl_pipeline(etl_pipeline, name):
+
+    extractors = "  ".join(etl_pipeline["extractors"].keys())
+    extractors = f"| {extractors} |"
+    extractors_divider = "-" * len(extractors)
+
+    transformers = []
+    lengths = []
+    for step in etl_pipeline["transformers"]:
+        transformers += ["|", "V"]
+        if "name" in step:
+           transformers.append(step["name"])
+        else:
+            assert len(step) == 1
+            transformers.append(next(iter(step)))
+        lengths.append(len(transformers[-1]))
+    transformers += ["|", "V"]
+
+    loaders = "  ".join(etl_pipeline["loaders"].keys())
+    loaders = f"| {loaders} |"
+    loaders_divider = "-" * len(loaders)
+
+    max_length = max(lengths + [len(extractors), len(loaders) ])
+    extractors_divider = extractors_divider.center(max_length, " ")
+    out = [extractors_divider, extractors.center(max_length, " ") + " Extractors",  extractors_divider]
+
+    for i, line in enumerate(transformers):
+        line = line.center(max_length, " ")
+
+        if i == 0:
+            line =  line + " Transformers"
+
+        out.append(line)
+
+    loaders_divider = loaders_divider.center(max_length, " ")
+    out += [loaders_divider, loaders.center(max_length, " ") + " Loaders",  loaders_divider]
+
+    print(f"ETL Pipeline: {name}")
+    for line in out:
+        print(line)
+    print()

@@ -39,7 +39,7 @@ class ActionModule(ActionBase):
         # extract argument from module
         module_args = self._task.args
 
-        _design = validate_extend.main(suite=module_args["suite"],
+        _design, _ = validate_extend.main(suite=module_args["suite"],
                                        only_validate_design=True,
                                        exp_filter=module_args.get("exp_filter"),
                                        suite_design_dest=module_args["dest"],

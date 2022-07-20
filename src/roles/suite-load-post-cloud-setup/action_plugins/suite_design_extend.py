@@ -38,7 +38,7 @@ class ActionModule(ActionBase):
         # extract argument from module
         module_args = self._task.args
 
-        result["designs"] =  validate_extend.main(suite="suite_design",
+        _, result["designs"] =  validate_extend.main(suite="suite_design",
                                        design_files_dir=module_args["suite_design_path"],
                                        suite_design_ext_dest=module_args["ext_design_file_output"],
                                        ignore_undefined_vars=False,

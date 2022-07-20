@@ -59,6 +59,7 @@ def extend(suite_design, exp_specific_vars):
                     # temporary convert to a dict
                     run_config = json.loads(template)
                     del run_config["$CMD$"] # temporary delete of cmd (should not be available as var for templating)
+                    #print(f"template={template}    run_config={run_config}   exp_vars={exp_vars}")
                     template = env.from_string(template)
                     template = template.render(my_run=run_config, **exp_vars)
                 run_config = json.loads(template)

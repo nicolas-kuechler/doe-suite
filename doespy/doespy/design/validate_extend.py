@@ -40,7 +40,7 @@ def main(suite, design_files_dir=util.get_suite_design_dir(), only_validate_desi
 
     # if we only validate and not extend have early return
     if only_validate_design:
-        return suite_design
+        return suite_design, None
 
     # extend the suite design design -> job list (resolve [% %])
     suite_design_ext = extend.extend(suite_design, exp_specific_vars)
@@ -50,7 +50,7 @@ def main(suite, design_files_dir=util.get_suite_design_dir(), only_validate_desi
         with open(suite_design_ext_dest, 'w+') as f:
             yaml.dump(suite_design_ext, f, sort_keys=False, width=10000)
 
-    return suite_design_ext
+    return suite_design, suite_design_ext
 
 
 def output_design(suite_design):
@@ -67,6 +67,15 @@ def output_commands(suite_design_ext):
                         print(f"  run={run_idx:03d} host={host}-{host_idx}: {cmd['main']}")
                     else:
                         raise ValueError("not implemented yet")
+
+def output_etl_pipelines(suite_design):
+
+    from doespy.etl import etl_util
+    for name, etl_pipeline in suite_design["$ETL$"].items():
+        if name not in ["experiments"]:
+            etl_util.print_etl_pipeline(etl_pipeline, name)
+
+
 
 
 class UniqueKeyLoader(yaml.SafeLoader):
@@ -95,9 +104,17 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    suite_design = main(suite=args.suite, only_validate_design=args.only_validate, exp_filter=args.expfilter, suite_design_dest=args.out_design, suite_design_ext_dest=args.out_design, ignore_undefined_vars=args.ignore_undefined_vars)
+    suite_design, suite_design_ext = main(suite=args.suite, only_validate_design=args.only_validate, exp_filter=args.expfilter, suite_design_dest=args.out_design, suite_design_ext_dest=args.out_design, ignore_undefined_vars=args.ignore_undefined_vars)
+
+    from pyfiglet import figlet_format
 
     if not args.only_validate:
-        output_commands(suite_design)
+        print(figlet_format('Run Commands', font='small'))
+        output_commands(suite_design_ext)
     else:
+        print(figlet_format('Design', font='small'))
         output_design(suite_design)
+
+    print("\n")
+    print(figlet_format('ETL', font='small'))
+    output_etl_pipelines(suite_design)
