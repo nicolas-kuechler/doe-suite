@@ -1,5 +1,17 @@
+# A template that can be used to define common ETL functionality.
+# All suites in the project can then use these pipeline definition.
+# The format of the template file is the same as the format of a suite
+# (but without experiments)
 
-# TODO: doc
+# The following template is used by the example suite: `example07-etl`
+#  (3) including another complete pipeline
+#      (3.2) defined in a template under `designs/etl_templates`
+#  (4) including a "stage" of another pipeline (from a template)
+#      (4.1) include extractor stage
+#      (4.2) include transformer stage
+#      (4.3) include loader stage
+#  (5) use etl variables in pipeline/stage inclusion
+
 $ETL$:
   config:
     extractors:
@@ -10,4 +22,5 @@ $ETL$:
       - df.filter: {regex: "\\$CMD\\$"}
     loaders:
       CsvSummaryLoader: # write the transformed dataframe across the whole experiment as a csv file
+        #  (5) use etl variables in pipeline/stage inclusion
         output_dir: "[% output_dir %]" # write results into an output dir

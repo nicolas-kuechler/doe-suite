@@ -1,3 +1,117 @@
+# The goal of this design is to showcase (advanced) features of ETL pipelines.
+# Unlike in the other examples, we list the ETL pipeline before the experiment definitions.
+
+# There are four experiment designs in this suite that define three shapes (in 4 experiments)
+#  each experiment outputs x,y coordinates in a file `coordinates.yaml`
+# The ETL pipelines visualize these shapes in different scatter plots.
+
+# ETL FUNCTIONALITY:
+#  (1) use `experiments: "*"` to avoid listing all experiments
+#  (2) use df.X syntax to directly use pandas df transformations: https://pandas.pydata.org/docs/reference/frame.html
+#  (3) including another complete pipeline
+#      (3.1) defined in a suite (current or another)
+#      (3.2) defined in a template under `designs/etl_templates`
+#  (4) including a "stage" of another pipeline (from suite / template)
+#      (4.1) include extractor stage
+#      (4.2) include transformer stage
+#      (4.3) include loader stage
+#  (5) use etl variables in pipeline/stage inclusion
+
+$ETL$:                                                         # Visualization of ETL Pipeline:
+  # coordinate pipelines to generate plots                     #   use `make design-validate suite=example07-etl` to see all
+  coord_square:    # visualize the square shape                #
+    experiments: [square]                                      # ETL Pipeline: coord_square
+    extractors:                                                #--------------------------------------------------
+      YamlExtractor: {} # by default loads all .yaml files     #| YamlExtractor  ErrorExtractor  IgnoreExtractor | Extractors:
+      ErrorExtractor: {} # error stderr.log if non-empty       #--------------------------------------------------    result files to pandas df
+      IgnoreExtractor: {} # ignore stdout.log                  #                        |                          Transformers:
+    transformers:                                              #                        V                             transform df
+      - df.filter: {items: ["exp_name", "x", "y"]}             #                    df.filter
+      - df.eval: {expr: "color = 'black'"}                     #                        |
+    loaders:                                                   #                        V
+      CsvSummaryLoader: {} # writing a csv                     #                     df.eval
+      CoordinateLoader: {} # plotting a scatter plot           #                        |
+                                                               #                        V
+                                                               #       --------------------------------------
+                                                               #       | CsvSummaryLoader  CoordinateLoader |       Loaders:
+                                                               #       --------------------------------------          create results, e.g., plots
+
+
+  coord_plus:   # visualize the plus shape
+    experiments: [plus]
+    # (3) including another complete pipeline
+    #    (3.1) defined in a suite (current or another)
+    #    for (3.2) defined in a template under `designs/etl_templates`
+    #       we would have to replace `suite` with `template`
+    $INCLUDE_PIPELINE$:  {suite: example07-etl, pipeline: coord_square} # show self include
+
+  coord_triangle:   # visualize the triangle shape (combining two experiments)
+    experiments: [triangle1, triangle2]
+    $INCLUDE_PIPELINE$:  {suite: example07-etl, pipeline: coord_square}
+
+
+  # In this pipeline we want to use the same pipeline as above (same extractor + same loaders)
+  #  but provide a custom transformer stage. Hence, we use the $INCLUDE_STEPS$ functionality.
+  coord_all: # visualize all shapes together
+    experiments: "*" # (1) use `experiments: "*"` to avoid listing all experiments
+    extractors:
+      #  (4) including a "stage" of another pipeline (from suite / template)
+      #      (4.1) include extractor stage
+      #       instead of including a complete pipeline, it's also possible to include a stage, here the extractor stage
+      $INCLUDE_STEPS$: [{suite: example07-etl, pipeline: coord_square}]
+
+    transformers:
+    # by including all we have a more complex color assignment -> we only include extractors + loaders and provide a custom transformer stage
+        # (2) use df.X syntax to directly use pandas df transformations: https://pandas.pydata.org/docs/reference/frame.html
+        #       (note there are a few limitations: some functions on df require indexes which cannot be defined here -> e.g., see Conditional Transformer)
+        - df.filter: {items: ["exp_name", "x", "y"]}
+        - {name: ConditionalTransformer, col: "exp_name", dest: "color", value: {plus: black, square: green, triangle1: blue, triangle2: blue}}
+    loaders:
+      #  (4) including a "stage" of another pipeline (from suite / template)
+      #      (4.3) include loader stage (can replace `suite` with `template` to choose the location)
+      $INCLUDE_STEPS$: [{suite: example07-etl, pipeline: coord_square}]
+
+
+  commands: # a pipeline to write a csv with the commands
+    $ETL_VARS$:
+      output_dir: config
+    experiments: "*"
+    $INCLUDE_PIPELINE$:  {template: config_template, pipeline: config}
+
+
+  # The idea is that the `config` pipeline is the same as the `config_stage` pipeline.
+  #  The difference is that here we show wo to import a stage individually.
+  #  (4) including a "stage" of another pipeline (from suite / template)
+  commands_stage: # a pipeline to write a csv with the commands
+
+    #  (5) use etl variables in pipeline/stage inclusion
+    #      It's possible to use variables with the `[% %]` syntax.
+    #      In combination with including pipelines or stages, this allows to specify some custom behavior.
+    #       (The included pipeline defines a variable with [% %] and then the "including" pipeline includes
+    #          `$ETL_VARS$` section to set the values)
+    $ETL_VARS$:
+      output_dir: config
+    experiments: "*"
+    extractors:
+      # (4.1) include extractor stage
+      $INCLUDE_STEPS$: # include a step from another pipeline (can also be from etl_template)
+        - {template: config_template, pipeline: config}
+
+    # (4.2) include transformer stage
+    # NOTE THE SMALL SYNTAX DIFFERENCE between inlcuding transformers compared to loaders and extractors
+    transformers:
+      # could have custom steps before
+      - $INCLUDE_STEPS$: {template: config_template, pipeline: config}  # include all steps in transformers
+      # could have custom steps after
+    loaders:
+      #  (4.3) include loader stage
+      $INCLUDE_STEPS$:
+        - {template: config_template, pipeline: config}
+
+
+# Experiment Designs
+###################################################################################
+
 square:
   n_repetitions: 1
   host_types:
@@ -63,85 +177,3 @@ triangle2:
     y: 3
   - x: 1
     y: 6
-
-# The goal of this design is to showcase (advanced) features of eth ETL pipeline
-#  (1)
-#  (2)
-#  ( ) use `experiments: "*"` to avoid listing all experiments
-#  ( ) use df.X syntax to directly use pandas df transformations: https://pandas.pydata.org/docs/reference/frame.html
-#  ( ) including another complete pipeline
-#      ( ) defined in a suite (current or another)
-#      ( ) defined in a template under `designs/etl_templates`
-#  ( ) including a "stage" of another pipeline (from suite / template)
-#      ( ) include extractor stage
-#      ( ) include transformer stage
-#      ( ) include loader stage
-#  ( ) use etl variables in pipeline/stage inclusion
-
-$ETL$:                                                         # Visualization of ETL Pipeline:
-  # coordinate pipelines to generate plots                     #   use `make design-validate suite=example07-etl` to see all
-  coord_square:                                                #
-    experiments: [square]                                      # ETL Pipeline: coord_square
-    extractors:                                                #--------------------------------------------------
-      YamlExtractor: {} # by default loads all .yaml files     #| YamlExtractor  ErrorExtractor  IgnoreExtractor | Extractors:
-      ErrorExtractor: {} # error stderr.log if non-empty       #--------------------------------------------------    result files to pandas df
-      IgnoreExtractor: {} # ignore stdout.log                  #                        |                          Transformers:
-    transformers:                                              #                        V                             transform df
-      - df.filter: {items: ["exp_name", "x", "y"]}             #                    df.filter
-      - df.eval: {expr: "color = 'black'"}                     #                        |
-    loaders:                                                   #                        V
-      CsvSummaryLoader: {} # writing a csv                     #                     df.eval
-      CoordinateLoader: {} # plotting a scatter plot           #                        |
-                                                               #                        V
-                                                               #       --------------------------------------
-                                                               #       | CsvSummaryLoader  CoordinateLoader |       Loaders:
-                                                               #       --------------------------------------          create results, e.g., plots
-
-
-
-  # TODO (.2) including another pipeline of a suite
-  # Here we use a pipeline defined in the same suite and select different experiments
-  # However, it is also possible to include a pipeline from another suite
-  coord_plus:
-    experiments: [plus]
-    $INCLUDE_PIPELINE$:  {suite: example07-etl, pipeline: coord_square} # show self include
-
-  coord_triangle:
-    experiments: [triangle1, triangle2]
-    $INCLUDE_PIPELINE$:  {suite: example07-etl, pipeline: coord_square}
-
-  coord_all:
-    experiments: "*"
-    extractors:
-      $INCLUDE_STEPS$: [{suite: example07-etl, pipeline: coord_square}]
-    # by including all we have a more complex color assignment -> we only include extractors + loaders and provide a custom transformer stage
-    transformers:
-        - df.filter: {items: ["exp_name", "x", "y"]}
-        - {name: ConditionalTransformer, col: "exp_name", dest: "color", value: {plus: black, square: green, triangle1: blue, triangle2: blue}}
-    loaders:
-      $INCLUDE_STEPS$: [{suite: example07-etl, pipeline: coord_square}]
-
-
-  commands:
-    $ETL_VARS$:
-      output_dir: config
-    experiments: "*"
-    $INCLUDE_PIPELINE$:  {template: config_template, pipeline: config}
-
-  commands_stage:
-
-    # the idea is that the `config` pipeline is the same as the `config_stage` pipeline. The difference is that here we show wo to import a stage individually
-    $ETL_VARS$:
-      output_dir: config
-    experiments: "*"
-    extractors:
-      $INCLUDE_STEPS$: # include a step from another pipeline (can also be from etl_template)
-        - {template: config_template, pipeline: config}
-
-    transformers:
-      # could have custom steps before
-      - $INCLUDE_STEPS$: {template: config_template, pipeline: config}  # include all steps in transformers
-      # could have custom steps after
-    loaders:
-      $INCLUDE_STEPS$:
-        - {template: config_template, pipeline: config}
