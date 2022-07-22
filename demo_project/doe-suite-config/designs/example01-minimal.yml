@@ -25,3 +25,8 @@ minimal: # experiment name
       $FACTOR$: [world, universe] # varied parameter between runs (factor)
     arg3:
       $FACTOR$: [".", "!"] # varied parameter between runs (factor)
+
+$ETL$: # ensures that stderr.log is empty everywhere and that no files are generated except stdout.log
+  check_error:
+    experiments: "*"
+    extractors: {ErrorExtractor: {}, IgnoreExtractor: {} }

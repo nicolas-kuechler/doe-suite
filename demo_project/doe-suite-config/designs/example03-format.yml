@@ -127,3 +127,8 @@ format_mixed:
   # - {"vector_size": 40, "app.name": app1, "app.hyperparam": 0.1, "seed": 1234}
   # - {"vector_size": 40, "app.name": app2, "app.hyperparam": 10 , "seed": 1234}
   # - {"vector_size": 40, "app.name": app3, "app.hyperparam": 5  , "seed": 1234}
+
+$ETL$:
+  check_error: # ensures that stderr.log is empty everywhere and that no files are generated except stdout.log
+    experiments: "*"
+    extractors: {ErrorExtractor: {}, IgnoreExtractor: {} }

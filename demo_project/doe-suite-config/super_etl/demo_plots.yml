@@ -5,7 +5,7 @@
 # Super ETL also supports multiple outputs from different suites can be combined here, but this file does not demo that functionality.
 
 $SUITE_ID$:
-  example02-single: #00000001 # SUITE ID
+  example02-single: $expected #00000001 # SUITE ID
 
   # ... if more suites exist, other ids
 

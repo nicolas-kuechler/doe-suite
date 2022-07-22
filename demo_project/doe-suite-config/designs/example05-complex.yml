@@ -96,3 +96,9 @@ exp_multi_2:
     # - echo hello 200 people
     # - echo hello 300 people
     # - echo hello 500 people
+
+
+$ETL$:
+  check_error: # ensures that stderr.log is empty everywhere and that no files are generated except stdout.log
+    experiments: "*"
+    extractors: {ErrorExtractor: {}, IgnoreExtractor: {} }

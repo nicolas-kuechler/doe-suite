@@ -53,3 +53,8 @@ exp_client_server:
       host_vars:
         client:
           msg:  good day server
+
+$ETL$:
+  check_error: # ensures that stderr.log is empty everywhere and that no files are generated except stdout.log
+    experiments: "*"
+    extractors: {ErrorExtractor: {}, IgnoreExtractor: {} }
