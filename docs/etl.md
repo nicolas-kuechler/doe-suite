@@ -33,9 +33,10 @@ Doe suite supports the definition of suite-transcending (super-suite) ETL pipeli
 combines experiments from multiple suites, which we refer to as super ETL.
 
 Pipeline configs are defined in `doe-suite-config/super_etl` and can be run similar to regular etl, using
+# TODO [nku] needs to use makefile in commands
 
 ```bash
-poetry run python src/super_etl.py --config_name pipeline.yml
+poetry run python src/super_etl.py --config pipeline
 ```
 
 #### Custom output location
@@ -43,19 +44,19 @@ The default option is to place results in `doe-suite-results/super_etl`.
 This may be overridden using the `output_path` option to specify a base directory for outputs.
 In the following example, a pipeline named `pipeline` outputs a file `plot.pdf` defined in `config.yml`.
 ```bash
-poetry run python src/super_etl.py --config_name config.yml --output_path {paper_dir}
+poetry run python src/super_etl.py --config config --output_path {paper_dir}
 # (Over)writes: paper_dir/config/plot.pdf
 ```
 In the base directory, subdirectories per-pipeline and per-config file can be created using `--output_dir_config_name_disabled`
 and `output_dir_pipeline`.
 ```bash
-poetry run python src/super_etl.py --config_name config.yml --output_path {paper_dir} --output_dir_config_name_disabled
+poetry run python src/super_etl.py --config config --output_path {paper_dir} --output_dir_config_name_disabled
 # (Over)writes: paper_dir/plot.pdf
 
-poetry run python src/super_etl.py --config_name config.yml --output_path {paper_dir} --output_dir_pipeline
+poetry run python src/super_etl.py --config config --output_path {paper_dir} --output_dir_pipeline
 # (Over)writes: paper_dir/config/pipeline/plot.pdf
 
-poetry run python src/super_etl.py --config_name config.yml --output_path {paper_dir} --output_dir_config_name_disabled --output_dir_pipeline
+poetry run python src/super_etl.py --config_name config --output_path {paper_dir} --output_dir_config_name_disabled --output_dir_pipeline
 # (Over)writes: paper_dir/pipeline/plot.df
 ```
 The default is to create a directory for each config file, but not for each pipeline as generally the output files have the pipeline name.

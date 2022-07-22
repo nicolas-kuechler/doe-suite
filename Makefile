@@ -31,10 +31,12 @@ help:
 	@echo '  make run suite=<SUITE> id=<ID> expfilter=<REGEX>    - run only subset of experiments in suite where name matches the <REGEX>'
 	@echo 'Clean'
 	@echo '  make clean                                          - terminate running cloud instances belonging to the project and local cleanup'
-	@echo '  make clean-result                                   - delete all results in doe-suite-results except for one suite run per suite (the last complete)'
-	@echo 'Running ETL'
+	@echo '  make clean-result                                   - delete all results in doe-suite-results except for the last (complete) suite run per suite'
+	@echo 'Running ETL Locally'
 	@echo '  make etl suite=<SUITE> id=<ID>                      - run the etl pipeline of the suite (locally) to process results (often id=last)'
+	@echo '  make etl-design suite=<SUITE> id=<ID>               - same as `make etl ...` but uses the pipeline from the suite design instead of results'
 	@echo '  make etl-all                                        - run etl pipelines of all results'
+	@echo '  make etl-super config=<CONFIG> out=<PATH>           - run the super etl to combine results of multiple suites  (for <CONFIG> e.g., demo_plots)'
 	@echo 'Clean ETL'
 	@echo '  make etl-clean suite=<SUITE> id=<ID>                - delete etl results from specific suite (can be regenerated with make etl ...)'
 	@echo '  make etl-clean-all                                  - delete etl results from all suites (can be regenerated with make etl-all)'
@@ -47,11 +49,10 @@ help:
 	@echo 'Setting up a Suite'
 	@echo '  make new                                            - initialize doe-suite-config from a template'
 	@echo 'Running Tests'
-	@echo '  make test                                           - running all suites sequentially and comparing results to expected'
+	@echo '  make test                                           - running all suites (seq) and comparing results to expected (on aws)'
+	@echo '  make euler-test cloud=euler                         - running all single instance suites on euler and compare results to expected'
 	@echo '  make etl-test-all                                   - re-run all etl pipelines and compare results to current state (useful after update of etl step)'
 
-# TODO: add super etl + clean commands
-# TODO: extend run commands with state (if available)
 
 #################################
 #  ___ ___ _____ _   _ ___
@@ -97,17 +98,15 @@ run: install cloud-check
 	poetry run ansible-playbook $(PWD)/src/experiment-suite.yml -e "suite=$(suite) id=$(id) cloud=$(cloud) $(myexpfilter)"
 
 # TODO [nku] integrate them into run target when they are available
-#run2 :
-#	@echo "suite=$(suite) id=$(id) cloud=$(cloud)   state=$(state)   $(myexpfilter)"
 #
 #run-keep: state=keep
-#run-keep: run2
+#run-keep: run
 #
 #run-stop: state=stop
-#run-stop: run2
+#run-stop: run
 #
 #run-terminate: state=terminate
-#run-terminate: run2
+#run-terminate: run
 
 
 #################################
@@ -125,14 +124,23 @@ etl: install
 	@cd $(does_config_dir) && \
 	poetry run python $(PWD)/doespy/doespy/etl/etl.py --suite $(suite) --id $(id)
 
+# instead of using the etl pipeline defined in the results folder, it uses the pipeline from the design
+# useful for developing an etl pipeline
+etl-design: install
+	@cd $(does_config_dir) && \
+	poetry run python $(PWD)/doespy/doespy/etl/etl.py --suite $(suite) --id $(id) --load_from_design
+
 # run etl pipelines for all available results
 etl-all: install
 	@cd $(does_config_dir) && \
 	poetry run python $(PWD)/doespy/doespy/etl/etl.py --all
 
-# TODO: define running the super etl with its arguments
+# run the etl pipelines defined in the doe-suite-config/super_etl/$(config)
+#  write the etl results into $(out)
+# e.g., make etl-super config=demo_plots out=/home/kuenico/dev/doe-suite/tmp
 etl-super: install
 	@cd $(does_config_dir) && \
+	poetry run python $(PWD)/doespy/doespy/etl/super_etl.py --config $(config) --output_path $(out)
 
 # delete etl results for a specific `suite` and `id`  (can be regenerated with `make etl suite=<SUITE> id=<ID>`)
 etl-clean:
@@ -151,6 +159,7 @@ etl-test-all:
 	poetry run pytest $(PWD)/doespy -q -k 'test_etl_pipeline' -s
 
 
+
 #################################
 #    ___ _    ___   _   _  _
 #  / __| |  | __| /_\ | \| |
@@ -159,7 +168,6 @@ etl-test-all:
 #
 #################################
 # https://patorjk.com/software/taag/#p=display&h=2&v=2&f=Small&t=CLEAN
-
 
 
 # delete surplus python files: https://gist.github.com/lumengxi/0ae4645124cd4066f676
@@ -228,12 +236,25 @@ rescomp:
 test-%:
 	@make run suite=$* id=new
 	@make rescomp suite=$* id=last
+
+
+single-test: test-example01-minimal test-example02-single test-example03-format test-example06-vars test-example07-etl
+multi-test: test-example04-multi test-example05-complex
+
 # runs the listed suites and compares the result with the expected result under `doe-suite-results`
-test: test-example01-minimal test-example02-single test-example03-format test-example06-vars
-# roughly took 20 mins
+aws-test: single-test multi-test
 
+# runs all examples compatible with euler (no multi instance experiments)
+euler-test: single-test
 
+test: aws-test euler-test
 
+# convert a results dir to the expected results dir
+convert-to-expected:
+	@echo -n "Are you sure to make the results in $(does_results_dir)/$(suite)_$(id) to the expected results of the suite? [y/N] " && read ans && [ $${ans:-N} = y ]
+	cd $(does_results_dir)/$(suite)_$(id) && \
+	find . -type f -exec sed -i 's/$(id)/$$expected/g' {} +
+	mv $(does_results_dir)/$(suite)_$(id) $(does_results_dir)/$(suite)_\$$expected
 
 
 #################################

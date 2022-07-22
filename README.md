@@ -143,6 +143,23 @@ Quick reference for the most important commands.
 
 :warning: Ensure that the environment variable `DOES_PROJECT_DIR` points to the project directory.
 
+```sh
+# hint: can set the environment variables with `direnv` in an .envrc
+
+# expect does-config-dir in this folder
+export DOES_PROJECT_DIR=<PATH>
+
+# a unique short name, allows that multiple people can work on the same project
+export DOES_PROJECT_ID_SUFFIX=<SUFFIX>
+
+# name of ssh key used for setting up access to aws machines
+export DOES_SSH_KEY_NAME=<SSH_KEY_NAME>
+
+# eth nethz account for using euler cluster
+export DOES_EULER_USER=<NETHZ>
+
+```
+
 
 ### Running Experiments
 

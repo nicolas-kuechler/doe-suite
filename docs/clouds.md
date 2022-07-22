@@ -21,10 +21,10 @@ If no such file exists, `main.yml` will be used as a fallback.
 This cloud multiplexing is enabled for the following roles:
 - `setup-suite`
 - Any `suite-cloud-*` role
-- Any host-specific role, those in `does_config/roles/setup-*`.
+- Any host-specific role, those in `doe-suite-config/roles/setup-*`.
 
 ## Schedulers
-We now have the concept of schedulers that handles the scheduling of jobs. 
+We now have the concept of schedulers that handles the scheduling of jobs.
 The default scheduler is `tsp` which will be set-up on the OS by the doe suite.
 In some cases, the cloud has its own scheduler, for example `bsub` in Euler.
 The variable `job_scheduler` is used to control which scheduler is used.
@@ -41,7 +41,7 @@ The Doe Suite looks for the specific scheduler implementation in the following r
 `main` represents all supported clouds except the ones that have a specific file.
 
 ### Setup roles
-In `does_config/roles/**`, rename `main.yml` to `aws.yml`
+In `doe-suite-config/roles/**`, rename `main.yml` to `aws.yml`
 
 ## Adding new clouds
 Add setup tasks for all cloud-related tasks: `suite-cloud-*` in the suite.
@@ -54,7 +54,7 @@ Here we describe some task-specific variables that must be defined.
 
 #### suite-cloud-inventory-setup
 Set up the inventory file for ansible based on local parameters and then refresh inventory.
-May consist of templating a template inventory file with the relevant parameters in the `group_vars` of the `does_config` dir.
+May consist of templating a template inventory file with the relevant parameters in the `group_vars` of the `doe-suite-config` dir.
 
 "Coordinating" servers must be added to the host group `is_controller_yes`.
 
@@ -79,4 +79,3 @@ Get the status of jobs
 #### suite-scheduler-remove
 Remove a job with label from the queue when its finished.
 `job_id_to_wait_for` must be defined.
-
