@@ -1,0 +1,62 @@
+experiment_1:
+- out: json
+  payload_size_mb: 10
+  opt: true
+  $CMD$:
+    small:
+    - main: /home/ubuntu/code/demo_project/.venv/bin/python /home/ubuntu/code/demo_project/demo_latency.py --opt True --size 10 --out json
+- out: json
+  payload_size_mb: 10
+  opt: false
+  $CMD$:
+    small:
+    - main: /home/ubuntu/code/demo_project/.venv/bin/python /home/ubuntu/code/demo_project/demo_latency.py --opt False --size 10 --out json
+- out: json
+  payload_size_mb: 20
+  opt: true
+  $CMD$:
+    small:
+    - main: /home/ubuntu/code/demo_project/.venv/bin/python /home/ubuntu/code/demo_project/demo_latency.py --opt True --size 20 --out json
+- out: json
+  payload_size_mb: 20
+  opt: false
+  $CMD$:
+    small:
+    - main: /home/ubuntu/code/demo_project/.venv/bin/python /home/ubuntu/code/demo_project/demo_latency.py --opt False --size 20 --out json
+- out: json
+  payload_size_mb: 30
+  opt: true
+  $CMD$:
+    small:
+    - main: /home/ubuntu/code/demo_project/.venv/bin/python /home/ubuntu/code/demo_project/demo_latency.py --opt True --size 30 --out json
+- out: json
+  payload_size_mb: 30
+  opt: false
+  $CMD$:
+    small:
+    - main: /home/ubuntu/code/demo_project/.venv/bin/python /home/ubuntu/code/demo_project/demo_latency.py --opt False --size 30 --out json
+experiment_2:
+- out: csv
+  problem:
+    opt: false
+    size: 10
+    other: '[0, 1]'
+  $CMD$:
+    small:
+    - main: /home/ubuntu/code/demo_project/.venv/bin/python /home/ubuntu/code/demo_project/demo.py --config config.json
+- out: csv
+  problem:
+    opt: false
+    size: 15
+    other: '[0, 1]'
+  $CMD$:
+    small:
+    - main: /home/ubuntu/code/demo_project/.venv/bin/python /home/ubuntu/code/demo_project/demo.py --config config.json
+- out: csv
+  problem:
+    opt: false
+    size: 20
+    other: '[0, 1]'
+  $CMD$:
+    small:
+    - main: /home/ubuntu/code/demo_project/.venv/bin/python /home/ubuntu/code/demo_project/demo.py --config config.json

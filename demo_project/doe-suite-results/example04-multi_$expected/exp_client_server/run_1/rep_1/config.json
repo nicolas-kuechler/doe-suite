@@ -1,0 +1,27 @@
+{
+    "$CMD$": {
+        "client": [
+            {
+                "main": "sleep 5 && echo 'hi server from client 1 (run 1)' | netcat -q 1 ip-10-100-0-171.eu-central-1.compute.internal 2807"
+            },
+            {
+                "main": "sleep 5 && echo 'hi server from client 2 (run 1)' | netcat -q 1 ip-10-100-0-171.eu-central-1.compute.internal 2807"
+            }
+        ],
+        "server": [
+            {
+                "main": "ncat -l 2807 --keep-open"
+            }
+        ]
+    },
+    "host_vars": {
+        "client": {
+            "msg": "hi server"
+        },
+        "server": {
+            "greeting": "ignore"
+        }
+    },
+    "info": "run 1",
+    "port": 2807
+}

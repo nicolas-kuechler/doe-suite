@@ -1,0 +1,23 @@
+{
+    "$CMD$": {
+        "small": [
+            {
+                "main": "echo \"--version v1 --option overwrite suite_vars default abc --hello a --f2 --2 \""
+            }
+        ]
+    },
+    "argument": "hello a",
+    "base_arg": "--version v1 --option overwrite suite_vars default abc",
+    "define_factor": "f2",
+    "define_factor_cross": "v1",
+    "design_va": "abc1",
+    "design_va_nested": {
+        "arg1": "a",
+        "arg2": "b"
+    },
+    "existing": "overwrite suite_vars default",
+    "existing_factor": 2,
+    "hello": {
+        "world": "o1"
+    }
+}

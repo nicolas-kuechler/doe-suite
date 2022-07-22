@@ -1,0 +1,25 @@
+minimal:
+- arg1: hello
+  arg2: world
+  arg3: .
+  $CMD$:
+    small:
+    - main: echo "hello world. "
+- arg1: hello
+  arg2: world
+  arg3: '!'
+  $CMD$:
+    small:
+    - main: echo "hello world! "
+- arg1: hello
+  arg2: universe
+  arg3: .
+  $CMD$:
+    small:
+    - main: echo "hello universe. "
+- arg1: hello
+  arg2: universe
+  arg3: '!'
+  $CMD$:
+    small:
+    - main: echo "hello universe! "

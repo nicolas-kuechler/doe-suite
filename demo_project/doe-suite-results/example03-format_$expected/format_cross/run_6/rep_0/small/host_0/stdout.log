@@ -1,0 +1,1 @@
+run app=app1 with vec=30 seed=1234

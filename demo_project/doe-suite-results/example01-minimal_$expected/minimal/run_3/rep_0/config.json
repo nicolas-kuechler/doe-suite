@@ -1,0 +1,12 @@
+{
+    "$CMD$": {
+        "small": [
+            {
+                "main": "echo \"hello universe! \""
+            }
+        ]
+    },
+    "arg1": "hello",
+    "arg2": "universe",
+    "arg3": "!"
+}

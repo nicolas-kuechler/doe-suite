@@ -1,0 +1,150 @@
+square:
+- x: 0
+  y: 0
+  $CMD$:
+    small:
+    - main: 'printf ''x: 0\ny: 0'' > results/coordinates.yaml'
+- x: 0
+  y: 1
+  $CMD$:
+    small:
+    - main: 'printf ''x: 0\ny: 1'' > results/coordinates.yaml'
+- x: 0
+  y: 2
+  $CMD$:
+    small:
+    - main: 'printf ''x: 0\ny: 2'' > results/coordinates.yaml'
+- x: 1
+  y: 0
+  $CMD$:
+    small:
+    - main: 'printf ''x: 1\ny: 0'' > results/coordinates.yaml'
+- x: 1
+  y: 1
+  $CMD$:
+    small:
+    - main: 'printf ''x: 1\ny: 1'' > results/coordinates.yaml'
+- x: 1
+  y: 2
+  $CMD$:
+    small:
+    - main: 'printf ''x: 1\ny: 2'' > results/coordinates.yaml'
+- x: 2
+  y: 0
+  $CMD$:
+    small:
+    - main: 'printf ''x: 2\ny: 0'' > results/coordinates.yaml'
+- x: 2
+  y: 1
+  $CMD$:
+    small:
+    - main: 'printf ''x: 2\ny: 1'' > results/coordinates.yaml'
+- x: 2
+  y: 2
+  $CMD$:
+    small:
+    - main: 'printf ''x: 2\ny: 2'' > results/coordinates.yaml'
+plus:
+- x: 8
+  y: 5
+  dist: 1
+  orient: N
+  $CMD$:
+    small:
+    - main: 'printf ''x: 8 \ny: 6'' > results/coordinates.yaml'
+- x: 8
+  y: 5
+  dist: 1
+  orient: E
+  $CMD$:
+    small:
+    - main: 'printf ''x: 9 \ny: 5'' > results/coordinates.yaml'
+- x: 8
+  y: 5
+  dist: 1
+  orient: S
+  $CMD$:
+    small:
+    - main: 'printf ''x: 8 \ny: 4'' > results/coordinates.yaml'
+- x: 8
+  y: 5
+  dist: 1
+  orient: W
+  $CMD$:
+    small:
+    - main: 'printf ''x: 7 \ny: 5'' > results/coordinates.yaml'
+- x: 8
+  y: 5
+  dist: 2
+  orient: N
+  $CMD$:
+    small:
+    - main: 'printf ''x: 8 \ny: 7'' > results/coordinates.yaml'
+- x: 8
+  y: 5
+  dist: 2
+  orient: E
+  $CMD$:
+    small:
+    - main: 'printf ''x: 10 \ny: 5'' > results/coordinates.yaml'
+- x: 8
+  y: 5
+  dist: 2
+  orient: S
+  $CMD$:
+    small:
+    - main: 'printf ''x: 8 \ny: 3'' > results/coordinates.yaml'
+- x: 8
+  y: 5
+  dist: 2
+  orient: W
+  $CMD$:
+    small:
+    - main: 'printf ''x: 6 \ny: 5'' > results/coordinates.yaml'
+triangle1:
+- x: 0
+  y: 3
+  $CMD$:
+    small:
+    - main: 'printf ''x: 0\ny: 3'' > results/coordinates.yaml'
+- x: 0
+  y: 4
+  $CMD$:
+    small:
+    - main: 'printf ''x: 0\ny: 4'' > results/coordinates.yaml'
+- x: 1
+  y: 3
+  $CMD$:
+    small:
+    - main: 'printf ''x: 1\ny: 3'' > results/coordinates.yaml'
+- x: 1
+  y: 4
+  $CMD$:
+    small:
+    - main: 'printf ''x: 1\ny: 4'' > results/coordinates.yaml'
+- x: 2
+  y: 3
+  $CMD$:
+    small:
+    - main: 'printf ''x: 2\ny: 3'' > results/coordinates.yaml'
+- x: 2
+  y: 4
+  $CMD$:
+    small:
+    - main: 'printf ''x: 2\ny: 4'' > results/coordinates.yaml'
+triangle2:
+- x: -1
+  y: 3
+  $CMD$:
+    small:
+    - main: 'printf ''x: -1\ny: 3'' > results/coordinates.yaml'
+- x: 3
+  y: 3
+  $CMD$:
+    small:
+    - main: 'printf ''x: 3\ny: 3'' > results/coordinates.yaml'
+- x: 1
+  y: 6
+  $CMD$:
+    small:
+    - main: 'printf ''x: 1\ny: 6'' > results/coordinates.yaml'

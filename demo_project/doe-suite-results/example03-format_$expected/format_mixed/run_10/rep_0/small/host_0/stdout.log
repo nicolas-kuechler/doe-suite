@@ -1,0 +1,1 @@
+run app=app3 with hyperparam=5 vec=30 seed=1234

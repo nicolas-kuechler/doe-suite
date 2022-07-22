@@ -1,0 +1,12 @@
+{
+    "$CMD$": {
+        "small": [
+            {
+                "main": "/home/ubuntu/code/demo_project/.venv/bin/python /home/ubuntu/code/demo_project/demo_latency.py --opt True --size 30 --out json"
+            }
+        ]
+    },
+    "opt": true,
+    "out": "json",
+    "payload_size_mb": 30
+}

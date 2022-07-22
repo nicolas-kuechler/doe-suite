@@ -1,0 +1,11 @@
+{
+    "$CMD$": {
+        "small": [
+            {
+                "main": "printf 'x: 1\\ny: 2' > results/coordinates.yaml"
+            }
+        ]
+    },
+    "x": 1,
+    "y": 2
+}

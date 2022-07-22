@@ -1,0 +1,15 @@
+{
+    "$CMD$": {
+        "small": [
+            {
+                "main": "echo \"run app=app3 with hyperparam=5 vec=10 seed=1234\""
+            }
+        ]
+    },
+    "app": {
+        "hyperparam": 5,
+        "name": "app3"
+    },
+    "seed": 1234,
+    "vector_size": 10
+}

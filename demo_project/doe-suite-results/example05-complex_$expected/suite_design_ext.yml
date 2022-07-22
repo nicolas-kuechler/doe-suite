@@ -1,0 +1,104 @@
+exp_single:
+- info: run1 - with optimization
+  seed: 1234
+  opt: true
+  $CMD$:
+    small:
+    - main: echo "run1 - with optimization;1234;True" >> results/out.csv
+- info: run2 - without optimization
+  seed: 1234
+  opt: false
+  $CMD$:
+    small:
+    - main: echo "run2 - without optimization;1234;False" >> results/out.csv
+exp_multi_1:
+- port: 2807
+  host_vars:
+    client:
+      msg: hello server
+  $CMD$:
+    client:
+    - main: sleep 5 && echo 'hello server from client 1' | netcat -q 1 ip-10-100-0-253.eu-central-1.compute.internal 2807
+    - main: sleep 5 && echo 'hello server from client 2' | netcat -q 1 ip-10-100-0-253.eu-central-1.compute.internal 2807
+    - main: sleep 5 && echo 'hello server from client 3' | netcat -q 1 ip-10-100-0-253.eu-central-1.compute.internal 2807
+    server:
+    - main: ncat -l 2807 --keep-open
+- port: 2807
+  host_vars:
+    client:
+      msg: hi server
+  $CMD$:
+    client:
+    - main: sleep 5 && echo 'hi server from client 1' | netcat -q 1 ip-10-100-0-253.eu-central-1.compute.internal 2807
+    - main: sleep 5 && echo 'hi server from client 2' | netcat -q 1 ip-10-100-0-253.eu-central-1.compute.internal 2807
+    - main: sleep 5 && echo 'hi server from client 3' | netcat -q 1 ip-10-100-0-253.eu-central-1.compute.internal 2807
+    server:
+    - main: ncat -l 2807 --keep-open
+- port: 2807
+  host_vars:
+    client:
+      msg: good day server
+  $CMD$:
+    client:
+    - main: sleep 5 && echo 'good day server from client 1' | netcat -q 1 ip-10-100-0-253.eu-central-1.compute.internal 2807
+    - main: sleep 5 && echo 'good day server from client 2' | netcat -q 1 ip-10-100-0-253.eu-central-1.compute.internal 2807
+    - main: sleep 5 && echo 'good day server from client 3' | netcat -q 1 ip-10-100-0-253.eu-central-1.compute.internal 2807
+    server:
+    - main: ncat -l 2807 --keep-open
+exp_multi_2:
+- n_parties: 100
+  prefix: hi
+  postfix: parties
+  $CMD$:
+    small:
+    - main: 'echo "hi 100 parties" '
+    - main: 'echo "hi 100 parties" '
+- n_parties: 200
+  prefix: hi
+  postfix: parties
+  $CMD$:
+    small:
+    - main: 'echo "hi 200 parties" '
+    - main: 'echo "hi 200 parties" '
+- n_parties: 300
+  prefix: hi
+  postfix: parties
+  $CMD$:
+    small:
+    - main: 'echo "hi 300 parties" '
+    - main: 'echo "hi 300 parties" '
+- n_parties: 500
+  prefix: hi
+  postfix: parties
+  $CMD$:
+    small:
+    - main: 'echo "hi 500 parties" '
+    - main: 'echo "hi 500 parties" '
+- n_parties: 100
+  prefix: hello
+  postfix: people
+  $CMD$:
+    small:
+    - main: 'echo "hello 100 people" '
+    - main: 'echo "hello 100 people" '
+- n_parties: 200
+  prefix: hello
+  postfix: people
+  $CMD$:
+    small:
+    - main: 'echo "hello 200 people" '
+    - main: 'echo "hello 200 people" '
+- n_parties: 300
+  prefix: hello
+  postfix: people
+  $CMD$:
+    small:
+    - main: 'echo "hello 300 people" '
+    - main: 'echo "hello 300 people" '
+- n_parties: 500
+  prefix: hello
+  postfix: people
+  $CMD$:
+    small:
+    - main: 'echo "hello 500 people" '
+    - main: 'echo "hello 500 people" '

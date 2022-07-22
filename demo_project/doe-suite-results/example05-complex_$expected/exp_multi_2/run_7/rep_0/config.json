@@ -1,0 +1,15 @@
+{
+    "$CMD$": {
+        "small": [
+            {
+                "main": "echo \"hello 500 people\" "
+            },
+            {
+                "main": "echo \"hello 500 people\" "
+            }
+        ]
+    },
+    "n_parties": 500,
+    "postfix": "people",
+    "prefix": "hello"
+}

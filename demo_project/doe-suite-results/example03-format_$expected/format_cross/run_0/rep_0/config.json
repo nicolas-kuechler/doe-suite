@@ -1,0 +1,14 @@
+{
+    "$CMD$": {
+        "small": [
+            {
+                "main": "echo \"run app=app1 with vec=10 seed=1234\""
+            }
+        ]
+    },
+    "app": {
+        "name": "app1"
+    },
+    "seed": 1234,
+    "vector_size": 10
+}

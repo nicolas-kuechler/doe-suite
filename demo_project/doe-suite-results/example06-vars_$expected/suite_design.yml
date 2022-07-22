@@ -1,0 +1,33 @@
+shared_vars:
+  n_repetitions: 1
+  host_types:
+    small:
+      n: 1
+      $CMD$:
+      - main: echo "[% my_run.base_arg %] --[% my_run.argument %] --[% my_run.define_factor %] --[% my_run.existing_factor %] "
+      check_status: true
+      init_roles: []
+  base_experiment:
+    existing: overwrite suite_vars default
+    existing_factor:
+      $FACTOR$:
+      - 1
+      - 2
+    argument: hello [% my_run.design_va_nested.arg1 %]
+    hello:
+      world: o1
+    define_factor: $FACTOR$
+    define_factor_cross:
+      $FACTOR$:
+      - v1
+      - v2
+    base_arg: --version [% my_run.define_factor_cross %] --option [% my_run.existing %] abc
+    design_va: abc1
+    design_va_nested:
+      arg1: a
+      arg2: b
+  factor_levels:
+  - define_factor: f1
+  - define_factor: f2
+  common_roles: []
+$ETL$: {}

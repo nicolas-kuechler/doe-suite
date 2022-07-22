@@ -1,3 +1,4 @@
 doe-suite-results/*
-# TODO [nku] in the end comment this in
-#!doe-suite-results/*_$expected
+
+# we want to have expected results in the repo
+!doe-suite-results/*_$expected
