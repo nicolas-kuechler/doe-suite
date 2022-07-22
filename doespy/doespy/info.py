@@ -1,5 +1,6 @@
 from doespy import util
-import os, glob
+import os
+import glob
 
 
 def display_info():
@@ -17,7 +18,6 @@ def display_info():
     print("------------------")
 
 
-
 def get_suite_designs():
 
     config_dir = util.get_config_dir()
@@ -30,6 +30,7 @@ def get_suite_designs():
         designs.append(suite)
     return designs
 
+
 def get_experiments(suite):
     exps = []
     design = util.get_suite_design(suite)
@@ -37,6 +38,7 @@ def get_experiments(suite):
         if not exp_name.startswith("$"):
             exps.append(exp_name)
     return exps
+
 
 def get_etl_pipelines(suite):
     design = util.get_suite_design(suite)
@@ -47,5 +49,5 @@ def get_etl_pipelines(suite):
     return pipelines
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     display_info()

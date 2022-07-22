@@ -1,4 +1,3 @@
-
 from doespy.etl.steps.extractors import Extractor
 from doespy.etl.steps.transformers import Transformer
 from doespy.etl.steps.loaders import Loader, PlotLoader
@@ -7,13 +6,13 @@ import pandas as pd
 from typing import Dict, List
 import matplotlib.pyplot as plt
 
-class MyExtractor(Extractor):
 
+class MyExtractor(Extractor):
     def file_regex_default(self):
-        return ['.*\.txt$', '.*\.log$']
+        return [r".*\.txt$", r".*\.log$"]
 
     def extract(self, path: str, options: Dict) -> List[Dict]:
-        print(f"MyExtractor: do nothing")
+        print("MyExtractor: do nothing")
         return [{}]
 
 
@@ -24,10 +23,9 @@ class MyTransformer(Transformer):
 
 
 class MyLoader(Loader):
-
     def load(self, df: pd.DataFrame, options: Dict, etl_info: Dict) -> None:
         print(f"MyLoader: do nothing  ({df.info()})")
-        #output_dir = self.get_output_dir(options, etl_info)
+        # output_dir = self.get_output_dir(options, etl_info)
 
 
 class MyPlotLoader(PlotLoader):
@@ -35,9 +33,8 @@ class MyPlotLoader(PlotLoader):
         print(f"MyPlotLoader: do nothing  ({df.info()})")
         if not df.empty:
             fig = self.plot(df)
-            output_dir = self.get_output_dir(options, etl_info)
+            output_dir = self.get_output_dir(etl_info)
             self.save_plot(fig, filename="test", output_dir=output_dir)
-
 
     def plot(self, df):
         fig = plt.figure()

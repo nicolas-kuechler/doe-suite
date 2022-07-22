@@ -1,13 +1,19 @@
-import argparse, time, json, random, csv, random
+import argparse
+import time
+import json
+import random
+import csv
+
 
 random.seed(1234)
+
 
 def main():
 
     parser = argparse.ArgumentParser(description="")
     parser.add_argument("--size", type=int, required=True)
-    parser.add_argument("--opt", choices=['True', 'False'], required=True)
-    parser.add_argument("--out", default="json", choices=['json', 'csv'])
+    parser.add_argument("--opt", choices=["True", "False"], required=True)
+    parser.add_argument("--out", default="json", choices=["json", "csv"])
 
     args = parser.parse_args()
 
@@ -16,12 +22,13 @@ def main():
     else:
         a = 2.7
 
-
     print("Measuring Latency...")
     data = {}
-    data["latency"] = a * args.size + random.uniform(-1, 1) # latency depends linear on size + some noise for reps
+    data["latency"] = a * args.size + random.uniform(
+        -1, 1
+    )  # latency depends linear on size + some noise for reps
 
-    time.sleep(10) # wait 15 seconds
+    time.sleep(10)  # wait 15 seconds
 
     if args.out == "json":
         write_json_output([data])
@@ -32,7 +39,7 @@ def main():
 
 
 def write_json_output(data):
-    with open("results/demo_latency_out.json", 'w+') as f:
+    with open("results/demo_latency_out.json", "w+") as f:
         json.dump(data, f)
 
 

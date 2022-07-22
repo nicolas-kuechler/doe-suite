@@ -1,6 +1,12 @@
-import os, sys, time, json, random, csv
+import os
+import sys
+import time
+import json
+import random
+import csv
 
 random.seed(1234)
+
 
 def main():
     print(f"cwd={os.getcwd()}")
@@ -12,7 +18,7 @@ def main():
     print(f"config={config}\n\n")
 
     print("Demo Starting...")
-    time.sleep(15) # wait 15 seconds
+    time.sleep(15)  # wait 15 seconds
 
     print("Demo Writing Output...")
 
@@ -31,8 +37,7 @@ def write_json_output(args):
 
     d["tp"] = random.randint(1, 21)
 
-
-    with open("results/demo_out.json", 'w+') as f:
+    with open("results/demo_out.json", "w+") as f:
         json.dump(d, f)
 
 

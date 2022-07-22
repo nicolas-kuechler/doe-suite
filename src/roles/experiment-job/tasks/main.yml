@@ -210,9 +210,10 @@
 
   - name: Run ETL Pipeline
     block:
+
       - name: Run ETL pipeline over results files (start)
         delegate_to: localhost
-        ansible.builtin.shell: # the --dev ensures that local changes in the etl pipelines are respected
+        ansible.builtin.shell:
           cmd: python ../doespy/doespy/etl/etl.py --suite {{ suite }} --id {{ suite_id }}
         when: ((current_exec_etl | int - previous_exec_etl | default(0) | int) > (etl_minimum_delay_sec|int))  or exp_job_ids_unfinished | list | length == 1
 

@@ -1,4 +1,6 @@
-import os, yaml, argparse
+import os
+import yaml
+import argparse
 
 from doespy import util
 
@@ -44,12 +46,15 @@ def get_suite_status(dir):
 
     return suite_status, etl_error
 
+
 def print_suite_status(suite_status):
-    for exp, status in suite_status.items():
-        print(f"Experiment={exp}  -  {status['n_jobs_finished']}/{status['n_jobs']} jobs finished")
+    for exp, s in suite_status.items():
+        print(
+            f"Experiment={exp}  -  {s['n_jobs_finished']}/{s['n_jobs']} jobs done"
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="")
     parser.add_argument("--suite", type=str)
     parser.add_argument("--id", type=str)

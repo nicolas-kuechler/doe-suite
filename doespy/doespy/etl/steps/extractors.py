@@ -1,7 +1,10 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict
 
-import warnings, yaml, json, csv
+import warnings
+import yaml
+import json
+import csv
 from dataclasses import dataclass, field
 
 
@@ -26,28 +29,28 @@ class Extractor(ABC):
     def extract(self, path: str, options: Dict) -> List[Dict]:
         pass
 
+
 # TODO [nku] add docstrings
 
 
 class YamlExtractor(Extractor):
-
     def file_regex_default(self):
-        return ['.*\.yaml$', '.*\.yml$']
+        return [r".*\.yaml$", r".*\.yml$"]
 
     def extract(self, path: str, options: Dict) -> List[Dict]:
-       with open(path, 'r') as f:
-           data = yaml.load(f, yaml.SafeLoader)
-       if not isinstance(data, list):
-           data = [data]
-       return data
+        with open(path, "r") as f:
+            data = yaml.load(f, yaml.SafeLoader)
+        if not isinstance(data, list):
+            data = [data]
+        return data
+
 
 class JsonExtractor(Extractor):
-
     def file_regex_default(self):
-        return ['.*\.json$']
+        return [r".*\.json$"]
 
     def extract(self, path: str, options: Dict) -> List[Dict]:
-        with open(path, 'r') as f:
+        with open(path, "r") as f:
             data = json.load(f)
 
         if not isinstance(data, list):
@@ -55,10 +58,10 @@ class JsonExtractor(Extractor):
 
         return data
 
-class CsvExtractor(Extractor):
 
+class CsvExtractor(Extractor):
     def file_regex_default(self):
-        return ['.*\.csv$']
+        return [r".*\.csv$"]
 
     def extract(self, path: str, options: Dict) -> List[Dict]:
         data = []
@@ -67,7 +70,7 @@ class CsvExtractor(Extractor):
         has_header = options.get("has_header", True)
         fieldnames = options.get("fieldnames", None)
 
-        with open(path, 'r') as f:
+        with open(path, "r") as f:
 
             if has_header or fieldnames is not None:
                 reader = csv.DictReader(f, delimiter=delimiter, fieldnames=fieldnames)
@@ -80,25 +83,25 @@ class CsvExtractor(Extractor):
 
 
 class ErrorExtractor(Extractor):
-
     def file_regex_default(self):
-        return ['^stderr.log$']
+        return ["^stderr.log$"]
 
     # if the file is present and not empty, then throws a warning
     def extract(self, path: str, options: Dict) -> List[Dict]:
-        with open(path, 'r') as f:
-            content = f.read().replace('\n', ' ')
+        with open(path, "r") as f:
+            content = f.read().replace("\n", " ")
 
-        if content.strip() and not content.strip().isspace(): # ignore empty error files
+        if (
+            content.strip() and not content.strip().isspace()
+        ):  # ignore empty error files
             warnings.warn(f"found error file: {path}")
             warnings.warn(f"   {content}")
         return []
 
 
 class IgnoreExtractor(Extractor):
-
     def file_regex_default(self):
-        return ['^stdout.log$']
+        return ["^stdout.log$"]
 
     # ignores a file
     def extract(self, path: str, options: Dict) -> List[Dict]:
