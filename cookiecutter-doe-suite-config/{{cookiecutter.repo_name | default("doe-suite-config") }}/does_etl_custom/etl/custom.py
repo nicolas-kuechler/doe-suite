@@ -25,7 +25,8 @@ class MyTransformer(Transformer):
 class MyLoader(Loader):
     def load(self, df: pd.DataFrame, options: Dict, etl_info: Dict) -> None:
         print(f"MyLoader: do nothing  ({df.info()})")
-        # output_dir = self.get_output_dir(options, etl_info)
+        # Any result should be stored in:
+        # output_dir = self.get_output_dir(etl_info)
 
 
 class MyPlotLoader(PlotLoader):

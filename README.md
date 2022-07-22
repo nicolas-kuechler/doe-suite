@@ -15,31 +15,18 @@
 
 ## About The Project
 
-DoES automatically orchestrates and executes a set of experiments, i.e., an experiment suite, based on a simple declarative `YAML`  design file.
-Each experiment of a suite defines the involved computing resources (AWS EC2 instances) as well as a list of run configurations.
+The Design of Experiments Suite (DoES) automatically orchestrates and executes a set of experiments, i.e., an experiment suite, based on a simple declarative `YAML` design file.
+Each experiment of a suite defines the involved computing resources (e.g., AWS EC2 instances) and a list of run configurations.
 DoES follows the naming conventions of [DoE](https://en.wikipedia.org/wiki/Design_of_experiments):
-A `factor` is the parameter that changes between different runs, and in each run, a `factor` takes a particular `level`, i.e., value.
-DoES automatically downloads generated result files and processes them in an ETL pipeline to generate summaries and plots.
+A `factor` is a parameter that changes between different runs, and in each run, a `factor` takes a particular `level`, i.e., value.
+DoES downloads generated result files and processes them in an ETL pipeline to create summaries and plots.
 
-<!--
-TODO [nku] unify these two parts
-The AWS Ansible Experiment Suite automates the process of running experiments on AWS.
-On a high level, the experiment suite creates AWS resources (VPC, EC2 instances), installs required packages, and builds the artifact.
-
-Afterward, the suite sequentially executes jobs of an experimental design (DOE).
-The suite supports a multi-factor and multi-level experiment design with repetition,
-i.e., it is possible to vary multiple parameters and repeat each run.
-A `YAML`file in [experiments/designs](experiments/designs) describes the full experiment design.
-
-After completing a job, the suite downloads all result files and provides helper scripts for processing.
-
-Finally, after completing the experiment (all jobs), the suite can clean up the created AWS resources.
--->
 
 ### Example: Suite Design
 
 The core of DoES are suite design files that define a set of experiments and how to process results.
-In a nutshell, the example suite below runs an experiment with 8 configurations (cross-product of the two factors `payload_size_mb` and `opt`) and repeats each run 3 times. Note that suite designs are not limited to the cross-product of factors.
+In essence, the example suite below runs an experiment with 8 configurations (cross-product of the two factors `payload_size_mb` and `opt`) and repeats each run 3 times.
+Note that suite designs are not limited to the cross-product of factors.
 Finally, the ETL pipeline processes the results and creates a table and a plot.
 
 <a align="center">
@@ -83,11 +70,11 @@ $ETL$:
 
 #### Detailed Explanation
 
-The suite design consists of a single experiment `experiment_1` that runs on a single EC2 instance of type `small`.
+The suite design consists of a single experiment `experiment_1` that runs on a single machine of type `small`, e.g., an EC2 instance.
 The experiment runs a script `demo_latency.py` that takes three command line arguments: `--opt`, `--size` (i.e., `payload_size_mb`), and `--out`.
 Naturally, the experiment config in `base_experiment` consists of these three arguments.
-In the experiment we want to measure the latency for different sizes `--size` with and without the optimization `--opt`.
-As a result, these two parameters are marked as factors i.e., with  `$FACTOR$` and a list of `levels`: in each run we use a different combination of the levels when running the script `demo_latency.py`.
+In the experiment, we want to measure the latency for different sizes `--size` with and without the optimization `--opt`.
+As a result, these two parameters are marked as factors, i.e., with  `$FACTOR$` and a list of `levels` in each run, we use a different combination of the levels when running the script `demo_latency.py`.
 
 The factor `payload_size_mb` has 4 levels, while the factor `opt` has 2 levels.
 In this format we run the cross-product of all factors which results in 4x2=8 different runs.
@@ -160,7 +147,6 @@ export DOES_EULER_USER=<NETHZ>
 
 ```
 
-
 ### Running Experiments
 
 Start an experiment suite:
@@ -178,16 +164,9 @@ Start an experiment suite on a specific cloud:
   make run suite=example01-minimal id=new cloud=euler
   ```
 
-Start an experiment suite with the explicit choice (`run-keep`, `run-stop`, `run-terminate`) what to do after suite is complete:
-  ```sh
-  make run-keep suite=example01-minimal id=new
-  make run-stop suite=example01-minimal id=new
-  make run-terminate suite=example01-minimal id=new
-  ```
+:warning: Use `make clean` to terminate compute resources.
 
-
-
-### ETL
+### ETL - Extract Transform Load
 
 Run ETL results pipeline:
   ```sh
@@ -195,10 +174,12 @@ Run ETL results pipeline:
   make etl suite=example01-minimal id=last
   ```
 
-
 Run Super-ETL results pipeline:
-
-# TODO:
+  ```sh
+  # config: file in `doe-suite-config/super_etl`
+  # out: output path of loader results
+  make etl-super config=demo_plots out=~/paper/figures
+  ```
 ### Status and Info
 
 Get information about available suites and experiments:
@@ -217,27 +198,82 @@ Get progress information about the last suite run:
   make status suite=example01-minimal id=last
   ```
 
+### Cleanup
 
-
-
-Terminate all AWS resources:
+Terminate all remote resources, e.g., terminate all EC2 instances, and local cleanup, e.g., pycache:
   ```sh
-  poetry run ansible-playbook src/clear.yml
+  make clean
   ```
 
-Configure Project:
+### Developing
+
+:warning: Ensure that the environment variable `DOES_PROJECT_DIR` points to the project directory.
+
+Configure Project: Initialize `doe-suite-config` from a template
   ```sh
-  TODO [nku] missing command
+  make new
   ```
 
+List all commands that a suite design defines (+ Visualize ETL pipelines)
+  ```sh
+  make design suite=example01-minimal
+  ```
 
+Validate a design and show  the design with default values assigned:
+  ```sh
+  make design-validate suite=example01-minimal
+  ```
 
-Note, instead of `id=last` it also always possible to chose an explicit `id` of a suite, e.g., `id=1655831553`.
+Developing ETL pipeline by using the pipeline from the design:
+  ```sh
+  # can replace `id=last` with actual id, e.g., `id=1655831553`
+  make etl-design suite=example01-minimal id=last
+
+  # The same as: `make etl suite=example01-minimal id=last`
+  #   but uses the etl pipeline defined in `doe-suite-config/designs`
+  #   compared to the etl pipeline in `doe-suite-results/example01-single_<ID>/suite_design.yml`
+  ```
+
+### Overview
+
+To get an overview of the functionality use `make` or `make help`:
+
+```
+Running Experiments
+  make run suite=<SUITE> id=new                       - run the experiments in the suite
+  make run suite=<SUITE> id=<ID>                      - continue with the experiments in the suite with <ID> (often id=last)
+  make run suite=<SUITE> id=<ID> cloud=<CLOUD>        - run suite on non-default cloud ([aws], euler)
+  make run suite=<SUITE> id=<ID> expfilter=<REGEX>    - run only subset of experiments in suite where name matches the <REGEX>
+  make run-keep suite=<SUITE> id=new                  - does not terminate instances at the end, otherwise works the same as run target
+Clean
+  make clean                                          - terminate running cloud instances belonging to the project and local cleanup
+  make clean-result                                   - delete all results in doe-suite-results except for the last (complete) suite run per suite
+Running ETL Locally
+  make etl suite=<SUITE> id=<ID>                      - run the etl pipeline of the suite (locally) to process results (often id=last)
+  make etl-design suite=<SUITE> id=<ID>               - same as `make etl ...` but uses the pipeline from the suite design instead of results
+  make etl-all                                        - run etl pipelines of all results
+  make etl-super config=<CONFIG> out=<PATH>           - run the super etl to combine results of multiple suites  (for <CONFIG> e.g., demo_plots)
+Clean ETL
+  make etl-clean suite=<SUITE> id=<ID>                - delete etl results from specific suite (can be regenerated with make etl ...)
+  make etl-clean-all                                  - delete etl results from all suites (can be regenerated with make etl-all)
+Gather Information
+  make info                                           - list available suite designs
+  make status suite=<SUITE> id=<ID>                   - show the status of a specific suite run (often id=last)
+Design of Experiment Suites
+  make design suite=<SUITE>                           - list all the run commands defined by the suite
+  make design-validate suite=<SUITE>                  - validate suite design and show with default values
+Setting up a Suite
+  make new                                            - initialize doe-suite-config from a template
+Running Tests
+  make test                                           - running all suites (seq) and comparing results to expected (on aws)
+  make euler-test cloud=euler                         - running all single instance suites on euler and compare results to expected
+  make etl-test-all                                   - re-run all etl pipelines and compare results to current state (useful after update of etl step)
+```
 
 <!-- GETTING STARTED -->
 ## Getting Started
 
-To get started, the DoE-Suite provides a [demo project](demo_project) that shows the required structure to integrate DoES in an existing project.
+To get started, the DoE-Suite provides a [demo project](demo_project) that shows the required structure to integrate DoES into an existing project.
 After completing the getting started section, it should be possible to run the [example suite designs](demo_project/doe-suite-config/designs) of the demo project.
 
 Afterward, you can change the environment variable `DOES_PROJECT_DIR` to point to your own project (instead of the demo project) and continue from there.
@@ -250,37 +286,30 @@ Afterward, you can change the environment variable `DOES_PROJECT_DIR` to point t
 
 ### Prerequisites
 
-* We assume that you have already an existing project for which you want to run benchmarks with DoES (otherwise just create a dummy project).
+* We assume that you already have an existing project for which you want to run benchmarks with DoES (otherwise, just create a dummy project).
 
 * Before starting, ensure that you have `poetry` installed [(see instructions)](https://python-poetry.org/docs/).
 
-* Moreover, create a `key pair for AWS` in the region `eu-central-1` [(see instructions)](https://docs.aws.amazon.com/servicecatalog/latest/adminguide/getstarted-keypair.html).
+* Moreover, ensure that you have `cookieclutter` installed [(see instructions)](https://cookiecutter.readthedocs.io/en/stable/installation.html).
 
-* Finally, ensure that you can clone remote `repositories with SSH` [(see instructions for GitHub)](https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh).
+* For using the AWS cloud, create a `key pair for AWS` in the region `eu-central-1` [(see instructions)](https://docs.aws.amazon.com/servicecatalog/latest/adminguide/getstarted-keypair.html).
+
+* For using the ETHZ Euler cloud: ensure that you can connect to `euler.ethz.ch` with ssh [(see instructions)](https://scicomp.ethz.ch/wiki/Accessing_the_clusters#SSH)
+
+* Finally, ensure you can clone remote `repositories with SSH` [(see instructions for GitHub)](https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh).
 
 
 ### Installation
 
-1. Add the DoES repository as a submodule to your project repository.
+After this section, it should be possible to run the example designs of the demo project.
+For example: `make run suite=example01-minimal id=new`
 
-<!-- TODO describe how to do this -->
+1. Add the DoES repository as a submodule to your project repository.
     ```sh
     git submodule add git@github.com:nicolas-kuechler/doe-suite.git
     ```
 
-2. Move to the root of the DoES repository
-
-    ```sh
-    cd doe-suite
-    ```
-
-3. Within the doe-suite repository, install the Python packages (for Ansible)
-
-    ```sh
-    poetry install
-    ```
-
-4. Configure `ssh` and `ssh-agent`.
+2. Configure `ssh` and `ssh-agent`.
 
       * Configure ~/.ssh/config:  (add to file and replace the key for AWS, for example, with aws_ppl.pem)
           ```
@@ -304,7 +333,7 @@ Afterward, you can change the environment variable `DOES_PROJECT_DIR` to point t
           3. (On a MAC, need add to keychain)
 
 
-5. Install AWS CLI (version 2) and configure Boto
+3. Install AWS CLI (version 2) and configure Boto
 
       * Install AWS CLI version 2 [(see instructions)](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html)
 
@@ -315,39 +344,35 @@ Afterward, you can change the environment variable `DOES_PROJECT_DIR` to point t
         By default, credentials should be in `~/.aws/credentials`.
 
 
-6. Install the required Ansible collections
+4. Set the environment variables listed below.
+Hint, [direnv](https://direnv.net/) allows project-specific env vars in an `.envrc` file.
+  ```sh
+  # the root of your project repository, later we expect does-config-dir in this folder
+  export DOES_PROJECT_DIR=<PATH> # !!! For now set to absolute path of demo project: `doe-suite/demo_project`
 
+  # your unique shortname, e.g., nku
+  export DOES_PROJECT_ID_SUFFIX=<SUFFIX>
+
+  # name of ssh key used for setting up access to aws machines
+  export DOES_SSH_KEY_NAME=<SSH_KEY_NAME>
+
+  # for eth euler cluster: your nethz account
+  export DOES_EULER_USER=<NETHZ>
+  ```
+
+The variables `DOES_PROJECT_DIR` and `DOES_PROJECT_ID_SUFFIX` need to be set in any project.
+Running experiments on AWS requires `DOES_SSH_KEY_NAME` and running experiments on `DOES_EULER_USER`.
+
+
+5. Check that the [example01-minimal.yml](demo_project/doe-suite-config/designs/example01-minimal.yml)  of the `demo_project` runs in your setup. In the `doe-suite` repository, run the command below to run the example on AWS.
     ```sh
-    poetry run ansible-galaxy install -r requirements-collections.yml
+      make test-example01-minimal
+    ```
+For running the same example on the ETH Euler cloud, use:
+    ```sh
+      make test-example01-minimal cloud=euler
     ```
 
-
-7. Run the repository initialization helper script and configure the experiment suite
-
-    <!--
-    TODO [nku] describe this process (re-design it) -> Q: maybe for the demo-project it's a bit strange that we need to generate the group_vars etc.?
-    However, setting a prj_id might be sensible, + setting github repository
-    -->
-
-    <!--and the example host types `client` and `server`.
-
-    This prompts user input to perform variable substitution using the `resources/repotemplate/group_vars/*/main.yml.j2` templates. By default, it creates four groups: `all`, `server`, `client`, and `ansible_controller`.
-
-    When unsure, set the unique `project id` and the AWS `key name` from the prerequisites and otherwise use the default options.
-
-    ```sh
-    pipenv run python scripts/repotemplate.py
-    ```
-
-    -->
-
-8. Try running the minimal example suite design (see [demo_project/doe-suite-config/designs/example01-minimal.yml](demo_project/doe-suite-config/designs/example01-minimal.yml))
-
-    ```sh
-    poetry run ansible-playbook src/experiment-suite.yml -e "suite=example01-minimal id=new"
-    ```
-
-<!-- TODO [nku] describe what you can expect to see that everything worked -->
 
 
 <!-- USAGE -->
@@ -391,10 +416,18 @@ The resulting folder structure for a project looks as follows:
 </pre>
 
 ### Moving beyond the Demo Project
+After the getting started section, we can run the suite designs from the `demo_project`.
+To use the suite in your project, you must follow the folder structure shown above and change the environment variable `DOES_PROJECT_DIR` from pointing to the `demo_project` to your project.
 
-After the getting started section we are able to run the suite designs from the `demo_project`.
-To use the suite in your own project, you must follow the folder structure shown above and change the environment variable `DOES_PROJECT_DIR` from pointing to the `demo_project` to your own project.
+To help you setting up the `doe-suite-config` folder structure, it is possible to initialize a new config based on a [cookiecutter template](cookiecutter-doe-suite-config).
+After changing the `DOES_PROJECT_DIR` env variable, run the command below from the `doe-suite` repo.
+The target helps to create a `doe-suite-config` folder in `DOES_PROJECT_DIR`.
+For a start, it should be fine to accept default values except for the **repo** you should use the repo of your project instead of the `doe-suite`repo.
+  ```sh
+    make new
+  ```
 
+Now
 
 ### Running an Experiment Suite
 
@@ -402,7 +435,7 @@ We run an experiment suite by starting the Ansible playbook.
 We provide the name of an experiment suite design from `doe-suite-config/designs` (e.g., `example01-minimal`), and we use `id=new` to run a new complete experiment.
 
 ```sh
-poetry run ansible-playbook src/experiment-suite.yml -e "suite=example01-minimal id=new"
+make run suite=example01-minimal id=new
 ```
 
 The playbook reads the **environment variable** `DOES_PROJECT_DIR` which must point to the project folder.
@@ -424,33 +457,32 @@ For experiments that run on a single instance, all jobs are scheduled on the ins
 To continue checking a previously started experiment, we can specify the ID of the experiment when starting the playbook:
 
 ```sh
-poetry run ansible-playbook src/experiment-suite.yml -e "suite=example01-minimal id=<ID>"
+make run suite=example01-minimal id=<ID>
 ```
 
 For convenience, we can also use `id=last` to continue executing the most recent experiment suite (the one with the highest suite ID).
 
 ```sh
-poetry run ansible-playbook src/experiment-suite.yml -e "suite=example01-minimal id=last"
+make run suite=example01-minimal id=last
 ```
 
 ### Cleaning up AWS
 
 By default, after an experiment suite is complete, all _experiment_ resources created on AWS are terminated.
-To deactivate this default behavior, provide the flag: `awsclean=false`.
 
 Creating resources on AWS and setting up the environment takes a considerable amount of time. So, for debugging and short experiments, it can make sense not to terminate the instances. If you use this flag, be sure to check that instances are terminated when you are done.
 
 Example:
 ```sh
-poetry run ansible-playbook src/experiment-suite.yml -e "suite=example01-minimal id=new awsclean=false"
+make run-keep suite=<SUITE> id=new
 ```
 
 Furthermore, we also provide a playbook to terminate all AWS resources:
 ```sh
-poetry run ansible-playbook src/clear.yml
+make clean
 ```
 
-:warning: The ansible controller instance, if used, is not removed. It is intended to be left running and trigger individual experiment runs. To remove it, use the flag `awscleanall=true`.
+:warning: The ansible controller instance, if used, is not removed. It is intended to be left running and trigger individual experiment runs.
 
 ### Experimental Results
 
@@ -602,7 +634,9 @@ Nicolas Küchler - [nicolas-kuechler](https://github.com/nicolas-kuechler)
 
 Miro Haller - [Miro-H](https://github.com/Miro-H)
 
-Project Link: [https://github.com/pps-lab/aws-simple-ansible](https://github.com/pps-lab/aws-simple-ansible)
+Hidde Lycklama - [hiddely](https://github.com/hiddely)
+
+Project Link: [https://github.com/nicolas-kuechler/doe-suite](https://github.com/nicolas-kuechler/doe-suite)
 
 
 
