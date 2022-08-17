@@ -28,7 +28,7 @@ help:
 	@echo '  make run suite=<SUITE> id=new                       - run the experiments in the suite'
 	@echo '  make run suite=<SUITE> id=<ID>                      - continue with the experiments in the suite with <ID> (often id=last)'
 	@echo '  make run suite=<SUITE> id=<ID> cloud=<CLOUD>        - run suite on non-default cloud ([aws], euler)'
-	@echo '  make run suite=<SUITE> id=<ID> expfilter=<REGEX>    - run only subset of experiments in suite where name matches the <REGEX>'
+	@echo '  make run suite=<SUITE> id=<ID> expfilter=<REGEX>    - run only subset of experiments in suite where name matches the <REGEX> (suite must be valid)'
 	@echo '  make run-keep suite=<SUITE> id=new                  - does not terminate instances at the end, otherwise works the same as run target'
 	@echo 'Clean'
 	@echo '  make clean                                          - terminate running cloud instances belonging to the project and local cleanup'
@@ -257,7 +257,6 @@ euler-test: single-test
 test: aws-test euler-test
 
 # convert a results dir to the expected results dir
-# TODO [nku] at the moment this does not support adding a .gitkeep to empty etl_result folder
 convert-to-expected:
 	@echo -n "Are you sure to make the results in $(does_results_dir)/$(suite)_$(id) to the expected results of the suite? [y/N] " && read ans && [ $${ans:-N} = y ]
 	cd $(does_results_dir)/$(suite)_$(id) && \

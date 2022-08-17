@@ -120,7 +120,7 @@ def _validate_and_default_suite(prj_id, suite, design_raw, dirs):
 
     for exp_name in exp_names:
         if len(exp_name) > 200:
-            raise ValueError("exp_name too long")
+            raise ValueError(f"exp_name too long: {exp_name}")
 
         if not re.match(r"^[A-Za-z0-9_]+$", exp_name):
             raise ValueError(
@@ -133,7 +133,7 @@ def _validate_and_default_suite(prj_id, suite, design_raw, dirs):
     for key, value in design_raw.items():
         if key == "$ETL$":
             include_etl_pipelines(etl_pipelines=value)
-            _validate_etl_pipeline(etl_pipelines=value, exp_names=exp_names)
+            _validate_etl_pipelines(etl_pipelines=value, exp_names=exp_names)
 
         else:
             _validate_and_default_experiment(value, dirs, suite_vars)
@@ -220,6 +220,8 @@ def include_etl_steps(etl_pipeline):
                         # set the step (if not already present)
                         if step_name not in config:
                             config[step_name] = step_cfg
+                        else:
+                            print(f"skip include step: {step_name} in etl pipeline: {name} because already exists")
 
         else:
             raise ValueError(
@@ -274,7 +276,7 @@ def include_etl_pipeline(etl_pipeline):
             )
 
 
-def _validate_etl_pipeline(etl_pipelines, exp_names):
+def _validate_etl_pipelines(etl_pipelines, exp_names):
 
     for name, config in etl_pipelines.items():
 
@@ -320,11 +322,11 @@ def _validate_and_default_experiment(exp_raw, dirs, suite_vars):
     exp_keywords = KEYWORDS["exp"]
     exp_keywords_required = ["n_repetitions", "host_types"]
 
-    if any(x not in exp_keywords for x in exp_raw.keys()):
-        raise ValueError("unknown entry in experiment")
+    if any((culprit := x) not in exp_keywords for x in exp_raw.keys()):
+        raise ValueError(f"unknown entry in experiment: {culprit}")
 
-    if any(x not in exp_raw.keys() for x in exp_keywords_required):
-        raise ValueError("missing required keyword")
+    if any((culprit := x) not in exp_raw.keys() for x in exp_keywords_required):
+        raise ValueError(f"missing required keyword: {culprit}")
 
     if "base_experiment" not in exp_raw:
         exp_raw["base_experiment"] = {}
@@ -338,7 +340,7 @@ def _validate_and_default_experiment(exp_raw, dirs, suite_vars):
         exp_raw["common_roles"] = [exp_raw["common_roles"]]
 
     if not isinstance(exp_raw["common_roles"], list):
-        raise ValueError("common_roles must be a list")
+        raise ValueError("common_roles must be a string or a list of strings")
 
     # check that common role actually exists
     for common_role in exp_raw["common_roles"]:
@@ -352,7 +354,21 @@ def _validate_and_default_experiment(exp_raw, dirs, suite_vars):
         exp_raw["factor_levels"] = [{}]
 
     # set suite vars (if not present in exp_base)
+
+    # if the include vars is present in both, we want to extend the list by adding the ones which were not present
+    if "$INCLUDE_VARS$" in suite_vars and "$INCLUDE_VARS$" in exp_raw["base_experiment"]:
+        # ensure both are a list
+        if isinstance(exp_raw["base_experiment"]["$INCLUDE_VARS$"], str):
+            exp_raw["base_experiment"]["$INCLUDE_VARS$"] = [exp_raw["base_experiment"]["$INCLUDE_VARS$"]]
+        if isinstance(suite_vars["$INCLUDE_VARS$"], str):
+            suite_vars["$INCLUDE_VARS$"] = [suite_vars["$INCLUDE_VARS$"]]
+
+        for x in suite_vars["$INCLUDE_VARS$"]:
+            if x not in exp_raw["base_experiment"]["$INCLUDE_VARS$"]:
+                exp_raw["base_experiment"]["$INCLUDE_VARS$"].append(x)
+
     _include_vars(exp_raw["base_experiment"], suite_vars)
+
 
     # load external vars (marked with $INCLUDE_VARS$)
     _load_external_vars(exp_raw["base_experiment"], dirs["designvars"])
@@ -390,6 +406,7 @@ def _load_external_vars(conf, external_dir):
 
 
 def _include_vars(base, vars):
+
     for path, value in nested_dict_iter(vars):
         _set_nested_value(base, path, value)
 
@@ -400,11 +417,11 @@ def _validate_and_default_host_type(host_type_name, host_type_raw, dirs):
 
     host_type_keywords = KEYWORDS["host_type"]
 
-    if any(x not in host_type_keywords for x in host_type_raw.keys()):
-        raise ValueError("illegal keyword in host type")
+    if any((culprit :=x) not in host_type_keywords for x in host_type_raw.keys()):
+        raise ValueError(f"illegal keyword in host type: {culprit}")
 
     if "$CMD$" not in host_type_raw:
-        raise ValueError("$CMD$ must be in host_type")
+        raise ValueError(f"$CMD$ must be in host_type")
 
     ############
     # Check that group vars exist
@@ -436,7 +453,7 @@ def _validate_and_default_host_type(host_type_name, host_type_raw, dirs):
         host_type_raw["init_roles"] = [host_type_raw["init_roles"]]
 
     if not isinstance(host_type_raw["init_roles"], list):
-        raise ValueError("init_roles must be a list")
+        raise ValueError("init_roles must be a string or a list of strings")
 
     for init_role in host_type_raw["init_roles"]:
         role_path = os.path.join(dirs["roles"], init_role, "tasks")
@@ -450,6 +467,8 @@ def _validate_and_default_host_type(host_type_name, host_type_raw, dirs):
 
     if not isinstance(host_type_raw["$CMD$"], list):
         # repeat the same cmd for all `n` hosts of this type
+
+        assert isinstance(host_type_raw["n"], int) and host_type_raw["n"] > 0
         host_type_raw["$CMD$"] = [host_type_raw["$CMD$"]] * host_type_raw["n"]
 
     if len(host_type_raw["$CMD$"]) != host_type_raw["n"]:
@@ -505,16 +524,7 @@ def _validate_base_experiment(base_experiment_raw):
             factors.append(path)
 
         if path[-1] == "$FACTOR$":
-            if isinstance(value, str):
-
-                # add support for the range syntax in factors
-                if "range" not in value:
-                    raise ValueError(
-                        "if $FACTOR$ is the key:",
-                        f" the only allowed string is the range syntax: got=|{value}|",
-                    )
-
-            elif not isinstance(value, list):
+            if not isinstance(value, list):
                 raise ValueError(
                     "if $FACTOR$ is the key, then value must be a list of levels",
                     f"(path={path} value={value})",

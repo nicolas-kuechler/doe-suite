@@ -79,7 +79,7 @@ $ETL$:                                                         # Visualization o
     $INCLUDE_PIPELINE$:  {template: config_template, pipeline: config}
 
 
-  # The idea is that the `config` pipeline is the same as the `config_stage` pipeline.
+  # The idea is that the `commands` pipeline is the same as the `commands_stage` pipeline.
   #  The difference is that here we show wo to import a stage individually.
   #  (4) including a "stage" of another pipeline (from suite / template)
   commands_stage: # a pipeline to write a csv with the commands
@@ -176,4 +176,4 @@ triangle2:
   - x: 3
     y: 3
   - x: 1
-    y: 6
+    y: 5

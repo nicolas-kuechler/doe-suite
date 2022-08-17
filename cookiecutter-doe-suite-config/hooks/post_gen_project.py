@@ -1,4 +1,6 @@
-import subprocess, os
+import subprocess
+import os
+import warnings
 from typing import Callable
 from ast import literal_eval
 
@@ -46,7 +48,7 @@ def get_latest_ami(default_ubuntu_ami=DEFAULT_UBUNTU_AMI):
 
         ubuntu_ami = proc_awk.communicate()[0].decode().rstrip()
     except:
-        print(f"WARNING: Failed to get latest ubuntu AMI (is aws cli setup?), using {default_ubuntu_ami}")
+        warnings.warn(f"Failed to get latest ubuntu AMI (is aws cli setup?), using {default_ubuntu_ami}")
         ubuntu_ami = default_ubuntu_ami
 
     return ubuntu_ami
@@ -72,7 +74,7 @@ def get_volume_snapshot(ec2_image_id):
         ]).decode())[0]
 
     except:
-        print(f"WARNING: could not fetch snapshot id for {ec2_image_id} (is aws cli setup?)")
+        warnings.warn(f"Could not fetch snapshot id for {ec2_image_id} (is aws cli setup?)")
         snapshot_id = input("> Snapshot ID for this instance:")
 
     return snapshot_id

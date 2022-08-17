@@ -99,12 +99,12 @@ def output_etl_pipelines(suite_design):
 
 class UniqueKeyLoader(yaml.SafeLoader):
     def construct_mapping(self, node, deep=False):
-        mapping = []
+        mapping = set()
         for key_node, value_node in node.value:
             key = self.construct_object(key_node, deep=deep)
             if key in mapping:
                 raise AssertionError(f"duplicate key={key}")
-            mapping.append(key)
+            mapping.add(key)
         return super().construct_mapping(node, deep)
 
 

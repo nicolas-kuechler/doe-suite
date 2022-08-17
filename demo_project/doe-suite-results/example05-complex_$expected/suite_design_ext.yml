@@ -18,9 +18,9 @@ exp_multi_1:
       msg: hello server
   $CMD$:
     client:
-    - main: sleep 5 && echo 'hello server from client 1' | netcat -q 1 ip-10-100-0-253.eu-central-1.compute.internal 2807
-    - main: sleep 5 && echo 'hello server from client 2' | netcat -q 1 ip-10-100-0-253.eu-central-1.compute.internal 2807
-    - main: sleep 5 && echo 'hello server from client 3' | netcat -q 1 ip-10-100-0-253.eu-central-1.compute.internal 2807
+    - main: sleep 5 && echo 'hello server from client 1' | netcat -q 1 ip-10-100-0-13.eu-central-1.compute.internal 2807
+    - main: sleep 5 && echo 'hello server from client 2' | netcat -q 1 ip-10-100-0-13.eu-central-1.compute.internal 2807
+    - main: sleep 5 && echo 'hello server from client 3' | netcat -q 1 ip-10-100-0-13.eu-central-1.compute.internal 2807
     server:
     - main: ncat -l 2807 --keep-open
 - port: 2807
@@ -29,9 +29,9 @@ exp_multi_1:
       msg: hi server
   $CMD$:
     client:
-    - main: sleep 5 && echo 'hi server from client 1' | netcat -q 1 ip-10-100-0-253.eu-central-1.compute.internal 2807
-    - main: sleep 5 && echo 'hi server from client 2' | netcat -q 1 ip-10-100-0-253.eu-central-1.compute.internal 2807
-    - main: sleep 5 && echo 'hi server from client 3' | netcat -q 1 ip-10-100-0-253.eu-central-1.compute.internal 2807
+    - main: sleep 5 && echo 'hi server from client 1' | netcat -q 1 ip-10-100-0-13.eu-central-1.compute.internal 2807
+    - main: sleep 5 && echo 'hi server from client 2' | netcat -q 1 ip-10-100-0-13.eu-central-1.compute.internal 2807
+    - main: sleep 5 && echo 'hi server from client 3' | netcat -q 1 ip-10-100-0-13.eu-central-1.compute.internal 2807
     server:
     - main: ncat -l 2807 --keep-open
 - port: 2807
@@ -40,9 +40,9 @@ exp_multi_1:
       msg: good day server
   $CMD$:
     client:
-    - main: sleep 5 && echo 'good day server from client 1' | netcat -q 1 ip-10-100-0-253.eu-central-1.compute.internal 2807
-    - main: sleep 5 && echo 'good day server from client 2' | netcat -q 1 ip-10-100-0-253.eu-central-1.compute.internal 2807
-    - main: sleep 5 && echo 'good day server from client 3' | netcat -q 1 ip-10-100-0-253.eu-central-1.compute.internal 2807
+    - main: sleep 5 && echo 'good day server from client 1' | netcat -q 1 ip-10-100-0-13.eu-central-1.compute.internal 2807
+    - main: sleep 5 && echo 'good day server from client 2' | netcat -q 1 ip-10-100-0-13.eu-central-1.compute.internal 2807
+    - main: sleep 5 && echo 'good day server from client 3' | netcat -q 1 ip-10-100-0-13.eu-central-1.compute.internal 2807
     server:
     - main: ncat -l 2807 --keep-open
 exp_multi_2:

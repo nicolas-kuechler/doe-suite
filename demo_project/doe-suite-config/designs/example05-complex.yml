@@ -101,4 +101,4 @@ exp_multi_2:
 $ETL$:
   check_error: # ensures that stderr.log is empty everywhere and that no files are generated except stdout.log
     experiments: "*"
-    extractors: {ErrorExtractor: {}, IgnoreExtractor: {} }
+    extractors: {ErrorExtractor: {}, IgnoreExtractor: {file_regex: ["stdout.log", "out.csv"]} }

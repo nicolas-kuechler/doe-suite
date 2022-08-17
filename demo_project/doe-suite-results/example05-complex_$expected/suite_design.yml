@@ -76,4 +76,17 @@ exp_multi_2:
     postfix: parties
   - prefix: hello
     postfix: people
-$ETL$: {}
+$ETL$:
+  check_error:
+    experiments:
+    - exp_single
+    - exp_multi_1
+    - exp_multi_2
+    extractors:
+      ErrorExtractor: {}
+      IgnoreExtractor:
+        file_regex:
+        - stdout.log
+        - out.csv
+    transformers: []
+    loaders: {}

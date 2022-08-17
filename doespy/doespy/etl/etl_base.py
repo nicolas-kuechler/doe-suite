@@ -32,6 +32,12 @@ def run_single_suite(
     if etl_output_dir is None:
         etl_output_dir = util.get_etl_results_dir(suite=suite, id=suite_id)
 
+    # create empty etl results dir + add .gitkeep
+    if not os.path.exists(etl_output_dir):
+        os.makedirs(etl_output_dir)
+    with open(os.path.join(etl_output_dir, ".gitkeep"),"a+") as f:
+        pass
+
     return run_etl(
         config_name=suite,
         pipeline_design=pipeline_design,
@@ -248,7 +254,10 @@ def _extract_experiments_suite(suite, experiments, suite_id_map):
     elif isinstance(suite_ids, dict):
         # dict { experiment: id }
         default = suite_ids.get("$DEFAULT$", None)
-        return {exp: suite_ids.get(exp, default) for exp in experiments}
+        d = {exp: suite_ids.get(exp, default) for exp in experiments}
+        if any(v is None for k, v in d.items()):
+            raise ValueError(f"Suite Id cannot be None: {d} (set default or suite in suite id map)")
+        return d
     else:
         raise ValueError("Suite ids must be a value or dict!")
 

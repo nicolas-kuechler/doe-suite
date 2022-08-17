@@ -9,7 +9,7 @@
 - name: check task spooler executable is present
   shell: "which tsp"
   register: tsp_installed_which
-  ignore_errors: true
+  failed_when: false
 
 - name: Install task spooler
   block:
