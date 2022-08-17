@@ -1,0 +1,12 @@
+---
+
+
+- debug:
+    msg: "-> {{ cookiecutter.host_name }} only"
+  tags: [print_action]
+
+- name: Update repositories cache and install required packages
+  become: True
+  apt:
+    pkg:
+    # TODO: add other required packages (only for base)

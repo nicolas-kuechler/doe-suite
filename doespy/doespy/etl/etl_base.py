@@ -1,0 +1,565 @@
+import importlib
+import json
+import os
+import re
+from inspect import getmembers
+from typing import Dict, List
+
+import pandas as pd
+import yaml
+from doespy import util
+from doespy.design import validate_extend
+from doespy.etl.steps.extractors import Extractor
+from doespy.etl.steps.loaders import Loader
+from doespy.etl.steps.transformers import Transformer
+
+ETL_CUSTOM_PACKAGE = "does"
+
+
+def run_single_suite(
+    suite: str,
+    suite_id: str,
+    etl_output_dir: str = None,
+    etl_from_design: bool = False,
+    return_df: bool = False,
+):
+
+    # load a suite design and convert the $ETL$ part into a pipeline design
+    # (as also used in super etl)
+    suite_design = _load_suite_design(suite, suite_id, etl_from_design)
+    pipeline_design = _etl_to_super_etl(suite, suite_id, suite_design)
+
+    if etl_output_dir is None:
+        etl_output_dir = util.get_etl_results_dir(suite=suite, id=suite_id)
+
+    # create empty etl results dir + add .gitkeep
+    if not os.path.exists(etl_output_dir):
+        os.makedirs(etl_output_dir)
+    with open(os.path.join(etl_output_dir, ".gitkeep"),"a+") as f:
+        pass
+
+    return run_etl(
+        config_name=suite,
+        pipeline_design=pipeline_design,
+        etl_output_dir=etl_output_dir,
+        etl_output_config_name=False,
+        etl_output_pipeline_name=False,
+        etl_from_design=etl_from_design,
+        return_df=return_df,
+    )
+
+
+def run_multi_suite(
+    super_etl: str,
+    etl_output_dir: str,
+    flag_output_dir_config_name: bool = True,
+    flag_output_dir_pipeline: bool = True,
+    etl_from_design: bool = False,
+    return_df: bool = False,
+):
+
+    pipeline_design = _load_super_etl_design(name=super_etl)
+
+    return run_etl(
+        config_name=super_etl,
+        pipeline_design=pipeline_design,
+        etl_output_dir=etl_output_dir,
+        etl_output_config_name=flag_output_dir_config_name,
+        etl_output_pipeline_name=flag_output_dir_pipeline,
+        etl_from_design=etl_from_design,
+        return_df=return_df,
+    )
+
+
+def run_etl(
+    config_name,
+    pipeline_design,
+    etl_output_dir: str,
+    etl_output_config_name: bool = False,
+    etl_output_pipeline_name: bool = False,
+    etl_from_design: bool = False,
+    return_df: bool = False,
+):
+
+    etl_config = pipeline_design["$ETL$"]
+
+    suite_id_map = pipeline_design["$SUITE_ID$"]
+
+    output_dfs = {}
+    # go over pipelines and run them
+    for pipeline_name, pipeline in etl_config.items():
+
+        experiments = pipeline["experiments"]
+        # extract suites here
+
+        extractors, transformers, loaders = load_selected_processes(
+            pipeline["extractors"], pipeline["transformers"], pipeline["loaders"]
+        )
+
+        experiments_df = []
+        etl_infos = []
+
+        for suite, experiments in experiments.items():
+
+            experiment_suite_id_map = _extract_experiments_suite(
+                suite, experiments, suite_id_map
+            )
+            for experiment, suite_id in experiment_suite_id_map.items():
+
+                suite_design = _load_suite_design(suite, suite_id, etl_from_design)
+
+                etl_info = {
+                    "suite": suite,
+                    "suite_id": suite_id,
+                    "pipeline": pipeline_name,
+                    "experiments": [experiment],
+                    "etl_output_dir": etl_output_dir,
+                }
+                etl_infos.append(etl_info)
+
+                try:
+                    # extract data from
+                    df = extract(
+                        suite=suite,
+                        suite_id=suite_id,
+                        experiments=[experiment],
+                        base_experiments=suite_design,
+                        extractors=extractors,
+                    )
+
+                    experiments_df.append(df)
+                except Exception:
+                    print(
+                        f"An error occurred in extractor from pipeline \
+                            {pipeline_name}!",
+                        etl_info,
+                    )
+                    raise
+
+        # ensure dir exists
+        config_post = config_name if etl_output_config_name else None
+        pipeline_post = pipeline_name if etl_output_pipeline_name else None
+        etl_output_dir = _get_output_dir_name(
+            etl_output_dir, config_post, pipeline_post
+        )
+
+        if not os.path.exists(etl_output_dir):
+            os.makedirs(etl_output_dir)
+
+        df = pd.concat(experiments_df)
+
+        etl_info = {
+            "suite": "_".join([x["suite"] for x in etl_infos]),
+            "suite_id": "_".join([x["suite_id"] for x in etl_infos]),
+            "pipeline": pipeline_name,
+            "experiments": experiments,
+            "etl_output_dir": etl_output_dir,
+        }
+
+        try:
+            # apply transformers sequentially
+            for x in transformers:
+
+                if isinstance(x["transformer"], str):
+                    # possibility for df functions directly
+                    df = _apply_pandas_df_transformer(
+                        df, func_name=x["transformer"], args=x["options"]
+                    )
+
+                else:
+                    df = x["transformer"].transform(df, options=x["options"])
+
+            if return_df:
+                output_dfs[pipeline_name] = df
+            else:
+                # execute all loaders on df
+                for x in loaders:
+                    x["loader"].load(df, options=x["options"], etl_info=etl_info)
+
+        except Exception:
+            print(f"An error occurred in pipeline {pipeline_name}!", etl_info)
+            raise
+
+    if return_df:
+        # for use in jupyter notebooks
+        return output_dfs
+
+
+def _load_suite_design(suite, suite_id, etl_from_design):
+    if etl_from_design:
+        suite_design, _ = validate_extend.main(
+            suite=suite, only_validate_design=True, ignore_undefined_vars=True
+        )
+    else:
+        suite_dir = util.get_suite_results_dir(suite=suite, id=suite_id)
+        suite_design = _load_config_yaml(suite_dir, file="suite_design.yml")
+    return suite_design
+
+
+def _load_super_etl_design(name):
+
+    config_dir = util.get_super_etl_dir()
+    pipeline_design = _load_config_yaml(config_dir, file=f"{name}.yml")
+
+    if "$ETL$" not in pipeline_design:
+        # we don't have an ETL config => don't run it
+        raise ValueError(f"super etl {name}  does not contain $ETL$")
+    if "$SUITE_ID$" not in pipeline_design:
+        raise ValueError(f"super etl {name}  does not contain $SUITE_ID$")
+
+    # TODO [nku] the include functionality does not exist yet
+
+    return pipeline_design
+
+
+def _etl_to_super_etl(suite, suite_id, suite_design):
+
+    # 1st Set $SUITE_ID$ Field
+
+    suite_design["$SUITE_ID$"] = {suite: suite_id}
+
+    etl_config = suite_design["$ETL$"]
+
+    for _pipeline_name, pipeline in etl_config.items():
+        pipeline["experiments"] = {suite: pipeline["experiments"]}
+
+    pipeline_design = {"$SUITE_ID$": {suite: suite_id}, "$ETL$": etl_config}
+
+    return pipeline_design
+
+
+def _apply_pandas_df_transformer(df, func_name, args):
+
+    try:
+        func = getattr(df, func_name)
+
+        # apply the function on the dataframe
+        return func(**args)
+    except AttributeError:
+        raise ValueError(f"pandas.DataFrame.{func_name} not found")
+
+
+def _extract_experiments_suite(suite, experiments, suite_id_map):
+    """
+    :param experiments list of experiments
+    :param suite_id_map dict can be a dict of (suite, suite_id),
+            or (suite, dict) where dict is a dict of experiment-level id
+    :return: dict Experiment to suite mapping
+    """
+    suite_ids = suite_id_map[suite]
+
+    if isinstance(suite_ids, str) or isinstance(suite_ids, int):
+        # suite-wide id
+        return {experiment: suite_ids for experiment in experiments}
+    elif isinstance(suite_ids, dict):
+        # dict { experiment: id }
+        default = suite_ids.get("$DEFAULT$", None)
+        d = {exp: suite_ids.get(exp, default) for exp in experiments}
+        if any(v is None for k, v in d.items()):
+            raise ValueError(f"Suite Id cannot be None: {d} (set default or suite in suite id map)")
+        return d
+    else:
+        raise ValueError("Suite ids must be a value or dict!")
+
+
+def _get_output_dir_name(
+    output_path: str, config_name: str = None, pipeline_name: str = None
+):
+    """Generates output directory based on options and current pipeline."""
+
+    if config_name is not None:
+        # config_prefix = re.match(r"^(.*)\.yml$", config_name).group(1)
+        # assert config_prefix is not None,
+        # f"Filename {config_name} has invalid format and cant be extracted!"
+        output_path = os.path.join(output_path, config_name)
+
+    if pipeline_name is not None:
+        output_path = os.path.join(output_path, pipeline_name)
+
+    return output_path
+
+
+############################################################################
+# Load Extractor, Transformer, and Loaders                                 #
+############################################################################
+
+
+def load_selected_processes(extractors_sel, transformers_sel, loaders_sel):
+
+    extractors_avl, transformers_avl, loaders_avl = _load_available_processes()
+
+    extractors = []
+    for name, options in extractors_sel.items():
+
+        if name not in extractors_avl:
+            raise ValueError(f"extractor not found: {name}")
+
+        regex = options.get("file_regex")
+
+        d = {
+            "extractor": extractors_avl[name](regex),
+            "options": options,
+        }
+
+        extractors.append(d)
+
+    transformers = []
+    for trans_sel in transformers_sel:
+        if "name" in trans_sel:
+            if trans_sel["name"] not in transformers_avl:
+                raise ValueError(f"transformer not found: {trans_sel['name']}")
+
+            d = {
+                "transformer": transformers_avl[trans_sel["name"]](),
+                "options": trans_sel,
+            }
+            transformers.append(d)
+        elif len(trans_sel.keys()) == 1:
+            func_name = next(iter(trans_sel))
+            args = trans_sel[func_name]
+
+            match = re.search(r"df\.(.*)", func_name)
+            func_name = match.group(1)
+
+            d = {
+                "transformer": func_name,
+                "options": args,
+            }
+            transformers.append(d)
+
+        else:
+            raise ValueError(f"transformer with illegal format: {trans_sel}")
+
+    loaders = []
+    for name, options in loaders_sel.items():
+
+        if name not in loaders_avl:
+            raise ValueError(f"loader not found: {name}")
+
+        d = {
+            "loader": loaders_avl[name](),
+            "options": options,
+        }
+        loaders.append(d)
+
+    return extractors, transformers, loaders
+
+
+def _load_available_processes():
+
+    extractors = {}
+    transformers = {}
+    loaders = {}
+
+    import pkgutil
+    import warnings
+
+    with warnings.catch_warnings(record=True):
+        for _importer, modname, _ispkg in pkgutil.walk_packages(
+            path=None, onerror=lambda x: None
+        ):
+            warnings.simplefilter("ignore")
+            if ETL_CUSTOM_PACKAGE in modname or "doespy" in modname:
+                _load_processes(modname, extractors, transformers, loaders)
+
+    return extractors, transformers, loaders
+
+
+def _load_processes(module_name, extractors, transformers, loaders):
+
+    module = importlib.import_module(module_name)
+
+    # go over all members of the module
+    for member_name, _ in getmembers(module):
+
+        # check for duplicates
+        if (
+            member_name in extractors
+            or member_name in transformers
+            or member_name in loaders
+        ):
+            raise ValueError(f"duplicate class={member_name}")
+
+        # find members that are actually an ETL process step
+        # by checking if they inherit from the abstract base class
+        try:
+            etl_candidate = getattr(module, member_name)
+            if issubclass(etl_candidate, Extractor):
+                etl_candidate()
+                extractors[member_name] = etl_candidate
+            elif issubclass(etl_candidate, Transformer):
+                etl_candidate()
+                transformers[member_name] = etl_candidate
+            elif issubclass(etl_candidate, Loader):
+                etl_candidate()
+                loaders[member_name] = etl_candidate
+
+        except TypeError:
+            pass
+
+
+############################################################################
+# Extractor                                                                #
+############################################################################
+
+
+def extract(
+    suite: str,
+    suite_id: str,
+    experiments: List[str],
+    base_experiments: Dict,
+    extractors: List[Dict],
+) -> pd.DataFrame:
+    res_lst = []
+
+    res_dir = util.get_suite_results_dir(suite=suite, id=suite_id)
+    existing_exps = _list_dir_only(res_dir)
+
+    exps_filtered = [exp for exp in existing_exps if exp in experiments]
+
+    for exp in exps_filtered:
+
+        exp_dir = util.get_suite_results_dir(suite=suite, id=suite_id, exp=exp)
+
+        runs = _list_dir_only(exp_dir)
+        factor_columns = _parse_factors(base_experiments[exp])
+
+        for run in runs:
+            run_dir = os.path.join(exp_dir, run)
+            reps = _list_dir_only(run_dir)
+
+            for rep in reps:
+                rep_dir = os.path.join(run_dir, rep)
+                host_types = _list_dir_only(rep_dir)
+
+                try:
+                    config = _load_config_yaml(path=rep_dir, file="config.json")
+                except FileNotFoundError:
+                    continue
+
+                # ignores the part of the config that shows what is varied
+                # # (if this is present)
+                if "$FACTOR_LEVEL" in config:
+                    del config["~FACTORS_LEVEL"]
+
+                config_flat = _flatten_d(config)
+
+                for host_type in host_types:
+                    host_type_dir = os.path.join(rep_dir, host_type)
+                    hosts = _list_dir_only(host_type_dir)
+
+                    for host_idx, host in enumerate(hosts):
+                        host_dir = os.path.join(host_type_dir, host)
+                        files = _list_files_only(host_dir)
+
+                        job_info = {
+                            "suite_name": suite,
+                            "suite_id": suite_id,
+                            "exp_name": exp,
+                            "run": int(run.split("_")[-1]),
+                            "rep": int(rep.split("_")[-1]),
+                            "host_type": host_type,
+                            "host_idx": host_idx,
+                            "factor_columns": factor_columns,
+                        }
+
+                        for file in files:
+                            d_lst = _parse_file(host_dir, file, extractors)
+                            for d in d_lst:
+                                d_flat = _flatten_d(d)
+                                res = {**job_info, **config_flat, **d_flat}
+                                res_lst.append(res)
+
+    df = pd.DataFrame(res_lst)
+    return df
+
+
+def _parse_file(path: str, file: str, extractors: List[Dict]) -> List[Dict]:
+    has_match = False
+
+    for extractor_d in extractors:
+
+        patterns = extractor_d["extractor"].regex
+        if not isinstance(patterns, list):
+            patterns = [patterns]
+
+        for p in patterns:
+            regex = re.compile(p)
+
+            if regex.match(file):
+
+                # we want to assign one extractor per file
+                if has_match:
+                    raise ValueError(
+                        f"file={file} matches multiple extractors (p={path})"
+                    )
+
+                file_path = os.path.join(path, file)
+                d_lst = extractor_d["extractor"].extract(
+                    path=file_path, options=extractor_d["options"]
+                )
+
+                has_match = True
+
+    # if no extractor found
+    if not has_match:
+        raise ValueError(f"file={file} matches no extractor (path={path})")
+
+    return d_lst
+
+
+def _parse_factors(experiment: Dict) -> list:
+    """
+    Parses factors in experiment. Loosely based on `suite_design_extend.py`.
+    :param experiment:
+    :return: list of factors
+    """
+
+    # Stolen from `suite_design_extend.py`
+    def _nested_dict_iter(nested, p=[]):
+        for key, value in nested.items():
+            if isinstance(value, dict):
+                yield from _nested_dict_iter(value, p=p + [key])
+            else:
+                yield key, value, p
+
+    factor_columns = []
+    for k, v, path in _nested_dict_iter(experiment["base_experiment"]):
+        # k: the key (i.e. the name of the config option, unless it's a factor,
+        #    than the content is just $FACTOR$)
+        # v: the value or a list of levels in case it's a factor
+        # path: to support nested config dicts, path keep tracks
+        #       of all the parent nodes of k (empty if it is on the top level)
+
+        if k == "$FACTOR$":
+            # inline factor
+            factor = path[-1]
+            factor_columns.append(factor)
+        elif v == "$FACTOR$":
+            # factor defined in factor_levels
+            factor_columns.append(k)
+
+    return factor_columns
+
+
+def _load_config_yaml(path, file="config.json"):
+    with open(os.path.join(path, file)) as file:
+        config = yaml.load(file, Loader=yaml.FullLoader)
+    return config
+
+
+def _list_dir_only(path):
+    lst = [f for f in os.listdir(path) if os.path.isdir(os.path.join(path, f))]
+    return lst
+
+
+def _list_files_only(path):
+    def _is_file(path, f):
+        return not os.path.isdir(os.path.join(path, f))
+
+    lst = [f for f in os.listdir(path) if _is_file(path, f)]
+    return lst
+
+
+def _flatten_d(d):
+    return json.loads(pd.json_normalize(d, sep=".").iloc[0].to_json())

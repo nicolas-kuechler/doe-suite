@@ -1,0 +1,15 @@
+{
+    "$CMD$": {
+        "small": [
+            {
+                "main": "/home/ubuntu/code/demo_project/.venv/bin/python /home/ubuntu/code/demo_project/demo.py --config config.json"
+            }
+        ]
+    },
+    "out": "csv",
+    "problem": {
+        "opt": false,
+        "other": "[0, 1]",
+        "size": 10
+    }
+}

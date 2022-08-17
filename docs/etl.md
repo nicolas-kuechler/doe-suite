@@ -32,30 +32,31 @@ For an example, see `GroupByAggTransformer`.
 Doe suite supports the definition of suite-transcending (super-suite) ETL pipelines that
 combines experiments from multiple suites, which we refer to as super ETL.
 
-Pipeline configs are defined in `does_config/super_etl` and can be run similar to regular etl, using 
+Pipeline configs are defined in `doe-suite-config/super_etl` and can be run similar to regular etl, using
+# TODO [nku] needs to use makefile in commands
 
 ```bash
-poetry run python src/super_etl.py --config_name pipeline.yml
+poetry run python src/super_etl.py --config pipeline
 ```
 
 #### Custom output location
-The default option is to place results in `does_results/super_etl`.
+The default option is to place results in `doe-suite-results/super_etl`.
 This may be overridden using the `output_path` option to specify a base directory for outputs.
 In the following example, a pipeline named `pipeline` outputs a file `plot.pdf` defined in `config.yml`.
 ```bash
-poetry run python src/super_etl.py --config_name config.yml --output_path {paper_dir}
+poetry run python src/super_etl.py --config config --output_path {paper_dir}
 # (Over)writes: paper_dir/config/plot.pdf
 ```
 In the base directory, subdirectories per-pipeline and per-config file can be created using `--output_dir_config_name_disabled`
 and `output_dir_pipeline`.
 ```bash
-poetry run python src/super_etl.py --config_name config.yml --output_path {paper_dir} --output_dir_config_name_disabled
+poetry run python src/super_etl.py --config config --output_path {paper_dir} --output_dir_config_name_disabled
 # (Over)writes: paper_dir/plot.pdf
 
-poetry run python src/super_etl.py --config_name config.yml --output_path {paper_dir} --output_dir_pipeline
+poetry run python src/super_etl.py --config config --output_path {paper_dir} --output_dir_pipeline
 # (Over)writes: paper_dir/config/pipeline/plot.pdf
 
-poetry run python src/super_etl.py --config_name config.yml --output_path {paper_dir} --output_dir_config_name_disabled --output_dir_pipeline
+poetry run python src/super_etl.py --config_name config --output_path {paper_dir} --output_dir_config_name_disabled --output_dir_pipeline
 # (Over)writes: paper_dir/pipeline/plot.df
 ```
 The default is to create a directory for each config file, but not for each pipeline as generally the output files have the pipeline name.
@@ -109,7 +110,7 @@ Full example:
 $SUITE_ID$:
   suite_1: 1648453067
   suite_2: 1651052734
-  
+
 $ETL$:
   pipeline_name:
     experiments:
@@ -124,9 +125,9 @@ $ETL$:
         data_columns: [latency] # the names of the columns in the dataframe that contain the measurements
     loaders:
       CsvSummaryLoader: # write the transformed detl_info["suite_dir"]ataframe across the whole experiment as a csv file
-        output_dir: "etl_results/pipeline1" # write results into an output dir
+        output_dir: "pipeline1" # write results into an output dir
       DemoLatencyPlotLoader: # create a plot based on project-specific plot loader
-        output_dir: "etl_results/pipeline1" # write results into an output dir
+        output_dir: "pipeline1" # write results into an output dir
 
 ```
 

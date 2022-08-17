@@ -1,7 +1,11 @@
 does_project_dir: "{{ lookup('env', 'DOES_PROJECT_DIR') }}"
-does_config_dir: "{{ does_project_dir }}/does_config"
+does_project_id_suffix: "{{ lookup('env', 'DOES_PROJECT_ID_SUFFIX') }}"
+does_config_dir: "{{ does_project_dir }}/doe-suite-config"
 external_group_vars_dir: "{{ does_config_dir }}/group_vars"
 external_roles_dir: "{{ does_config_dir }}/roles"
 
+ssh_key_name: "{{ lookup('env', 'DOES_SSH_KEY_NAME') }}"
+
+euler_user: "{{ lookup('env', 'DOES_EULER_USER') }}"
 cloud: "aws"
 job_scheduler: "{{ 'bsub' if cloud == 'euler' else 'tsp' }}"

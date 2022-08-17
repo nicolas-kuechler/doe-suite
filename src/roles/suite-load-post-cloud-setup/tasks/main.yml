@@ -49,8 +49,9 @@
 
 - name: expand experiment suite design + replace variables
   suite_design_extend:
-    suite_design: "{{ hostvars['localhost'].my_suite_design }}"
+    suite_design_path: "{{ hostvars['localhost'].suite_design_dir }}/"
     exp_specific_vars: "{{ exp_specific_vars }}" # dict {exp_name: {k:v}}
+    ext_design_file_output: "{{ hostvars['localhost'].suite_design_dir }}/suite_design_ext.yml"
   register: my_suite_design_ext
   # my_suite_design_ext.design: {<exp_name1>: [{<run_config1>}, {<run_config2>}, ...], }
   delegate_to: localhost

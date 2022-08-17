@@ -1,0 +1,92 @@
+exp_single:
+  n_repetitions: 2
+  common_roles:
+  - setup-common
+  host_types:
+    small:
+      n: 1
+      init_roles:
+      - setup-small
+      $CMD$:
+      - main: echo "[% my_run.info %];[% my_run.seed %];[% my_run.opt%]" >> results/out.csv
+      check_status: true
+  base_experiment:
+    info: $FACTOR$
+    seed: 1234
+    opt: $FACTOR$
+  factor_levels:
+  - info: run1 - with optimization
+    opt: true
+  - info: run2 - without optimization
+    opt: false
+exp_multi_1:
+  n_repetitions: 3
+  common_roles:
+  - setup-common
+  host_types:
+    client:
+      n: 3
+      $CMD$:
+      - main: sleep 5 && echo '[% my_run.host_vars.client.msg %] from client 1' | netcat -q 1 [% exp_host_lst | json_query('[?host_type==`server`].private_dns_name') | first %] [% my_run.port %]
+      - main: sleep 5 && echo '[% my_run.host_vars.client.msg %] from client 2' | netcat -q 1 [% exp_host_lst | json_query('[?host_type==`server`].private_dns_name') | first %] [% my_run.port %]
+      - main: sleep 5 && echo '[% my_run.host_vars.client.msg %] from client 3' | netcat -q 1 [% exp_host_lst | json_query('[?host_type==`server`].private_dns_name') | first %] [% my_run.port %]
+      check_status: true
+      init_roles: []
+    server:
+      n: 1
+      check_status: false
+      init_roles:
+      - setup-server
+      $CMD$:
+      - main: ncat -l [% my_run.port %] --keep-open
+  base_experiment:
+    port: 2807
+    host_vars:
+      client:
+        msg:
+          $FACTOR$:
+          - hello server
+          - hi server
+          - good day server
+  factor_levels:
+  - {}
+exp_multi_2:
+  n_repetitions: 2
+  common_roles:
+  - setup-common
+  host_types:
+    small:
+      n: 2
+      $CMD$:
+      - main: 'echo "[% my_run.prefix %] [% my_run.n_parties %] [% my_run.postfix %]" '
+      - main: 'echo "[% my_run.prefix %] [% my_run.n_parties %] [% my_run.postfix %]" '
+      check_status: true
+      init_roles: []
+  base_experiment:
+    n_parties:
+      $FACTOR$:
+      - 100
+      - 200
+      - 300
+      - 500
+    prefix: $FACTOR$
+    postfix: $FACTOR$
+  factor_levels:
+  - prefix: hi
+    postfix: parties
+  - prefix: hello
+    postfix: people
+$ETL$:
+  check_error:
+    experiments:
+    - exp_single
+    - exp_multi_1
+    - exp_multi_2
+    extractors:
+      ErrorExtractor: {}
+      IgnoreExtractor:
+        file_regex:
+        - stdout.log
+        - out.csv
+    transformers: []
+    loaders: {}

@@ -1,0 +1,50 @@
+exp_client_server:
+  n_repetitions: 3
+  common_roles:
+  - setup-common
+  host_types:
+    client:
+      n: 2
+      check_status: true
+      init_roles:
+      - setup-client
+      $CMD$:
+      - main: sleep 5 && echo '[% my_run.host_vars.client.msg %] from client 1 ([% my_run.info %])' | netcat -q 1 [% exp_host_lst | json_query('[?host_type==`server`].private_dns_name') | first %] [% my_run.port %]
+      - main: sleep 5 && echo '[% my_run.host_vars.client.msg %] from client 2 ([% my_run.info %])' | netcat -q 1 [% exp_host_lst | json_query('[?host_type==`server`].private_dns_name') | first %] [% my_run.port %]
+    server:
+      n: 1
+      check_status: false
+      init_roles:
+      - setup-server
+      $CMD$:
+      - main: ncat -l [% my_run.port %] --keep-open
+  base_experiment:
+    port: 2807
+    info: $FACTOR$
+    host_vars:
+      client:
+        msg: $FACTOR$
+      server:
+        greeting: ignore
+  factor_levels:
+  - info: run 0
+    host_vars:
+      client:
+        msg: hello server
+  - info: run 1
+    host_vars:
+      client:
+        msg: hi server
+  - info: run 2
+    host_vars:
+      client:
+        msg: good day server
+$ETL$:
+  check_error:
+    experiments:
+    - exp_client_server
+    extractors:
+      ErrorExtractor: {}
+      IgnoreExtractor: {}
+    transformers: []
+    loaders: {}

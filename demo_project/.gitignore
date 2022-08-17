@@ -1,1 +1,4 @@
-does_results
+doe-suite-results/*
+
+# we want to have expected results in the repo
+!doe-suite-results/*_$expected

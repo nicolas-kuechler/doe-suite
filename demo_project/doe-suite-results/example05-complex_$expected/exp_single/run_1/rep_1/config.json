@@ -1,0 +1,12 @@
+{
+    "$CMD$": {
+        "small": [
+            {
+                "main": "echo \"run2 - without optimization;1234;False\" >> results/out.csv"
+            }
+        ]
+    },
+    "info": "run2 - without optimization",
+    "opt": false,
+    "seed": 1234
+}

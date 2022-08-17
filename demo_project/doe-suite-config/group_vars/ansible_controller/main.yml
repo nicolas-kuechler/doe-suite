@@ -1,0 +1,33 @@
+---
+
+# The controller doesn't need to have beefy specs, it only distributes tasks.
+# However, we need enough space for the results.
+
+instance_type: t2.small # change if you feel the controller is a bottleneck
+ec2_volume_size: 64 # choose large enough to store results (at least until they are downloaded)
+
+ec2_image_id: ami-08481eff064f39a84
+ec2_volume_snapshot: snap-0b8d7894c93b6df7a
+
+ansible_controller_user: controller
+ansible_controller_group: controller
+ansible_controller_home: "/home/{{ ansible_controller_user }}"
+
+# AWS Ansible Experiment Suite repo options
+ansible_exp_suite_git_repo: git@github.com:nicolas-kuechler/doe-suite.git # TODO: change to the URL of your clone of the ansible experiment suite
+# TODO: improve naming - according to comment, it should be set to true if repo is public, but the variable is named ...private_repo
+ansible_exp_suite_private_repo: yes # Set to true if the repo is public. In that case we don't need to setup SSH keys for the repo.
+ansible_controller_does_dir: "{{ ansible_controller_home }}/aws_ansible_experiment_suite" # Path to where AWS Ansible Experiment Suite is cloned to
+
+# SSH options
+ansible_controller_ssh_key_dir: "{{ ansible_controller_home }}/.ssh"
+ansible_controller_ssh_key_types:
+  git: ecdsa
+  aws: rsa
+ansible_controller_ssh_key_sizes:
+  git: 521
+  aws: 4096
+
+ansible_controller_ssh_key_paths:
+  git: "{{ ansible_controller_ssh_key_dir }}/id_ssh_git"
+  aws: "{{ ansible_controller_ssh_key_dir }}/{{ exp_base.key_name }}"

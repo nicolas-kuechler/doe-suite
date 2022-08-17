@@ -1,0 +1,204 @@
+format_cross:
+- seed: 1234
+  vector_size: 10
+  app:
+    name: app1
+  $CMD$:
+    small:
+    - main: echo "run app=app1 with vec=10 seed=1234"
+- seed: 1234
+  vector_size: 10
+  app:
+    name: app2
+  $CMD$:
+    small:
+    - main: echo "run app=app2 with vec=10 seed=1234"
+- seed: 1234
+  vector_size: 10
+  app:
+    name: app3
+  $CMD$:
+    small:
+    - main: echo "run app=app3 with vec=10 seed=1234"
+- seed: 1234
+  vector_size: 20
+  app:
+    name: app1
+  $CMD$:
+    small:
+    - main: echo "run app=app1 with vec=20 seed=1234"
+- seed: 1234
+  vector_size: 20
+  app:
+    name: app2
+  $CMD$:
+    small:
+    - main: echo "run app=app2 with vec=20 seed=1234"
+- seed: 1234
+  vector_size: 20
+  app:
+    name: app3
+  $CMD$:
+    small:
+    - main: echo "run app=app3 with vec=20 seed=1234"
+- seed: 1234
+  vector_size: 30
+  app:
+    name: app1
+  $CMD$:
+    small:
+    - main: echo "run app=app1 with vec=30 seed=1234"
+- seed: 1234
+  vector_size: 30
+  app:
+    name: app2
+  $CMD$:
+    small:
+    - main: echo "run app=app2 with vec=30 seed=1234"
+- seed: 1234
+  vector_size: 30
+  app:
+    name: app3
+  $CMD$:
+    small:
+    - main: echo "run app=app3 with vec=30 seed=1234"
+- seed: 1234
+  vector_size: 40
+  app:
+    name: app1
+  $CMD$:
+    small:
+    - main: echo "run app=app1 with vec=40 seed=1234"
+- seed: 1234
+  vector_size: 40
+  app:
+    name: app2
+  $CMD$:
+    small:
+    - main: echo "run app=app2 with vec=40 seed=1234"
+- seed: 1234
+  vector_size: 40
+  app:
+    name: app3
+  $CMD$:
+    small:
+    - main: echo "run app=app3 with vec=40 seed=1234"
+format_levellist:
+- seed: 1234
+  app:
+    name: app1
+    hyperparam: 0.1
+  $CMD$:
+    small:
+    - main: echo "run app=app1 with hyperparam=0.1 seed=1234"
+- seed: 1234
+  app:
+    name: app2
+    hyperparam: 10
+  $CMD$:
+    small:
+    - main: echo "run app=app2 with hyperparam=10 seed=1234"
+- seed: 1234
+  app:
+    name: app3
+    hyperparam: 5
+  $CMD$:
+    small:
+    - main: echo "run app=app3 with hyperparam=5 seed=1234"
+format_mixed:
+- seed: 1234
+  vector_size: 10
+  app:
+    name: app1
+    hyperparam: 0.1
+  $CMD$:
+    small:
+    - main: echo "run app=app1 with hyperparam=0.1 vec=10 seed=1234"
+- seed: 1234
+  vector_size: 20
+  app:
+    name: app1
+    hyperparam: 0.1
+  $CMD$:
+    small:
+    - main: echo "run app=app1 with hyperparam=0.1 vec=20 seed=1234"
+- seed: 1234
+  vector_size: 30
+  app:
+    name: app1
+    hyperparam: 0.1
+  $CMD$:
+    small:
+    - main: echo "run app=app1 with hyperparam=0.1 vec=30 seed=1234"
+- seed: 1234
+  vector_size: 40
+  app:
+    name: app1
+    hyperparam: 0.1
+  $CMD$:
+    small:
+    - main: echo "run app=app1 with hyperparam=0.1 vec=40 seed=1234"
+- seed: 1234
+  vector_size: 10
+  app:
+    name: app2
+    hyperparam: 10
+  $CMD$:
+    small:
+    - main: echo "run app=app2 with hyperparam=10 vec=10 seed=1234"
+- seed: 1234
+  vector_size: 20
+  app:
+    name: app2
+    hyperparam: 10
+  $CMD$:
+    small:
+    - main: echo "run app=app2 with hyperparam=10 vec=20 seed=1234"
+- seed: 1234
+  vector_size: 30
+  app:
+    name: app2
+    hyperparam: 10
+  $CMD$:
+    small:
+    - main: echo "run app=app2 with hyperparam=10 vec=30 seed=1234"
+- seed: 1234
+  vector_size: 40
+  app:
+    name: app2
+    hyperparam: 10
+  $CMD$:
+    small:
+    - main: echo "run app=app2 with hyperparam=10 vec=40 seed=1234"
+- seed: 1234
+  vector_size: 10
+  app:
+    name: app3
+    hyperparam: 5
+  $CMD$:
+    small:
+    - main: echo "run app=app3 with hyperparam=5 vec=10 seed=1234"
+- seed: 1234
+  vector_size: 20
+  app:
+    name: app3
+    hyperparam: 5
+  $CMD$:
+    small:
+    - main: echo "run app=app3 with hyperparam=5 vec=20 seed=1234"
+- seed: 1234
+  vector_size: 30
+  app:
+    name: app3
+    hyperparam: 5
+  $CMD$:
+    small:
+    - main: echo "run app=app3 with hyperparam=5 vec=30 seed=1234"
+- seed: 1234
+  vector_size: 40
+  app:
+    name: app3
+    hyperparam: 5
+  $CMD$:
+    small:
+    - main: echo "run app=app3 with hyperparam=5 vec=40 seed=1234"

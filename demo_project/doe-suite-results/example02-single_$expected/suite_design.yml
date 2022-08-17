@@ -1,0 +1,77 @@
+experiment_1:
+  n_repetitions: 2
+  host_types:
+    small:
+      n: 1
+      init_roles:
+      - setup-small
+      $CMD$:
+      - main: /home/ubuntu/code/demo_project/.venv/bin/python /home/ubuntu/code/demo_project/demo_latency.py --opt [% my_run.opt %] --size [% my_run.payload_size_mb %] --out [% my_run.out %]
+      check_status: true
+  base_experiment:
+    out: json
+    payload_size_mb:
+      $FACTOR$:
+      - 10
+      - 20
+      - 30
+    opt:
+      $FACTOR$:
+      - true
+      - false
+  common_roles: []
+  factor_levels:
+  - {}
+experiment_2:
+  n_repetitions: 3
+  host_types:
+    small:
+      n: 1
+      init_roles:
+      - setup-small
+      $CMD$:
+      - main: /home/ubuntu/code/demo_project/.venv/bin/python /home/ubuntu/code/demo_project/demo.py --config config.json
+      check_status: true
+  base_experiment:
+    out: csv
+    problem:
+      opt: false
+      size:
+        $FACTOR$:
+        - 10
+        - 15
+        - 20
+      other: '[0, 1]'
+  common_roles: []
+  factor_levels:
+  - {}
+$ETL$:
+  pipeline1:
+    experiments:
+    - experiment_1
+    extractors:
+      JsonExtractor: {}
+      ErrorExtractor: {}
+      IgnoreExtractor: {}
+    transformers:
+    - name: RepAggTransformer
+      data_columns:
+      - latency
+    loaders:
+      CsvSummaryLoader:
+        output_dir: pipeline1
+      DemoLatencyPlotLoader:
+        output_dir: pipeline1
+  pipeline2:
+    experiments:
+    - experiment_2
+    extractors:
+      CsvExtractor:
+        file_regex: .*\.csv$
+      ErrorExtractor:
+        file_regex: stderr.log
+      IgnoreExtractor:
+        file_regex: stdout.log
+    transformers: []
+    loaders:
+      CsvSummaryLoader: {}

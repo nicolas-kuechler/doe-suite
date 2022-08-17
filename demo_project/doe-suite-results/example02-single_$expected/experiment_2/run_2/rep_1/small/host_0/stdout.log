@@ -1,0 +1,7 @@
+cwd=/home/ubuntu/results/example02-single_$expected/experiment_2/run_2/rep_1
+config={'$CMD$': {'small': [{'main': '/home/ubuntu/code/demo_project/.venv/bin/python /home/ubuntu/code/demo_project/demo.py --config config.json'}]}, 'out': 'csv', 'problem': {'opt': False, 'other': '[0, 1]', 'size': 20}}
+
+
+Demo Starting...
+Demo Writing Output...
+Demo Done!

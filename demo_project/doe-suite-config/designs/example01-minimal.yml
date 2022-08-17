@@ -1,0 +1,32 @@
+---
+
+# The suite `example01-minimal` contains a single experiment called `minimal`.
+# We run this experiment on a single instance `n=1` of host type `small` and we only use a single repetition.
+# The experiment consists of four runs, i.e., configurations:
+# - echo "hello world."
+# - echo "hello world!"
+# - echo "hello universe."
+# - echo "hello universe!"
+#
+# For the experiment configuration, we use the `cross` format:
+# The different levels for each factor are listed in `base_experiment` and
+# we create the runs by taking a cross product of all factor levels.
+# (e.g., [world, universe] x [".", "!"] results in 4 runs)
+
+minimal: # experiment name
+  n_repetitions: 1
+  host_types:
+    small: # one instance of type `small`
+      n: 1
+      $CMD$: "echo \"[% my_run.arg1 %] [% my_run.arg2 %][% my_run.arg3 %] \"" # command to start experiment run
+  base_experiment:
+    arg1: hello # fix parameter between runs (constant)
+    arg2:
+      $FACTOR$: [world, universe] # varied parameter between runs (factor)
+    arg3:
+      $FACTOR$: [".", "!"] # varied parameter between runs (factor)
+
+$ETL$: # ensures that stderr.log is empty everywhere and that no files are generated except stdout.log
+  check_error:
+    experiments: "*"
+    extractors: {ErrorExtractor: {}, IgnoreExtractor: {} }
