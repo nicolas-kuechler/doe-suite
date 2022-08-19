@@ -51,7 +51,6 @@ class DemoLatencyPlotLoader(PlotLoader):
 
         return fig
 
-
 class CoordinateLoader(PlotLoader):
     def load(self, df: pd.DataFrame, options: Dict, etl_info: Dict) -> None:
         if not df.empty:

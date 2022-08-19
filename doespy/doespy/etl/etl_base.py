@@ -136,6 +136,8 @@ def run_etl(
                     )
                     raise
 
+
+
         # ensure dir exists
         config_post = config_name if etl_output_config_name else None
         pipeline_post = pipeline_name if etl_output_pipeline_name else None
@@ -207,7 +209,7 @@ def _load_super_etl_design(name):
     if "$SUITE_ID$" not in pipeline_design:
         raise ValueError(f"super etl {name}  does not contain $SUITE_ID$")
 
-    # TODO [nku] the include functionality does not exist yet
+    # TODO [nku] the include functionality does not exist yet in the SUPER ETL
 
     return pipeline_design
 
@@ -297,7 +299,7 @@ def load_selected_processes(extractors_sel, transformers_sel, loaders_sel):
         regex = options.get("file_regex")
 
         d = {
-            "extractor": extractors_avl[name](regex),
+            "extractor": extractors_avl[name](regex), # TODO [nku] also need to pass options here
             "options": options,
         }
 
@@ -310,7 +312,7 @@ def load_selected_processes(extractors_sel, transformers_sel, loaders_sel):
                 raise ValueError(f"transformer not found: {trans_sel['name']}")
 
             d = {
-                "transformer": transformers_avl[trans_sel["name"]](),
+                "transformer": transformers_avl[trans_sel["name"]](**options),
                 "options": trans_sel,
             }
             transformers.append(d)
@@ -337,7 +339,7 @@ def load_selected_processes(extractors_sel, transformers_sel, loaders_sel):
             raise ValueError(f"loader not found: {name}")
 
         d = {
-            "loader": loaders_avl[name](),
+            "loader": loaders_avl[name](**options),
             "options": options,
         }
         loaders.append(d)
@@ -380,18 +382,29 @@ def _load_processes(module_name, extractors, transformers, loaders):
         ):
             raise ValueError(f"duplicate class={member_name}")
 
+        from pydantic import ValidationError
+
         # find members that are actually an ETL process step
         # by checking if they inherit from the abstract base class
         try:
             etl_candidate = getattr(module, member_name)
             if issubclass(etl_candidate, Extractor):
-                etl_candidate()
+                try:
+                    etl_candidate()
+                except ValidationError:
+                    pass
                 extractors[member_name] = etl_candidate
             elif issubclass(etl_candidate, Transformer):
-                etl_candidate()
+                try:
+                    etl_candidate()
+                except ValidationError:
+                    pass
                 transformers[member_name] = etl_candidate
             elif issubclass(etl_candidate, Loader):
-                etl_candidate()
+                try:
+                    etl_candidate()
+                except ValidationError:
+                    pass
                 loaders[member_name] = etl_candidate
 
         except TypeError:

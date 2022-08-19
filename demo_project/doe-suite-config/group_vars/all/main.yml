@@ -10,7 +10,7 @@ git_remote_repository:
 #- repo: git@github.com:nicolas-kuechler/doe-suite.git
 #  version: etl
 
-# TODO: The following parameters define how the playbook checks whether a job finished, fetches the results and starts the next job.
+# The following parameters define how the playbook checks whether a job finished, fetches the results and starts the next job.
 # - 'job_n_tries' is the maximal number times we check the job's status before aborting
 # - 'job_check_wait_time' is the time (in seconds) to wait in between checking whether a job finished
 # Note that those parameters directly influence the playbook duration:

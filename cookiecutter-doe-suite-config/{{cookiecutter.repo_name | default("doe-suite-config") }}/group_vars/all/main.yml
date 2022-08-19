@@ -1,7 +1,7 @@
 
 
 
-# TODO: set remote repository (code will be cloned on each remote host)
+# set remote repository (code will be cloned on each remote host)
 git_remote_repository: "{{ cookiecutter.repo }}"
 # Can also get multiple repos and with a specific branch / commit
 #git_remote_repository:
@@ -13,7 +13,7 @@ git_remote_repository: "{{ cookiecutter.repo }}"
 {% raw %}
 prj_id: example_{{ does_project_id_suffix }} #| default('', True) }}
 
-# TODO: The following parameters define how the playbook checks whether a job finished, fetches the results and starts the next job.
+# The following parameters define how the playbook checks whether a job finished, fetches the results and starts the next job.
 # - 'job_n_tries' is the maximal number times we check the job's status before aborting
 # - 'job_check_wait_time' is the time (in seconds) to wait in between checking whether a job finished
 # Note that those parameters directly influence the playbook duration:

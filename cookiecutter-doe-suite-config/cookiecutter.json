@@ -1,5 +1,6 @@
 {
     "suite": "getting-started",
+    "experiment_name": "exp1",
     "host_name": "base",
     "host_ec2_instance_type": "t2.medium",
     "host_ec2_volume_size": 16,
@@ -11,6 +12,7 @@
     "euler_gpu_number": 0,
     "euler_gpu_mem": 0,
     "euler_env": "gcc/8.2.0 python/3.9.9",
-    "repo": "git@github.com:nicolas-kuechler/doe-suite.git",
+    "repo": "git@github.com:nicolas-kuechler/doe-suite.git", TODO [nku] can this also not provide a default? -> also not ideal because cannot see example
+    "repo_branch": "main",
     "relative_path_does_config_to_doespy": "<AUTO-PATH>"
 }

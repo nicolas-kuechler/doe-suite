@@ -1,0 +1,6 @@
+
+
+div.twocol {
+    display: flex;
+    justify-content: space-evenly;
+}

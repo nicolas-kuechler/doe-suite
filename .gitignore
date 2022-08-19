@@ -2,6 +2,8 @@
 
 src/inventory/aws_ec2.yml
 
+doespy/docs/build
+
 ### Ansible ###
 *.retry
 .boto
