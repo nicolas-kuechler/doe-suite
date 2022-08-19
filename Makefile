@@ -309,6 +309,6 @@ design-validate: install-silent
 	poetry run python $(PWD)/doespy/doespy/design/validate_extend.py --suite $(suite) --ignore-undefined-vars --only-validate
 
 
-design2: #install
+design2: install
 	@cd $(does_config_dir) && \
 	poetry run python $(PWD)/doespy/doespy/design/design.py
