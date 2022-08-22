@@ -43,6 +43,29 @@
         res
 
 
+# Network Interfaces
+
+- name: find existing eni
+  amazon.aws.ec2_eni_info:
+    filters:
+      vpc-id: "{{ exp_base.vpc_id }}"
+  register: ec2_eni_info
+
+- name: Collect infos on ec2 instances (filter by prj_id and suite tags)
+  community.aws.ec2_instance_info:
+      region: "{{ exp_base.aws_region }}"
+      filters:
+        instance-state-name: [ "pending", "running" ]
+        "tag:prj_id": "{{ prj_id }}"
+        "tag:suite": "{{ suite }}"
+  register: ec2_instance_info
+
+- set_fact:
+    eni_assignment: "{{ ec2_eni_info | to_eni_assignment(ec2_instance_info, host_types, host_type_specific_vars) }}"
+
+#- debug:
+#    var: eni_assignment
+
 #######################################################################
 # Create EC2 Instances for all host_types
 ######################################################################
@@ -53,13 +76,12 @@
     key_name: '{{ ssh_key_name }}'
     image_id: '{{ ec2config.ec2_image_id }}'
     region: '{{ ec2config.aws_region }}'
-    security_group: '{{ ec2config.sg_name }}'
+    security_groups: "{{ ec2config.attach_eni | default(False) | ternary([], [ec2config.sg_name]) }} " #ec2config.sg_name "{{ omit }}" #
     vpc_subnet_id: '{{ ec2config.vpc_subnet_id }}'
     instance_role: '{{ ec2config.instance_role | default(None) }}'
     wait: no
     purge_tags: yes
-    network:
-      assign_public_ip: yes
+    network: "{{ my_host | to_network(eni_assignment) }}"
     volumes:
       - device_name: '{{ volume_root_device_name | default("/dev/sda1") }}'
         ebs:

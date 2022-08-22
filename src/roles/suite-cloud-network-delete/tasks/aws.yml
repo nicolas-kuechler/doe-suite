@@ -60,6 +60,8 @@
     state: absent
   when: vpc_id != 'undefined'
 
+# TODO [nku] also delete the eni here
+
 # Delete Route Table
 - name: Delete Server Route Table
   community.aws.ec2_vpc_route_table:
