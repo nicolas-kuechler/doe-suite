@@ -150,18 +150,18 @@ etl-super: install
 	poetry run python $(PWD)/doespy/doespy/etl/super_etl.py --config $(config) --output_path $(out)
 
 # delete etl results for a specific `suite` and `id`  (can be regenerated with `make etl suite=<SUITE> id=<ID>`)
-etl-clean:
+etl-clean: install
 	@cd $(does_config_dir) && \
 	poetry run python $(PWD)/doespy/doespy/etl/etl_clean.py --suite $(suite) --id $(id)
 
 # delete all etl results  (can be regenerated with `make etl-all`)
-etl-clean-all:
+etl-clean-all: install
 	@cd $(does_config_dir) && \
 	poetry run python $(PWD)/doespy/doespy/etl/etl_clean.py --all
 
 # reruns all etl pipelines of all suite runs and compares the results
 #   -> can be used to check that a change in an ETL step did not break another earlier suite
-etl-test-all:
+etl-test-all: install
 	@cd $(does_config_dir) && \
 	poetry run pytest $(PWD)/doespy -q -k 'test_etl_pipeline' -s
 
@@ -186,18 +186,18 @@ clean-local-py:
 	@find . -name '.pytest_cache' -exec rm -fr {} +
 
 # delete all incomplete results
-clean-result-incomplete:
+clean-result-incomplete: install
 	@echo -n "Are you sure to delete all the incomplete results in $(does_results_dir)? [y/N] " && read ans && [ $${ans:-N} = y ]
 	@cd $(does_config_dir) && \
 	poetry run python $(PWD)/doespy/doespy/result_clean.py --incomplete
 
 # only keep one suite run per suite (the last complete)
-clean-result:
+clean-result: install
 	@echo -n "Are you sure to delete all the results in $(does_results_dir) except for the ones with the highest id? [y/N] " && read ans && [ $${ans:-N} = y ]
 	@cd $(does_config_dir) && \
 	poetry run python $(PWD)/doespy/doespy/result_clean.py --keeplast
 
-clean-cloud :
+clean-cloud: install
 	@cd $(does_config_dir) && \
 	ANSIBLE_CONFIG=$(PWD)/ansible.cfg \
 	poetry run ansible-playbook $(PWD)/src/clear.yml
@@ -215,12 +215,12 @@ clean: clean-local-py clean-cloud
 # https://patorjk.com/software/taag/#p=display&h=2&v=2&f=Small&t=INFO
 
 # list infos about the doe-suite-config (config + designs)
-info:
+info: install
 	@cd $(does_config_dir) && \
 	poetry run python $(PWD)/doespy/doespy/info.py
 
 # show status info of a suite (how much progress)
-status:
+status: install
 	@cd $(does_config_dir) && \
 	poetry run python $(PWD)/doespy/doespy/status.py $(mysuite) $(myid)
 
@@ -235,7 +235,7 @@ status:
 # https://patorjk.com/software/taag/#p=display&h=2&v=2&f=Small&t=TEST
 
 
-rescomp:
+rescomp: install
 	@cd $(does_config_dir) && \
 	poetry run pytest $(PWD)/doespy -q -k 'test_does_results' -s --suite $(suite) --id $(id)
 
@@ -272,11 +272,11 @@ convert-to-expected:
 #
 #################################
 
-design:
+design: install
 	@cd $(does_config_dir) && \
 	poetry run python $(PWD)/doespy/doespy/design/validate_extend.py --suite $(suite) --ignore-undefined-vars
 
 
-design-validate:
+design-validate: install
 	@cd $(does_config_dir) && \
 	poetry run python $(PWD)/doespy/doespy/design/validate_extend.py --suite $(suite) --ignore-undefined-vars --only-validate

@@ -1,4 +1,5 @@
 {
+    "project_id": "example",
     "suite": "getting-started",
     "host_name": "base",
     "host_ec2_instance_type": "t2.medium",

@@ -26,7 +26,7 @@ def main(
 
     # ignore if {{ }} is undefined
     undefined = (
-        jinja2.DebugUndefined if ignore_undefined_vars else jinja2.StrictUndefined
+        util.DebugChainableUndefined if ignore_undefined_vars else jinja2.StrictUndefined
     )
 
     # load suite design and apply templating (resolve {{ }} in design)
