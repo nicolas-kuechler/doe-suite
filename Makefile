@@ -73,12 +73,7 @@ new:
 # depending on`cloud` variable, check if connection can be established
 cloud-check:
 	@if [ $(cloud) = aws ]; then aws sts get-caller-identity > /dev/null || aws configure; fi
-	@if [ $(cloud) = euler ] && [ $(shell uname) = Linux ]; then \
-	    timeout 1 ping -c 1 login.euler.ethz.ch > /dev/null || (echo "\nCannot reach login.euler.ethz.ch, are you connected to the ETHZ network, e.g., via VPN?" && exit 1); \
-	fi
-	@if [ $(cloud) = euler ] && [ $(shell uname) = Darwin ]; then \
-        ping -c 1 -W 1 login.euler.ethz.ch || (echo "\nCannot reach login.euler.ethz.ch, are you connected to the ETHZ network, e.g., via VPN?" && exit 1); \
-	fi
+	@if [ $(cloud) = euler ]; then ping -c 1 -W 1 login.euler.ethz.ch > /dev/null || (echo "\nCannot reach login.euler.ethz.ch, are you connected to the ETHZ network, e.g., via VPN?" && exit 1); fi
 
 # install dependenicies to ensure that suites can be run + etl
 install: new
