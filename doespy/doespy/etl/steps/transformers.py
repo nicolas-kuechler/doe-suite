@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any
+from typing import Dict, Any, List
 from importlib_metadata import Deprecated
 
 import pandas as pd
@@ -11,13 +11,29 @@ from pydantic import BaseModel
 from doespy.etl.etl_util import expand_factors
 
 
-class Transformer(ABC):
+class Transformer(BaseModel, ABC):
+
+    class Config:
+        extra = "forbid"
+
     @abstractmethod
     def transform(self, df: pd.DataFrame, options: Dict) -> pd.DataFrame:
         pass
 
 
+class DfTransformer(Transformer):
+
+    def transform(self, df: pd.DataFrame, options: Dict) -> pd.DataFrame:
+
+        # TODO [nku] here I could define the different things for the df.x
+        pass
+
+
 class ConditionalTransformer(Transformer):
+
+    col: str
+    dest: str
+    value: Dict[Any, Any]
 
     r"""The `ConditionalTransformer` replaces the value in the ``dest`` column with ``repl``
     if the value in ``col`` is ``value``, i.e., ``if df.col == value: df.dest = repl``
@@ -71,6 +87,9 @@ class ConditionalTransformer(Transformer):
             ============  ====
 
     """
+
+    class Config:
+        extra = "forbid"
 
     def transform(self, df: pd.DataFrame, options: Dict) -> pd.DataFrame:
         col = options["col"]
@@ -134,6 +153,12 @@ class RepAggTransformer(Transformer):
             ===  ==== ========
 
     """
+
+    ignore_columns: List[str] = []
+
+    data_columns: List[str]
+
+    agg_functions: List[str] = ["mean", "min", "max", "std", "count"]
 
     # TODO [nku] can we remove this transformer by unifying it with GroupByAggTransformer? -> I think we could remove this here and replace it only with the GroupByAggTransformer and include rep in Groupby cols
 

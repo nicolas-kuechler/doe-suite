@@ -14,6 +14,9 @@ class Loader(BaseModel, ABC):
 
     output_dir: Optional[str]
 
+    class Config:
+        extra = "forbid"
+
     def get_output_dir(self, etl_info):
 
         etl_output_dir = etl_info["etl_output_dir"]

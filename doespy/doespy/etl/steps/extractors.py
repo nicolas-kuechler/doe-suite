@@ -17,6 +17,9 @@ class Extractor(BaseModel, ABC):
 
     file_regex: Union[str, List[str]] = None
 
+    class Config:
+        extra = "forbid"
+
     @property
     @abstractmethod
     def file_regex_default(self):

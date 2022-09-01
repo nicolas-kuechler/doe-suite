@@ -21,7 +21,10 @@ Host Type
     :noindex:
     :validator-list-fields: True
 
-
+.. autoclass:: doespy.design.design.HostTypeId
+    :members:
+    :inherited-members:
+    :undoc-members:
 
 ETL
 ===
