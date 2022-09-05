@@ -351,10 +351,10 @@ class FilterColumnTransformer(Transformer):
         import warnings
 
         warnings.warn(
-            "FilterColumnTransformer is deprecated, instead you can directly use",
-            "df.query(col == 'A') in the etl definition ",
-            "i.e., transformers: [df.query: {expr: col == 'A'}]",
-            DeprecationWarning,
+            """FilterColumnTransformer is deprecated, instead you can directly use
+            df.query(col == 'A') in the etl definition 
+            i.e., transformers: [df.query: {expr: col == 'A'}]""",
+            DeprecationWarning
         )
 
         filters: dict[str, Any] = options.get("filters", {})
