@@ -64,7 +64,17 @@ def to_eni_assignment(ec2_eni_info, ec2_instance_info, host_types, host_type_spe
     return assignment
 
 
-
+def to_euler_tag_assignment(groups, host_types):
+    """builds the tag assignment list for the euler cloud
+    (abuses the ec2 to_tag_assignment filter)
+    """
+    instance_infos = []
+    i = 0
+    for ht, d in host_types.items():
+        for idx, exp in enumerate(d.keys()):
+            instance_infos += [{"instance_id": groups[i], "tags": {"host_type": ht, "idx": idx}}]
+            i = i+1
+    return to_tag_assignment(instance_infos, host_types)
 
 def to_tag_assignment(ec2_instances_info, host_types):
 
@@ -141,4 +151,5 @@ class FilterModule(object):
             'to_tag_assignment': to_tag_assignment,
             'to_eni_assignment': to_eni_assignment,
             'to_network': to_network,
+            'to_euler_tag_assignment': to_euler_tag_assignment,
         }

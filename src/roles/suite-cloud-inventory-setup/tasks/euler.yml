@@ -6,10 +6,14 @@
     that:
     - exp_base is defined
 
-- name: Assert that only a single host type is defined in experiments
+
+- name: Assert that there are only single instance experiments on Euler
   assert:
     that:
-    - host_types.keys() | length | int == 1
+    - host_types | json_query('*.*.n') | list | flatten | unique == [1] # on east host type n=1
+    - (host_types | json_query('*.keys(@)') | list | flatten | unique) == (host_types | json_query('*.keys(@)') | list | flatten) # each experiment has only one host type
+    fail_msg: "Cloud=euler only supports single instance experiments => each experiment can have only a single host_type with n=1"
+
 
 - name: Template dynamic inventory config file
   # we do this because we want to have the project id as an inventory filter (such that only ec2 instances with a corresponding tag are visible)
@@ -20,4 +24,4 @@
   vars:
     prj_clear: False # controls whether to also filter for the suite or not (for a clear we want to include all instances of the project independent of the suite)
     is_ansible_controller: False
-    number_of_experiments: "{{ host_types | dict2items | map(attribute='value') | first | length | int }}"
+    number_of_experiments: "{{ host_types | json_query('*.keys(@)') | list | flatten | unique n_query('*.keys(@)') | list | flatten | unique | length | int }}"
