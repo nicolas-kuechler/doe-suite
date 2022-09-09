@@ -30,7 +30,7 @@ job_check_wait_time: 5
 etl_minimum_delay_sec: 30
 
 remote:
-  dir: "{{ '/cluster/home/' + euler_user if cloud == 'euler' else '/home/ubuntu' }}"
+  dir: "{{ '/cluster/home/' + euler_user + '/doe-suite/' + prj_id + '/' + suite if cloud == 'euler' else '/home/ubuntu' }}"
   results_dir: "{{ '/cluster/scratch/' + euler_user + '/results' if cloud == 'euler' else '/home/ubuntu/results' }}"
 
 exp_code_dir: "{{ remote.dir }}/code"

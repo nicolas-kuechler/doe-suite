@@ -245,7 +245,10 @@ test-%:
 	@make rescomp suite=$* id=last
 
 
+# make single-test -j5  -> to run them in parallel
 single-test: test-example01-minimal test-example02-single test-example03-format test-example06-vars test-example07-etl
+
+# make multi-test -j2 -> to run them in parallel
 multi-test: test-example04-multi test-example05-complex
 
 # runs the listed suites and compares the result with the expected result under `doe-suite-results`

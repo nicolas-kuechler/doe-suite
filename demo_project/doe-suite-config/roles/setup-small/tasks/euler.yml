@@ -6,44 +6,18 @@
         msg: "-> small only  "
       tags: [print_action]
 
-    - name: Download install-poetry.py
-      ansible.builtin.get_url:
-        url:  https://install.python-poetry.org/install-poetry.py
-        dest: ~/install-poetry.py
-
     - name: Install poetry
       ansible.builtin.shell:
-        cmd: module load {{ euler_env }} && python  ~/install-poetry.py
-
-    # TODO: HIDDE any reason for this install via requirements.txt?
-    #- name: Install requirements.txt
-    #  shell: |
-    #    source /etc/profile
-    #    source ~/.bash_profile
-    #    . /cluster/apps/local/env2lmod.sh
-    #    module load {{ euler_env }}
-    #    python /tmp/get-poetry.py
-    #    source $HOME/.poetry/env
-    #    poetry export -f requirements.txt --output requirements.txt
-    #    pip install --user -r requirements.txt
-    #  args:
-    #    chdir: "{{ exp_code_dir }}"
-    #    executable: /bin/bash
+        cmd: module load {{ euler_env }} && curl -sSL https://install.python-poetry.org | POETRY_HOME={{ remote.dir }}/.local/share/pypoetry python3 -
 
     - name: make path to poetry available in variable
       set_fact:
-        poetry: ~/.local/bin/poetry
+        poetry: "{{ remote.dir }}/.local/share/pypoetry/venv/bin/poetry"
 
     - name: Set config to create .venv folder in project directory
       ansible.builtin.shell:
         cmd: "module load {{ euler_env }} && {{ poetry }} config virtualenvs.in-project true --local && {{ poetry }} install"
         chdir: "{{ exp_code_dir }}/demo_project"
-
-
-    #- name: Install python packages with poetry (-> afterward can run {{ poetry }} run python demo.py)
-    #  ansible.builtin.shell:
-    #    cmd: "module load {{ euler_env }} && {{ poetry }} install"
-    #    chdir: "{{ exp_code_dir }}/demo_project"
 
   # only execute the role for one per host type
   when: hostvars['localhost'].suite_hosts_lst | selectattr('host_type', 'equalto', host_type) | map(attribute='instance_id') | first == inventory_hostname

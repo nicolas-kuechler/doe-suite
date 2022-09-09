@@ -43,7 +43,7 @@ def run_single_suite(
         pipeline_design=pipeline_design,
         etl_output_dir=etl_output_dir,
         etl_output_config_name=False,
-        etl_output_pipeline_name=False,
+        etl_output_pipeline_name=True,
         etl_from_design=etl_from_design,
         return_df=return_df,
     )
@@ -139,7 +139,7 @@ def run_etl(
         # ensure dir exists
         config_post = config_name if etl_output_config_name else None
         pipeline_post = pipeline_name if etl_output_pipeline_name else None
-        etl_output_dir = _get_output_dir_name(
+        etl_output_dir_full = _get_output_dir_name(
             etl_output_dir, config_post, pipeline_post
         )
 
@@ -153,7 +153,7 @@ def run_etl(
             "suite_id": "_".join([x["suite_id"] for x in etl_infos]),
             "pipeline": pipeline_name,
             "experiments": experiments,
-            "etl_output_dir": etl_output_dir,
+            "etl_output_dir": etl_output_dir_full,
         }
 
         try:
@@ -467,7 +467,7 @@ def extract(
                             d_lst = _parse_file(host_dir, file, extractors)
                             for d in d_lst:
                                 d_flat = _flatten_d(d)
-                                res = {**job_info, **config_flat, **d_flat}
+                                res = {**job_info, "source_file": file, **config_flat, **d_flat}
                                 res_lst.append(res)
 
     df = pd.DataFrame(res_lst)

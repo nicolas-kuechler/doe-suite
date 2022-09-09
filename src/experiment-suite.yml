@@ -46,13 +46,20 @@
   hosts: localhost
 
   tasks:
-    - name: clear dynamic inventory files (must end with .yml)
-      file: path={{ item }} state=absent
-      with_fileglob: inventory/*.yml
 
     - name: resolve suite_id, load and validate suite design, fill default values, and prepare variables
       include_role:
         name: suite-load-pre-cloud-setup
+
+    - name: set the inventory source directory
+      set_fact:
+        does_inventory_source: "{{ ansible_inventory_sources | first }}"
+
+    - name: Create a directory if it does not exist
+      ansible.builtin.file:
+        path: "{{ does_inventory_source }}"
+        state: directory
+        mode: '0755'
 
     - name: prepare dynamic inventory
       include_role:
@@ -236,12 +243,14 @@
       include_role:
         name: suite-cloud-instances-delete
         tasks_from: "{{ 'suite-cloud-instances-delete' | multiplex_tasks(cloud) }}"
+      vars:
+        filter_by_suite: True
 
-    - name: Remove Cloud Network
-      include_role:
-        name: suite-cloud-network-delete
-        tasks_from: "{{ 'suite-cloud-network-delete' | multiplex_tasks(cloud) }}"
-      when: exp_base.skip_network_delete is undefined or  exp_base.skip_network_delete == false
+    #- name: Remove Cloud Network
+    #  include_role:
+    #    name: suite-cloud-network-delete
+    #    tasks_from: "{{ 'suite-cloud-network-delete' | multiplex_tasks(cloud) }}"
+    #  when: exp_base.skip_network_delete is undefined or  exp_base.skip_network_delete == false
 
     # cleanup aws if suite is finished (unless the explicit flag is set to keep the aws environment)
     when: awsclean | default(true) | bool and is_suite_finished

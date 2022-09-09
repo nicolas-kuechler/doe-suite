@@ -30,7 +30,7 @@
     # case 2: initialize a new suite_id
     - name: set the new suite_id as the epoch timestamp
       set_fact:
-        suite_id: "{{ ansible_date_time.epoch | int }}"
+        suite_id: "{{ epoch |default(ansible_date_time.epoch) | int }}" # epoch can be set from cmdline to already determine the id for a new run
       when: id == 'new'
 
     # case 3: load suite_id based on last running experiment suite

@@ -17,7 +17,7 @@ def compare_dir(d1, d2, ignore_infiles=[], ignore_files=[]):
         bool: return True if directories are the same
     """
 
-    comp = filedircmp(d1, d2, ignore=[".gitkeep"])
+    comp = filedircmp(d1, d2, ignore=[".gitkeep"] + ignore_files)
 
     if comp.diff_files:
         # for differing files, check if the only differences comes
