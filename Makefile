@@ -32,7 +32,7 @@ help:
 	@echo '  make run-keep suite=<SUITE> id=new                  - does not terminate instances at the end, otherwise works the same as run target'
 	@echo 'Clean'
 	@echo '  make clean                                          - terminate running cloud instances belonging to the project and local cleanup'
-	@echo '  make clean-result                                   - delete all results in doe-suite-results except for the last (complete) suite run per suite'
+	@echo '  make clean-result                                   - delete all inclomplete results in doe-suite-results'
 	@echo 'Running ETL Locally'
 	@echo '  make etl suite=<SUITE> id=<ID>                      - run the etl pipeline of the suite (locally) to process results (often id=last)'
 	@echo '  make etl-design suite=<SUITE> id=<ID>               - same as `make etl ...` but uses the pipeline from the suite design instead of results'
@@ -96,13 +96,15 @@ install: new
 run: install cloud-check
 	@cd $(does_config_dir) && \
 	ANSIBLE_CONFIG=$(PWD)/ansible.cfg \
-	poetry run ansible-playbook $(PWD)/src/experiment-suite.yml -e "suite=$(suite) id=$(id) cloud=$(cloud) $(myexpfilter)"
+	ANSIBLE_INVENTORY=$(ansible_inventory) \
+	poetry run ansible-playbook $(PWD)/src/experiment-suite.yml -e "suite=$(suite) id=$(id) epoch=$(epoch) cloud=$(cloud) $(myexpfilter)"
 
 .PHONY: run
 run-keep: install cloud-check
 	@cd $(does_config_dir) && \
 	ANSIBLE_CONFIG=$(PWD)/ansible.cfg \
-	poetry run ansible-playbook $(PWD)/src/experiment-suite.yml -e "suite=$(suite) id=$(id) cloud=$(cloud) $(myexpfilter) awsclean=False"
+	ANSIBLE_INVENTORY=$(ansible_inventory) \
+	poetry run ansible-playbook $(PWD)/src/experiment-suite.yml -e "suite=$(suite) id=$(id) epoch=$(epoch) cloud=$(cloud) $(myexpfilter) awsclean=False"
 
 # TODO [nku] integrate them into run target when they are available
 #
@@ -239,19 +241,23 @@ rescomp: install
 	@cd $(does_config_dir) && \
 	poetry run pytest $(PWD)/doespy -q -k 'test_does_results' -s --suite $(suite) --id $(id)
 
-# matches
+# for aws cloud setup there can be race conditions for network setup, delay each example by 10s
+# use sed to extract the example id and multiply it by 10 -> feed this to sleep
 test-%:
+	TMP=$$(echo $*|sed -r 's/example([0-9]*).*/echo "$$((\1*10))"/e') ;\
+	sleep $$TMP
 	@make run suite=$* id=new
 	@make rescomp suite=$* id=last
 
 
-# make single-test -j5  -> to run them in parallel
+# make single-test -j5 -O -> to run them in parallel
 single-test: test-example01-minimal test-example02-single test-example03-format test-example06-vars test-example07-etl
 
-# make multi-test -j2 -> to run them in parallel
+# make multi-test -j2 -O -> to run them in parallel
 multi-test: test-example04-multi test-example05-complex
 
 # runs the listed suites and compares the result with the expected result under `doe-suite-results`
+# make aws-test -j9 -O
 aws-test: single-test multi-test
 
 # runs all examples compatible with euler (no multi instance experiments)

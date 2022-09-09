@@ -46,7 +46,7 @@ exp_base:
   vpc_cidr_block: 10.100.0.0/16
   vpc_subnet_name: "{{ prj_id }}_subnet_az1"
   vpc_subnet_cidr: 10.100.0.0/24
-  sg_name: "{{ prj_id }}_sg"
-  sg_desc: "{{ prj_id }} security group"
+  sg_name: "{{ prj_id }}_{{ suite | default('') }}_sg"
+  sg_desc: "{{ prj_id }} {{ suite | default('') }} security group"
 
 {% endraw %}

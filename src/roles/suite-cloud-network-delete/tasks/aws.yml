@@ -21,27 +21,27 @@
   set_fact:
     vpc_id: "{{ vpc_result.vpcs[0].vpc_id | default('undefined') }}"
 
+
+- name: find security groups of vpc
+  amazon.aws.ec2_group_info:
+    filters:
+      vpc-id: "{{ vpc_id }}"
+  register: security_group_result
+
+- ansible.builtin.set_fact:
+    security_group_ids: "{{ security_group_result | json_query('security_groups[?group_name!=`default`].group_id') | list }}"
+
+
 - name: Remove All Routes from Security Group
   amazon.aws.ec2_group:
-    name: "{{ exp_base.sg_name }}"
-    description: "{{ exp_base.sg_desc }}"
-    vpc_id: "{{ vpc_id }}"
+    group_id: "{{ sg_id }}"
     region: "{{ exp_base.aws_region }}"
     purge_rules: true
-  when: vpc_id != 'undefined'
-
-# Delete Security Groups
-- name: Delete Security Group
-  amazon.aws.ec2_group:
-    name: "{{ exp_base.sg_name }}"
-    vpc_id: "{{ vpc_id }}"
-    region: "{{ exp_base.aws_region }}"
     state: absent
   when: vpc_id != 'undefined'
-  register: result
-  retries: 30
-  delay: 5
-  until: result is not failed
+  loop: "{{ security_group_ids | list }}"
+  loop_control:
+    loop_var: sg_id
 
 # Delete Subnet
 - name: Delete Subnet AZ1
