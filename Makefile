@@ -87,6 +87,12 @@ install: new
 	poetry run ansible-galaxy install -r $(PWD)/requirements-collections.yml
 
 
+install-silent: new
+	@cd $(does_config_dir) && \
+	poetry install > /dev/null && \
+	poetry run ansible-galaxy install -r $(PWD)/requirements-collections.yml > /dev/null
+
+
 #################################
 #  ___ _   _ _  _
 # | _ \ | | | \| |
@@ -227,12 +233,12 @@ clean: clean-local-py clean-cloud
 # https://patorjk.com/software/taag/#p=display&h=2&v=2&f=Small&t=INFO
 
 # list infos about the doe-suite-config (config + designs)
-info: install
+info: install-silent
 	@cd $(does_config_dir) && \
 	poetry run python $(PWD)/doespy/doespy/info.py
 
 # show status info of a suite (how much progress)
-status: install
+status: install-silent
 	@cd $(does_config_dir) && \
 	poetry run python $(PWD)/doespy/doespy/status.py $(mysuite) $(myid)
 
@@ -291,11 +297,11 @@ convert-to-expected:
 #
 #################################
 
-design: install
+design: install-silent
 	@cd $(does_config_dir) && \
 	poetry run python $(PWD)/doespy/doespy/design/validate_extend.py --suite $(suite) --ignore-undefined-vars
 
 
-design-validate: install
+design-validate: install-silent
 	@cd $(does_config_dir) && \
 	poetry run python $(PWD)/doespy/doespy/design/validate_extend.py --suite $(suite) --ignore-undefined-vars --only-validate

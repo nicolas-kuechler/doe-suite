@@ -76,13 +76,13 @@ def output_design(suite_design):
 
 def output_commands(suite_design_ext):
     for exp, runs in suite_design_ext.items():
-        print(f"Experiment={exp}")
+        print(f"\nExperiment={exp}")
         for run_idx, run in enumerate(runs):
             for host, cmds in run["$CMD$"].items():
                 for host_idx, cmd in enumerate(cmds):
                     if len(cmd) == 1:
                         print(
-                            f"  run={run_idx:03d} host={host}-{host_idx}: {cmd['main']}"
+                            f"\n  run={run_idx:03d} host={host}-{host_idx}: {cmd['main']}"
                         )
                     else:
                         raise ValueError("not implemented yet")

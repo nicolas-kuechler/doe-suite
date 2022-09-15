@@ -24,4 +24,4 @@
   vars:
     prj_clear: False # controls whether to also filter for the suite or not (for a clear we want to include all instances of the project independent of the suite)
     is_ansible_controller: False
-    number_of_experiments: "{{ host_types | json_query('*.keys(@)') | list | flatten | unique n_query('*.keys(@)') | list | flatten | unique | length | int }}"
+    number_of_experiments: "{{ host_types | json_query('*.keys(@)') | list | flatten | unique | length | int }}"

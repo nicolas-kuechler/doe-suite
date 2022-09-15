@@ -1,4 +1,6 @@
 from doespy import util
+from doespy.design import validate_extend
+
 import os
 import glob
 
@@ -13,8 +15,8 @@ def display_info():
         etl = "x" if len(get_etl_pipelines(suite)) > 0 else " "
         pad = (30 - len(suite)) * " "
         print(f"{suite} {pad}etl[{etl}]")
-        for exp in sorted(get_experiments(suite)):
-            print(f"   {exp}")
+        for exp in sorted(get_experiments(suite), key=lambda x: x["exp_name"]):
+            print(f"   {exp['exp_name']}  ({exp['n_runs']} runs) ")
     print("------------------")
 
 
@@ -33,10 +35,16 @@ def get_suite_designs():
 
 def get_experiments(suite):
     exps = []
-    design = util.get_suite_design(suite)
-    for exp_name in design.keys():
-        if not exp_name.startswith("$"):
-            exps.append(exp_name)
+
+    _suite_design, suite_design_ext = validate_extend.main(
+        suite=suite,
+        ignore_undefined_vars=True,
+    )
+
+
+    for exp_name, runs in suite_design_ext.items():
+        exps.append({"exp_name": exp_name, "n_runs": len(runs)})
+
     return exps
 
 

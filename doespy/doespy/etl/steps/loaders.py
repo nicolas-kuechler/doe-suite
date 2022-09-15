@@ -63,7 +63,7 @@ class PlotLoader(Loader):
 class CsvSummaryLoader(Loader):
     def load(self, df: pd.DataFrame, options: Dict, etl_info: Dict) -> None:
 
-        if options.get("skip_empty", False) and df.empty
+        if options.get("skip_empty", False) and df.empty:
             return
         elif df.empty:
             raise ValueError("CsvSummaryLoader: DataFrame is empty so not creating an output file.")
