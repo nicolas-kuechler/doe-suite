@@ -10,9 +10,9 @@ ec2_volume_snapshot: snap-0b8d7894c93b6df7a
 
 euler_job_minutes: 10 # individual job time in minutes
 euler_cpu_cores: 1
-euler_cpu_mem: 3072
+euler_cpu_mem_per_core_mb: 3072
 euler_gpu_number: 0
-euler_gpu_mem: 0
+euler_gpu_mem_per_gpu_mb: 0
 
 euler_env: "gcc/8.2.0 python/3.9.9"
 
