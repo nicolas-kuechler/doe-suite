@@ -23,4 +23,4 @@ $ETL$:
     loaders:
       CsvSummaryLoader: # write the transformed dataframe across the whole experiment as a csv file
         #  (5) use etl variables in pipeline/stage inclusion
-        output_dir: "[% output_dir %]" # write results into an output dir
+        skip_empty: "[% skip_empty %]" # write results into an output dir

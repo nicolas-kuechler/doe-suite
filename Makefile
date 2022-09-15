@@ -8,6 +8,11 @@ cloud?=$(DOES_CLOUD) # env variable with default (aws)
 DOES_CLOUD_STATE?=terminate
 state?=$(DOES_CLOUD_STATE) # env variable with default (terminate)
 
+
+epoch=$(shell date +%s)
+suite_id= $(shell [ $(id) = new ] && echo $(epoch) || echo $(id))
+ansible_inventory=$(does_results_dir)/$(suite)_$(suite_id)/.inventory
+
 # add prefix if defined for playbook run cmd
 ifdef expfilter
 	myexpfilter=expfilter=$(expfilter)
@@ -133,6 +138,11 @@ etl: install
 	@cd $(does_config_dir) && \
 	poetry run python $(PWD)/doespy/doespy/etl/etl.py --suite $(suite) --id $(id)
 
+# can be used for remote debugging with e.g., vs code
+etl-debug: install
+	@cd $(does_config_dir) && \
+	poetry run python -m debugpy --listen 5678 --wait-for-client $(PWD)/doespy/doespy/etl/etl.py --suite $(suite) --id $(id)
+
 # instead of using the etl pipeline defined in the results folder, it uses the pipeline from the design
 # useful for developing an etl pipeline
 etl-design: install
@@ -188,13 +198,13 @@ clean-local-py:
 	@find . -name '.pytest_cache' -exec rm -fr {} +
 
 # delete all incomplete results
-clean-result-incomplete: install
+clean-result: install
 	@echo -n "Are you sure to delete all the incomplete results in $(does_results_dir)? [y/N] " && read ans && [ $${ans:-N} = y ]
 	@cd $(does_config_dir) && \
 	poetry run python $(PWD)/doespy/doespy/result_clean.py --incomplete
 
 # only keep one suite run per suite (the last complete)
-clean-result: install
+clean-result-full: install
 	@echo -n "Are you sure to delete all the results in $(does_results_dir) except for the ones with the highest id? [y/N] " && read ans && [ $${ans:-N} = y ]
 	@cd $(does_config_dir) && \
 	poetry run python $(PWD)/doespy/doespy/result_clean.py --keeplast

@@ -74,7 +74,7 @@ $ETL$:                                                         # Visualization o
 
   commands: # a pipeline to write a csv with the commands
     $ETL_VARS$:
-      output_dir: config
+      skip_empty: False
     experiments: "*"
     $INCLUDE_PIPELINE$:  {template: config_template, pipeline: config}
 
@@ -90,7 +90,7 @@ $ETL$:                                                         # Visualization o
     #       (The included pipeline defines a variable with [% %] and then the "including" pipeline includes
     #          `$ETL_VARS$` section to set the values)
     $ETL_VARS$:
-      output_dir: config
+      skip_empty: True
     experiments: "*"
     extractors:
       # (4.1) include extractor stage

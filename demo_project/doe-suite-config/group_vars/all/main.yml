@@ -43,5 +43,16 @@ exp_base:
   sg_name: "{{ prj_id }}_{{ suite | default('') }}_sg"
   sg_desc: "{{ prj_id }} {{ suite | default('') }} security group"
 
+
+#  eni:
+#  - name: "{{ prj_id }}_eni0"
+#    desc: "{{ prj_id }} elastic network interface 0"
+#
+#  - name: "{{ prj_id }}_eni1"
+#    desc: "{{ prj_id }} elastic network interface 1"
+#
+#
+#attach_eni: True
+
 # For demo project
 demo_project_python: "{{ exp_code_dir + '/demo_project/.venv/bin/python' }}"

@@ -48,5 +48,12 @@ exp_base:
   vpc_subnet_cidr: 10.100.0.0/24
   sg_name: "{{ prj_id }}_{{ suite | default('') }}_sg"
   sg_desc: "{{ prj_id }} {{ suite | default('') }} security group"
+# list the eni to create in the vpc
+#  eni:
+#  - name: "{{ prj_id }}_eni0"
+#    desc: "{{ prj_id }} elastic network interface 0"
+
+# set the flag to attach an eni on a host type
+# attach_eni: True
 
 {% endraw %}

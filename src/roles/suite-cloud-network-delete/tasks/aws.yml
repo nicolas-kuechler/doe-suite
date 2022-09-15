@@ -22,15 +22,40 @@
     vpc_id: "{{ vpc_result.vpcs[0].vpc_id | default('undefined') }}"
 
 
+- name: collect eni's
+  amazon.aws.ec2_eni_info:
+    filters:
+      vpc-id: "{{ vpc_id }}"
+    region: "{{ exp_base.aws_region }}"
+  register: my_eni
+  when: vpc_id != 'undefined'
+
+- debug:
+    msg="res = {{ my_eni }}"
+
+- name: delete available eni's
+  amazon.aws.ec2_eni:
+    eni_id: "{{ eni_id }}"
+    state: absent
+  loop: "{{ eni_ids | default([]) | list }}"
+  loop_control:
+    loop_var: eni_id
+  when: eni_ids is iterable and vpc_id != 'undefined'
+  vars:
+    eni_ids: "{{ my_eni | json_query('network_interfaces[*].id')  }}"
+
+
+
 - name: find security groups of vpc
   amazon.aws.ec2_group_info:
     filters:
       vpc-id: "{{ vpc_id }}"
   register: security_group_result
+  when: vpc_id != 'undefined'
 
 - ansible.builtin.set_fact:
-    security_group_ids: "{{ security_group_result | json_query('security_groups[?group_name!=`default`].group_id') | list }}"
-
+    security_group_ids: "{{ security_group_result | json_query('security_groups[?group_name!=`default`].group_id') }}"
+  when: vpc_id != 'undefined'
 
 - name: Remove All Routes from Security Group
   amazon.aws.ec2_group:
@@ -38,8 +63,8 @@
     region: "{{ exp_base.aws_region }}"
     purge_rules: true
     state: absent
-  when: vpc_id != 'undefined'
-  loop: "{{ security_group_ids | list }}"
+  when: security_group_ids is iterable  and vpc_id != 'undefined'
+  loop: "{{ security_group_ids | default([]) | list }}"
   loop_control:
     loop_var: sg_id
 
@@ -60,7 +85,6 @@
     state: absent
   when: vpc_id != 'undefined'
 
-# TODO [nku] also delete the eni here
 
 # Delete Route Table
 - name: Delete Server Route Table
@@ -70,6 +94,7 @@
     tags:
       Name: "Public"
     routes: []
+    purge_tags: True
     state: absent
   when: vpc_id != 'undefined'
 
@@ -81,6 +106,7 @@
     region: "{{exp_base.aws_region }}"
     state: absent
     purge_cidrs: yes
+    purge_tags: True
   register: vpc_delete
   retries: 10
   delay: 5

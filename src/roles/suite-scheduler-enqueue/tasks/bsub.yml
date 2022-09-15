@@ -38,5 +38,3 @@
   loop: "{{ exp_jobs_to_enqueue }}"
   loop_control:
     loop_var: job
-
-# TODO: HIDDE do you need the -N flag on bsub to send emails for each job?
