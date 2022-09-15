@@ -18,7 +18,6 @@
 #    that:
 #      - False
 
-
 - name: schedule the job on leonhard using bsub
   vars:
     experiment_name: "{{ job.job_info | safe_job_info_string }}"
@@ -30,7 +29,7 @@
     source ~/.bash_profile
     . /cluster/apps/local/env2lmod.sh
     module load {{ euler_env }}
-    bsub -W {{ euler_job_minutes }} -n {{ euler_cpu_cores }} -J {{ experiment_name }} -oo {{ output_file }} -eo {{ error_file }} -R "rusage[mem={{ euler_cpu_mem_per_core_mb }},ngpus_excl_p={{ euler_gpu_number }}]" -R "select[gpu_mtotal0>={{ euler_gpu_mem_per_gpu_mb }}]" "{{ job.exp_run_cmd }}"
+    bsub -W {{ euler_job_minutes }} -n {{ euler_cpu_cores }} -J {{ experiment_name }} -oo {{ output_file }} -eo {{ error_file }} -R "rusage[mem={{ euler_cpu_mem_per_core_mb }},ngpus_excl_p={{ euler_gpu_number }}]" -R "select[{{ 'gpu_model0==' + euler_gpu_model if euler_gpu_model is not none else 'gpu_mtotal0>=' + euler_gpu_min_mem_per_gpu_mb | string }}]" "{{ job.exp_run_cmd }}"
   args:
     chdir: "{{ job.exp_working_dir }}"
     executable: /bin/bash

@@ -10,7 +10,8 @@ euler_job_minutes: {{ cookiecutter.euler_job_minutes  }} # individual job time
 euler_cpu_cores: {{ cookiecutter.euler_cpu_cores }}
 euler_cpu_mem_per_core_mb: {{ cookiecutter.euler_cpu_mem_per_core_mb }}
 euler_gpu_number: {{ cookiecutter.euler_gpu_number }}
-euler_gpu_mem_per_gpu_mb: {{ cookiecutter.euler_gpu_mem_per_gpu_mb }}
+euler_gpu_min_mem_per_gpu_mb: {{ cookiecutter.euler_gpu_min_mem_per_gpu_mb }}
+euler_gpu_model: ~ # if set to a specific GPU, then the euler_gpu_min_mem_per_gpu_mb is ignored
 euler_env: {{ cookiecutter.euler_env }}
 
 {% raw %}
