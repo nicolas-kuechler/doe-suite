@@ -1,6 +1,6 @@
 .ipynb_checkpoints
 
-src/inventory/aws_ec2.yml
+src/inventory/
 
 ### Ansible ###
 *.retry

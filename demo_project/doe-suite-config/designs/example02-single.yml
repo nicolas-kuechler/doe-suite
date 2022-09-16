@@ -32,7 +32,7 @@ experiment_1:
 experiment_2:
   n_repetitions: 3 # (4) each of the 3 run configurations is repeated 3x -> 9 jobs
   host_types:
-    small_v2:
+    small:
       n: 1
       init_roles: setup-small
       $CMD$: "{{ demo_project_python }} {{ exp_code_dir }}/demo_project/demo.py --config config.json" # (3) uses the config.json in the working dir of the command with the run config

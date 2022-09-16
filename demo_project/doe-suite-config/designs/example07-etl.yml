@@ -148,7 +148,7 @@ triangle1:
   # drawing a square
   n_repetitions: 1
   host_types:
-    small:
+    small_v2:
       n: 1
       init_roles: setup-small
       $CMD$: "printf 'x: [% my_run.x %]\\ny: [% my_run.y %]' > results/coordinates.yaml"
@@ -162,7 +162,7 @@ triangle2:
 # drawing individual points to make the square from triangle1 to a triangle
   n_repetitions: 1
   host_types:
-    small:
+    small_v2:
       n: 1
       init_roles: setup-small
       $CMD$: "printf 'x: [% my_run.x %]\\ny: [% my_run.y %]' > results/coordinates.yaml"

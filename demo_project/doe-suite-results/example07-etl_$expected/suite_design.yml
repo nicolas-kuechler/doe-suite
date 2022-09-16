@@ -92,7 +92,7 @@ $ETL$:
         regex: \$CMD\$
     loaders:
       CsvSummaryLoader:
-        output_dir: config
+        skip_empty: 'False'
   commands_stage:
     experiments: *id001
     extractors:
@@ -104,7 +104,7 @@ $ETL$:
         regex: \$CMD\$
     loaders:
       CsvSummaryLoader:
-        output_dir: config
+        skip_empty: 'True'
 square:
   n_repetitions: 1
   host_types:
@@ -158,7 +158,7 @@ plus:
 triangle1:
   n_repetitions: 1
   host_types:
-    small:
+    small_v2:
       n: 1
       init_roles:
       - setup-small
@@ -181,7 +181,7 @@ triangle1:
 triangle2:
   n_repetitions: 1
   host_types:
-    small:
+    small_v2:
       n: 1
       init_roles:
       - setup-small
