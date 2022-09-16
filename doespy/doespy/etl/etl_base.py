@@ -4,10 +4,12 @@ import os
 import re
 from inspect import getmembers
 from typing import Dict, List
+import warnings
 
 import pandas as pd
 import yaml
 from doespy import util
+from doespy import status
 from doespy.design import validate_extend
 from doespy.etl.steps.extractors import Extractor
 from doespy.etl.steps.loaders import Loader
@@ -90,7 +92,6 @@ def run_etl(
     for pipeline_name, pipeline in etl_config.items():
 
         experiments = pipeline["experiments"]
-        # extract suites here
 
         extractors, transformers, loaders = load_selected_processes(
             pipeline["extractors"], pipeline["transformers"], pipeline["loaders"]
@@ -99,12 +100,22 @@ def run_etl(
         experiments_df = []
         etl_infos = []
 
+        # only want to run pipelines where results already exist
+        has_exp_result = False
+
         for suite, experiments in experiments.items():
 
             experiment_suite_id_map = _extract_experiments_suite(
                 suite, experiments, suite_id_map
             )
             for experiment, suite_id in experiment_suite_id_map.items():
+
+                if not has_exp_result:
+                    res_dir = util.get_suite_results_dir(suite=suite, id=suite_id)
+
+                    suite_status, _etl_error = status.get_suite_status(res_dir)
+                    if suite_status[experiment]["n_jobs_finished"] > 0:
+                        has_exp_result = True
 
                 suite_design = _load_suite_design(suite, suite_id, etl_from_design)
 
@@ -135,6 +146,11 @@ def run_etl(
                         etl_info,
                     )
                     raise
+
+
+        if not has_exp_result:
+            warnings.warn(f"skip executing pipeline={pipeline_name} because no experiment data available")
+            return
 
         # ensure dir exists
         config_post = config_name if etl_output_config_name else None

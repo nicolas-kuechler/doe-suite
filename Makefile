@@ -260,7 +260,7 @@ rescomp: install
 # for aws cloud setup there can be race conditions for network setup, delay each example by 10s
 # use sed to extract the example id and multiply it by 10 -> feed this to sleep
 test-%:
-	TMP=$$(echo $*|sed -r 's/example([0-9]*).*/echo "$$((\1*10))"/e') ;\
+	@TMP=$$(echo $*|sed -r 's/example([0-9]*).*/echo "$$((\1*10))"/e') ;\
 	sleep $$TMP
 	@make run suite=$* id=new
 	@make rescomp suite=$* id=last
@@ -277,6 +277,7 @@ multi-test: test-example04-multi test-example05-complex
 aws-test: single-test multi-test
 
 # runs all examples compatible with euler (no multi instance experiments)
+# make euler-test -j5 -O -> to run them in parallel
 euler-test: single-test
 
 test: aws-test euler-test
