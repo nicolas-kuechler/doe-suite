@@ -8,6 +8,11 @@
       dir: "{{ external_group_vars_dir }}/all"
       ignore_unknown_extensions: True
 
+  - name: create directory for suite design  (if it does not exist)
+    file:
+      path: inventory
+      state: directory
+      mode:  0755
 
   - name: Template dynamic inventory config file
     template:

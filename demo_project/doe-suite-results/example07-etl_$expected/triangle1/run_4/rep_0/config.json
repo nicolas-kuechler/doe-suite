@@ -1,6 +1,6 @@
 {
     "$CMD$": {
-        "small": [
+        "small_v2": [
             {
                 "main": "printf 'x: 2\\ny: 3' > results/coordinates.yaml"
             }

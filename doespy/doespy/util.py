@@ -40,7 +40,7 @@ def get_suite_design(suite, folder=None):
         folder = get_suite_design_dir()
 
     env = jinja2_env(
-        loader=jinja2.FileSystemLoader(folder), undefined=jinja2.DebugUndefined
+        loader=jinja2.FileSystemLoader(folder), undefined=DebugChainableUndefined
     )
 
     template = env.get_template(f"{suite}.yml")
@@ -231,6 +231,8 @@ def get_last_suite_id(suite):
 
     return str(max_suite_id)
 
+class DebugChainableUndefined(jinja2.ChainableUndefined, jinja2.DebugUndefined):
+    pass
 
 def jinja2_env(loader, undefined, variable_start_string="{{", variable_end_string="}}"):
 

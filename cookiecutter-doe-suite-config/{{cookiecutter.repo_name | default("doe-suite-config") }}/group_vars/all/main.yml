@@ -10,8 +10,11 @@ git_remote_repository: "{{ cookiecutter.repo }}"
 #- repo: git@github.com:nicolas-kuechler/doe-suite.git
 #  version: etl
 
+prj_id_prefix: "{{ cookiecutter.project_id }}"
+
 {% raw %}
-prj_id: example_{{ does_project_id_suffix }} #| default('', True) }}
+prj_id: "{{ prj_id_prefix }}_{{ does_project_id_suffix }}"
+
 
 # The following parameters define how the playbook checks whether a job finished, fetches the results and starts the next job.
 # - 'job_n_tries' is the maximal number times we check the job's status before aborting
@@ -27,7 +30,7 @@ job_check_wait_time: 5
 etl_minimum_delay_sec: 30
 
 remote:
-  dir: "{{ '/cluster/home/' + euler_user if cloud == 'euler' else '/home/ubuntu' }}"
+  dir: "{{ '/cluster/home/' + euler_user + '/doe-suite/' + prj_id + '/' + suite if cloud == 'euler' else '/home/ubuntu' }}"
   results_dir: "{{ '/cluster/scratch/' + euler_user + '/results' if cloud == 'euler' else '/home/ubuntu/results' }}"
 
 exp_code_dir: "{{ remote.dir }}/code"
@@ -43,7 +46,14 @@ exp_base:
   vpc_cidr_block: 10.100.0.0/16
   vpc_subnet_name: "{{ prj_id }}_subnet_az1"
   vpc_subnet_cidr: 10.100.0.0/24
-  sg_name: "{{ prj_id }}_sg"
-  sg_desc: "{{ prj_id }} security group"
+  sg_name: "{{ prj_id }}_{{ suite | default('') }}_sg"
+  sg_desc: "{{ prj_id }} {{ suite | default('') }} security group"
+# list the eni to create in the vpc
+#  eni:
+#  - name: "{{ prj_id }}_eni0"
+#    desc: "{{ prj_id }} elastic network interface 0"
+
+# set the flag to attach an eni on a host type
+# attach_eni: True
 
 {% endraw %}

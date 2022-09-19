@@ -25,7 +25,7 @@ def test_suite_result(suite, suite_id, suite_idref="$expected"):
 
 
     print(f"Comparing folders:\n   {d1}\nwith:\n   {d2}")
-    is_same = dircomp.compare_dir(d1, d2, ignore_infiles=[suite_id, suite_idref, path_pattern, job_finished_order, aws_ec2_host_ids], ignore_files=["stdout.log"])
+    is_same = dircomp.compare_dir(d1, d2, ignore_infiles=[suite_id, suite_idref, path_pattern, job_finished_order, aws_ec2_host_ids], ignore_files=["stdout.log", "euler.yml", "aws_ec2.yml"])
     assert is_same
 
 
