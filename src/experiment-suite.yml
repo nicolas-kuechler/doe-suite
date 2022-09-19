@@ -28,17 +28,38 @@
 ##########################################################################
 #   Load Experiment State and Setup AWS                                  #
 ##########################################################################
+
+- name: Set and print configuration
+  hosts: localhost
+  tasks:
+  - name: Set config
+    set_fact:
+      any_errors_fatal_setup: "{{ lookup('ini', 'any_errors_fatal_setup', section='defaults', file=ansible_config_file) }}"
+      any_errors_fatal_experiments: "{{ lookup('ini', 'any_errors_fatal_experiments', section='defaults', file=ansible_config_file) }}"
+
+  - name: Print any_errors_fatal
+    debug:
+      msg: "any_errors_fatal_setup: {{ any_errors_fatal_setup }}, any_errors_fatal_experiments: {{ any_errors_fatal_experiments }}"
+
+
 - name: Load Experiment State and Setup AWS
   hosts: localhost
 
   tasks:
-    - name: clear dynamic inventory files (must end with .yml)
-      file: path={{ item }} state=absent
-      with_fileglob: inventory/*.yml
 
     - name: resolve suite_id, load and validate suite design, fill default values, and prepare variables
       include_role:
         name: suite-load-pre-cloud-setup
+
+    - name: set the inventory source directory
+      set_fact:
+        does_inventory_source: "{{ ansible_inventory_sources | first }}"
+
+    - name: Create a directory if it does not exist
+      ansible.builtin.file:
+        path: "{{ does_inventory_source }}"
+        state: directory
+        mode: '0755'
 
     - name: prepare dynamic inventory
       include_role:
@@ -100,30 +121,49 @@
   strategy: free
   tasks:
 
-#  - name: Load group_vars from non-standard location
-#    include_vars:
-#      dir: "{{ external_group_vars_dir }}/all"
-#      ignore_unknown_extensions: True
+  - name: Setup Part 2
+    block:
 
-  - name: Load group variables for host
-    include_role:
-      name: load-group-vars
-    vars:
-      groups_to_load:
-        - all
-        - "{{ host_type }}"
+    - name: Load group variables for host
+      include_role:
+        name: load-group-vars
+      vars:
+        groups_to_load:
+          - all
+          - "{{ host_type }}"
 
-  - name: Execute init roles (incl. common roles for all hosts)
-    include_role:
-      name: "{{ role_name }}"
-      tasks_from: "{{ role_name | multiplex_tasks(cloud) }}"
-    loop: "{{ setup_roles }}"
-    loop_control:
-      loop_var: role_name
-    when: id == 'new' # only setup if it is a new experiment
+    - name: Execute init roles (incl. common roles for all hosts)
+      include_role:
+        name: "{{ role_name }}"
+        tasks_from: "{{ role_name | multiplex_tasks(cloud) }}"
+      loop: "{{ setup_roles }}"
+      loop_control:
+        loop_var: role_name
+      when: id == 'new' # only setup if it is a new experiment
+
+    rescue:
+    - name: Set fact that setup has failed
+      set_fact:
+        failed_task: "Host name: {{ inventory_hostname }}, Task name: {{ ansible_failed_task.name }}, Action: {{ ansible_failed_task.action }}"
 
 
+- name: Check for any errors during setup, and terminate all hosts if any error is detected
+  # TODO [eopel] Does this need to run on all or would it be possible to only run on localhost?
+  hosts: all  # intersection of hosts in project and in suite (via aws_ec2 dynamic inventory plugin)
+  strategy: linear
+  any_errors_fatal: true
+  tasks:
+   # via https://stackoverflow.com/questions/64208241/how-to-get-variables-from-all-hosts-in-ansible
+  - name: Check if any host failed
+    set_fact:
+      failed_tasks: "{{ hostvars | dict2items | selectattr('value.failed_task', 'defined') | map(attribute='value.failed_task') }}"
 
+  - name: End execution if any host failed
+    fail:
+      msg: "Setup failed on at least one host: {{ failed_tasks }}"
+    when:
+      - (failed_tasks | length>0)
+      - hostvars['localhost']['any_errors_fatal_setup']
 
 ##########################################################################
 #   Run Experiment Jobs                                                  #
@@ -152,6 +192,11 @@
       # TODO: for easier debugging if a job failed, it would be good to download all the results. At the moment if there is a syntax error in the tsp command, no output is downloaded.
       #       -> could maybe be solved when multi-command setup with comeback of service files is implemented
       rescue:
+
+      - name: Set fact an unexpected error happened
+        set_fact:
+          failed_task: "Host name: {{ inventory_hostname }}, Task name: {{ ansible_failed_task.name }}, Action: {{ ansible_failed_task.action }}"
+        when: is_expected_error is not defined or not is_expected_error
 
       - name: handle unexpected error
         fail:
@@ -198,12 +243,14 @@
       include_role:
         name: suite-cloud-instances-delete
         tasks_from: "{{ 'suite-cloud-instances-delete' | multiplex_tasks(cloud) }}"
+      vars:
+        filter_by_suite: True
 
-    - name: Remove Cloud Network
-      include_role:
-        name: suite-cloud-network-delete
-        tasks_from: "{{ 'suite-cloud-network-delete' | multiplex_tasks(cloud) }}"
-      when: exp_base.skip_network_delete is undefined or  exp_base.skip_network_delete == false
+    #- name: Remove Cloud Network
+    #  include_role:
+    #    name: suite-cloud-network-delete
+    #    tasks_from: "{{ 'suite-cloud-network-delete' | multiplex_tasks(cloud) }}"
+    #  when: exp_base.skip_network_delete is undefined or  exp_base.skip_network_delete == false
 
     # cleanup aws if suite is finished (unless the explicit flag is set to keep the aws environment)
     when: awsclean | default(true) | bool and is_suite_finished

@@ -105,46 +105,46 @@ triangle1:
 - x: 0
   y: 3
   $CMD$:
-    small:
+    small_v2:
     - main: 'printf ''x: 0\ny: 3'' > results/coordinates.yaml'
 - x: 0
   y: 4
   $CMD$:
-    small:
+    small_v2:
     - main: 'printf ''x: 0\ny: 4'' > results/coordinates.yaml'
 - x: 1
   y: 3
   $CMD$:
-    small:
+    small_v2:
     - main: 'printf ''x: 1\ny: 3'' > results/coordinates.yaml'
 - x: 1
   y: 4
   $CMD$:
-    small:
+    small_v2:
     - main: 'printf ''x: 1\ny: 4'' > results/coordinates.yaml'
 - x: 2
   y: 3
   $CMD$:
-    small:
+    small_v2:
     - main: 'printf ''x: 2\ny: 3'' > results/coordinates.yaml'
 - x: 2
   y: 4
   $CMD$:
-    small:
+    small_v2:
     - main: 'printf ''x: 2\ny: 4'' > results/coordinates.yaml'
 triangle2:
 - x: -1
   y: 3
   $CMD$:
-    small:
+    small_v2:
     - main: 'printf ''x: -1\ny: 3'' > results/coordinates.yaml'
 - x: 3
   y: 3
   $CMD$:
-    small:
+    small_v2:
     - main: 'printf ''x: 3\ny: 3'' > results/coordinates.yaml'
 - x: 1
   y: 5
   $CMD$:
-    small:
+    small_v2:
     - main: 'printf ''x: 1\ny: 5'' > results/coordinates.yaml'

@@ -9,8 +9,8 @@ exp_client_server:
       init_roles:
       - setup-client
       $CMD$:
-      - main: sleep 5 && echo '[% my_run.host_vars.client.msg %] from client 1 ([% my_run.info %])' | netcat -q 1 [% exp_host_lst | json_query('[?host_type==`server`].private_dns_name') | first %] [% my_run.port %]
-      - main: sleep 5 && echo '[% my_run.host_vars.client.msg %] from client 2 ([% my_run.info %])' | netcat -q 1 [% exp_host_lst | json_query('[?host_type==`server`].private_dns_name') | first %] [% my_run.port %]
+      - main: sleep 5 && echo '[% my_run.host_vars.client.msg %] from client 1 ([% my_run.info %])' | netcat -q 1 [% exp_host_lst | json_query('[?host_type==`server`].private_dns_name') | default(['<UNDEFINED-DNS>'], true) | first %] [% my_run.port %]
+      - main: sleep 5 && echo '[% my_run.host_vars.client.msg %] from client 2 ([% my_run.info %])' | netcat -q 1 [% exp_host_lst | json_query('[?host_type==`server`].private_dns_name') | default(['<UNDEFINED-DNS>'], true) | first %] [% my_run.port %]
     server:
       n: 1
       check_status: false

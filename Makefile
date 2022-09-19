@@ -8,6 +8,11 @@ cloud?=$(DOES_CLOUD) # env variable with default (aws)
 DOES_CLOUD_STATE?=terminate
 state?=$(DOES_CLOUD_STATE) # env variable with default (terminate)
 
+
+epoch=$(shell date +%s)
+suite_id= $(shell [ $(id) = new ] && echo $(epoch) || echo $(id))
+ansible_inventory=$(does_results_dir)/$(suite)_$(suite_id)/.inventory
+
 # add prefix if defined for playbook run cmd
 ifdef expfilter
 	myexpfilter=expfilter=$(expfilter)
@@ -32,7 +37,7 @@ help:
 	@echo '  make run-keep suite=<SUITE> id=new                  - does not terminate instances at the end, otherwise works the same as run target'
 	@echo 'Clean'
 	@echo '  make clean                                          - terminate running cloud instances belonging to the project and local cleanup'
-	@echo '  make clean-result                                   - delete all results in doe-suite-results except for the last (complete) suite run per suite'
+	@echo '  make clean-result                                   - delete all inclomplete results in doe-suite-results'
 	@echo 'Running ETL Locally'
 	@echo '  make etl suite=<SUITE> id=<ID>                      - run the etl pipeline of the suite (locally) to process results (often id=last)'
 	@echo '  make etl-design suite=<SUITE> id=<ID>               - same as `make etl ...` but uses the pipeline from the suite design instead of results'
@@ -82,6 +87,12 @@ install: new
 	poetry run ansible-galaxy install -r $(PWD)/requirements-collections.yml
 
 
+install-silent: new
+	@cd $(does_config_dir) && \
+	poetry install > /dev/null && \
+	poetry run ansible-galaxy install -r $(PWD)/requirements-collections.yml > /dev/null
+
+
 #################################
 #  ___ _   _ _  _
 # | _ \ | | | \| |
@@ -96,13 +107,15 @@ install: new
 run: install cloud-check
 	@cd $(does_config_dir) && \
 	ANSIBLE_CONFIG=$(PWD)/ansible.cfg \
-	poetry run ansible-playbook $(PWD)/src/experiment-suite.yml -e "suite=$(suite) id=$(id) cloud=$(cloud) $(myexpfilter)"
+	ANSIBLE_INVENTORY=$(ansible_inventory) \
+	poetry run ansible-playbook $(PWD)/src/experiment-suite.yml -e "suite=$(suite) id=$(id) epoch=$(epoch) cloud=$(cloud) $(myexpfilter)"
 
 .PHONY: run
 run-keep: install cloud-check
 	@cd $(does_config_dir) && \
 	ANSIBLE_CONFIG=$(PWD)/ansible.cfg \
-	poetry run ansible-playbook $(PWD)/src/experiment-suite.yml -e "suite=$(suite) id=$(id) cloud=$(cloud) $(myexpfilter) awsclean=False"
+	ANSIBLE_INVENTORY=$(ansible_inventory) \
+	poetry run ansible-playbook $(PWD)/src/experiment-suite.yml -e "suite=$(suite) id=$(id) epoch=$(epoch) cloud=$(cloud) $(myexpfilter) awsclean=False"
 
 # TODO [nku] integrate them into run target when they are available
 #
@@ -131,6 +144,11 @@ etl: install
 	@cd $(does_config_dir) && \
 	poetry run python $(PWD)/doespy/doespy/etl/etl.py --suite $(suite) --id $(id)
 
+# can be used for remote debugging with e.g., vs code
+etl-debug: install
+	@cd $(does_config_dir) && \
+	poetry run python -m debugpy --listen 5678 --wait-for-client $(PWD)/doespy/doespy/etl/etl.py --suite $(suite) --id $(id)
+
 # instead of using the etl pipeline defined in the results folder, it uses the pipeline from the design
 # useful for developing an etl pipeline
 etl-design: install
@@ -150,18 +168,18 @@ etl-super: install
 	poetry run python $(PWD)/doespy/doespy/etl/super_etl.py --config $(config) --output_path $(out)
 
 # delete etl results for a specific `suite` and `id`  (can be regenerated with `make etl suite=<SUITE> id=<ID>`)
-etl-clean:
+etl-clean: install
 	@cd $(does_config_dir) && \
 	poetry run python $(PWD)/doespy/doespy/etl/etl_clean.py --suite $(suite) --id $(id)
 
 # delete all etl results  (can be regenerated with `make etl-all`)
-etl-clean-all:
+etl-clean-all: install
 	@cd $(does_config_dir) && \
 	poetry run python $(PWD)/doespy/doespy/etl/etl_clean.py --all
 
 # reruns all etl pipelines of all suite runs and compares the results
 #   -> can be used to check that a change in an ETL step did not break another earlier suite
-etl-test-all:
+etl-test-all: install
 	@cd $(does_config_dir) && \
 	poetry run pytest $(PWD)/doespy -q -k 'test_etl_pipeline' -s
 
@@ -186,18 +204,18 @@ clean-local-py:
 	@find . -name '.pytest_cache' -exec rm -fr {} +
 
 # delete all incomplete results
-clean-result-incomplete:
+clean-result: install
 	@echo -n "Are you sure to delete all the incomplete results in $(does_results_dir)? [y/N] " && read ans && [ $${ans:-N} = y ]
 	@cd $(does_config_dir) && \
 	poetry run python $(PWD)/doespy/doespy/result_clean.py --incomplete
 
 # only keep one suite run per suite (the last complete)
-clean-result:
+clean-result-full: install
 	@echo -n "Are you sure to delete all the results in $(does_results_dir) except for the ones with the highest id? [y/N] " && read ans && [ $${ans:-N} = y ]
 	@cd $(does_config_dir) && \
 	poetry run python $(PWD)/doespy/doespy/result_clean.py --keeplast
 
-clean-cloud :
+clean-cloud: install
 	@cd $(does_config_dir) && \
 	ANSIBLE_CONFIG=$(PWD)/ansible.cfg \
 	poetry run ansible-playbook $(PWD)/src/clear.yml
@@ -215,12 +233,12 @@ clean: clean-local-py clean-cloud
 # https://patorjk.com/software/taag/#p=display&h=2&v=2&f=Small&t=INFO
 
 # list infos about the doe-suite-config (config + designs)
-info:
+info: install-silent
 	@cd $(does_config_dir) && \
 	poetry run python $(PWD)/doespy/doespy/info.py
 
 # show status info of a suite (how much progress)
-status:
+status: install-silent
 	@cd $(does_config_dir) && \
 	poetry run python $(PWD)/doespy/doespy/status.py $(mysuite) $(myid)
 
@@ -235,23 +253,31 @@ status:
 # https://patorjk.com/software/taag/#p=display&h=2&v=2&f=Small&t=TEST
 
 
-rescomp:
+rescomp: install
 	@cd $(does_config_dir) && \
 	poetry run pytest $(PWD)/doespy -q -k 'test_does_results' -s --suite $(suite) --id $(id)
 
-# matches
+# for aws cloud setup there can be race conditions for network setup, delay each example by 10s
+# use sed to extract the example id and multiply it by 10 -> feed this to sleep
 test-%:
+	@TMP=$$(echo $*|sed -r 's/example([0-9]*).*/echo "$$((\1*10))"/e') ;\
+	sleep $$TMP
 	@make run suite=$* id=new
 	@make rescomp suite=$* id=last
 
 
+# make single-test -j5 -O -> to run them in parallel
 single-test: test-example01-minimal test-example02-single test-example03-format test-example06-vars test-example07-etl
+
+# make multi-test -j2 -O -> to run them in parallel
 multi-test: test-example04-multi test-example05-complex
 
 # runs the listed suites and compares the result with the expected result under `doe-suite-results`
+# make aws-test -j9 -O
 aws-test: single-test multi-test
 
 # runs all examples compatible with euler (no multi instance experiments)
+# make euler-test -j5 -O -> to run them in parallel
 euler-test: single-test
 
 test: aws-test euler-test
@@ -272,11 +298,11 @@ convert-to-expected:
 #
 #################################
 
-design:
+design: install-silent
 	@cd $(does_config_dir) && \
 	poetry run python $(PWD)/doespy/doespy/design/validate_extend.py --suite $(suite) --ignore-undefined-vars
 
 
-design-validate:
+design-validate: install-silent
 	@cd $(does_config_dir) && \
 	poetry run python $(PWD)/doespy/doespy/design/validate_extend.py --suite $(suite) --ignore-undefined-vars --only-validate

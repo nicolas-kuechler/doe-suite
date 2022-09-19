@@ -62,12 +62,14 @@ class PlotLoader(Loader):
 
 class CsvSummaryLoader(Loader):
     def load(self, df: pd.DataFrame, options: Dict, etl_info: Dict) -> None:
-        if df.empty:
-            print(
-                "CsvSummaryLoader: DataFrame is empty so not creating an output file."
-            )
-        output_dir = self.get_output_dir(etl_info)
-        df.to_csv(os.path.join(output_dir, f"{etl_info['pipeline']}.csv"))
+
+        if options.get("skip_empty", False) and df.empty:
+            return
+        elif df.empty:
+            raise ValueError("CsvSummaryLoader: DataFrame is empty so not creating an output file.")
+        else:
+            output_dir = self.get_output_dir(etl_info)
+            df.to_csv(os.path.join(output_dir, f"{etl_info['pipeline']}.csv"))
 
 
 class LatexTableLoader(Loader):

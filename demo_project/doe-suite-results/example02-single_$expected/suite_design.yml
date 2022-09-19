@@ -58,10 +58,8 @@ $ETL$:
       data_columns:
       - latency
     loaders:
-      CsvSummaryLoader:
-        output_dir: pipeline1
-      DemoLatencyPlotLoader:
-        output_dir: pipeline1
+      CsvSummaryLoader: {}
+      DemoLatencyPlotLoader: {}
   pipeline2:
     experiments:
     - experiment_2
