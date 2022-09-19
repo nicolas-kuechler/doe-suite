@@ -4,6 +4,7 @@ does_results_dir=$(DOES_PROJECT_DIR)/doe-suite-results
 DOES_CLOUD?=aws
 cloud?=$(DOES_CLOUD) # env variable with default (aws)
 
+test_delay?=0
 
 DOES_CLOUD_STATE?=terminate
 state?=$(DOES_CLOUD_STATE) # env variable with default (terminate)
@@ -260,7 +261,7 @@ rescomp: install
 # for aws cloud setup there can be race conditions for network setup, delay each example by 10s
 # use sed to extract the example id and multiply it by 10 -> feed this to sleep
 test-%:
-	@TMP=$$(echo $*|sed -r 's/example([0-9]*).*/echo "$$((\1*10))"/e') ;\
+	@TMP=$$(echo $*|sed -r 's/example([0-9]*).*/echo "$$((\1*$(test_delay)))"/e') ;\
 	sleep $$TMP
 	@make run suite=$* id=new
 	@make rescomp suite=$* id=last
@@ -273,12 +274,12 @@ single-test: test-example01-minimal test-example02-single test-example03-format 
 multi-test: test-example04-multi test-example05-complex
 
 # runs the listed suites and compares the result with the expected result under `doe-suite-results`
-# make aws-test -j9 -O
-aws-test: single-test multi-test
+aws-test:
+	@make single-test multi-test -j9 -O test_delay=10
 
 # runs all examples compatible with euler (no multi instance experiments)
-# make euler-test -j5 -O -> to run them in parallel
-euler-test: single-test
+euler-test:
+	@make single-test -j5 -O cloud=euler
 
 test: aws-test euler-test
 

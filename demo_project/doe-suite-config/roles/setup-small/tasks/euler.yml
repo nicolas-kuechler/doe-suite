@@ -19,5 +19,5 @@
         cmd: "module load {{ euler_env }} && {{ poetry }} config virtualenvs.in-project true --local && {{ poetry }} install"
         chdir: "{{ exp_code_dir }}/demo_project"
 
-  # only execute the role for one per host type
-  when: hostvars['localhost'].suite_hosts_lst | selectattr('host_type', 'equalto', host_type) | map(attribute='instance_id') | first == inventory_hostname
+  # only execute the role once
+  when: hostvars['localhost'].suite_hosts_lst | selectattr('init_roles', 'issuperset', ['setup-small']) | map(attribute='instance_id') | first == inventory_hostname
