@@ -98,3 +98,9 @@
 
     # common_roles = {exp_name1: [role1, ...], exp_name2: [role1, ...]}
     common_roles: "{{ my_suite_design | suite2commonroles }}"
+
+- name: Assert we have at least one host type at this point.
+  assert:
+    that:
+      - host_types | dict2items | length > 0
+    fail_msg: "No host_types found. Is your expfilter set up correctly?"
