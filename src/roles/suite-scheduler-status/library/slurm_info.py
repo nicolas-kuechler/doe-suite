@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-# TODO [nku] SLURM: squeue
 
 from __future__ import (absolute_import, division, print_function)
 import subprocess, re, sys
@@ -8,7 +7,7 @@ __metaclass__ = type
 
 DOCUMENTATION = r'''
 ---
-module: bjobs_info
+module: slurm_info
 
 short_description: This module gathers information about the jobs in slurm
 
