@@ -1,22 +1,12 @@
 ---
+# NOTE: At the moment `bsub` (LSF) is not used for scheduling tasks
+#       but we leave the scheduler if we want to add a cloud later that uses LSF
 
 - assert:
     that:
       - exp_jobs_to_enqueue is defined
       - exp_name is defined
 
-#- name: deb
-#  debug:
-#    msg: "{{ exp_jobs_to_enqueue }}"
-
-#- name: debug
-#  debug:
-#    msg: "{{ host_types }}"
-#
-#- name: kill
-#  assert:
-#    that:
-#      - False
 
 - name: schedule the job on leonhard using bsub
   vars:
