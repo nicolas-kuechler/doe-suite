@@ -6,21 +6,24 @@
       - exp_jobs_to_enqueue is defined
       - exp_name is defined
 
-#- name: deb
-#  debug:
-#    msg: "{{ exp_jobs_to_enqueue }}"
+- name: query current state
+  shell: squeue --json
+  register: my_queue
 
-#- name: debug
-#  debug:
-#    msg: "{{ host_types }}"
-#
-#- name: kill
-#  assert:
-#    that:
-#      - False
+- name: find jobs of same suite and same experiment that are not complete that we are going to cancel
+  set_fact:
+    jobs_to_cancel: "{{ my_slurm_jobs | zip(my_slurm_jobs | map(attribute='name') | map('job_info_from_safe_string')) | map('tuple2dict', keys=['slurm', 'job_id']) | json_query(my_query) }}"
+  vars:
+    my_query: "[?(job_id.suite=='{{ suite }}') && (job_id.exp_name=='{{ exp_name }}') && (slurm.job_state != 'COMPLETED')].{suite:job_id.suite, exp_name:job_id.exp_name, slurm_job_id:slurm.job_id}"
+    my_slurm_jobs: "{{ my_queue.stdout | from_json | json_query('jobs[*].{job_id:job_id, job_state:job_state, name:name}') }}"
 
-# TODO [nku] should query the queue and figure kill all experiments from same suite (or same suite + experiment)?
+- name: show jobs to cancel
+  debug:
+    var: jobs_to_cancel
 
+- name: cancel jobs from same suite
+  shell: scancel {{ jobs_to_cancel | map(attribute='slurm_job_id') | join(' ')}}
+  when: (jobs_to_cancel | list | length) > 0
 
 - name: schedule the job on euler using slurm (sbatch)
   vars:

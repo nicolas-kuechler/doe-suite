@@ -140,6 +140,12 @@ def safe_job_info_string(job_info):
 
     return "__".join(safe_elements)
 
+def job_info_from_safe_string(job_info_str):
+    pattern = r"^suite_(?P<suite>.*)__suite_id_(?P<suite_id>.*)__exp_name_(?P<exp_name>.*)__exp_run_(?P<exp_run>.*)__exp_run_rep_(?P<exp_run_rep>.*)$"
+
+    match = re.search(pattern, job_info_str)
+
+    return match.groupdict()
 
 class FilterModule(object):
     ''' jinja2 filters '''
@@ -150,5 +156,6 @@ class FilterModule(object):
             'tuple2dict': tuple2dict,
             'collect_items2dict': collect_items2dict,
             'multiplex_tasks': multiplex_tasks,
-            'safe_job_info_string': safe_job_info_string
+            'safe_job_info_string': safe_job_info_string,
+            'job_info_from_safe_string': job_info_from_safe_string
         }
