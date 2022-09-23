@@ -166,7 +166,7 @@ def run_etl(
 
         etl_info = {
             "suite": "_".join([x["suite"] for x in etl_infos]),
-            "suite_id": "_".join([x["suite_id"] for x in etl_infos]),
+            "suite_id": "_".join([str(x["suite_id"]) for x in etl_infos]),
             "pipeline": pipeline_name,
             "experiments": experiments,
             "etl_output_dir": etl_output_dir_full,
