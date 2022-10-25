@@ -637,6 +637,16 @@ More documentation can be found [here](./docs).
 
 Distributed under the Apache License. See `LICENSE` for more information.
 
+If you use DoE Suite in your research, please consider citing this project:
+```
+@misc{kuechler_doesuite,
+  author = {Nicolas K\"{u}chler and Miro Haller and Hidde Lycklama},
+  title = {{D}o{E} {S}uite},
+  year = {2022},
+  howpublished = {\url{https://github.com/nicolas-kuechler/doe-suite/}}
+}
+```
+
 
 <!-- CONTACT -->
 ## Contact
