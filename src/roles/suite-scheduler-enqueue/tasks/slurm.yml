@@ -1,0 +1,52 @@
+
+---
+
+- assert:
+    that:
+      - exp_jobs_to_enqueue is defined
+      - exp_name is defined
+
+- name: query current state
+  shell: squeue --json
+  register: my_queue
+
+- name: find jobs of same suite and same experiment that are not complete that we are going to cancel
+  set_fact:
+    jobs_to_cancel: "{{ my_slurm_jobs | zip(my_slurm_jobs | map(attribute='name') | map('job_info_from_safe_string')) | map('tuple2dict', keys=['slurm', 'job_id']) | json_query(my_query) }}"
+  vars:
+    my_query: "[?(job_id.suite=='{{ suite }}') && (job_id.exp_name=='{{ exp_name }}') && (slurm.job_state != 'COMPLETED')].{suite:job_id.suite, exp_name:job_id.exp_name, slurm_job_id:slurm.job_id}"
+    my_slurm_jobs: "{{ my_queue.stdout | from_json | json_query('jobs[*].{job_id:job_id, job_state:job_state, name:name}') }}"
+
+- name: show jobs to cancel
+  debug:
+    var: jobs_to_cancel
+
+- name: cancel jobs from same suite
+  shell: scancel {{ jobs_to_cancel | map(attribute='slurm_job_id') | join(' ')}}
+  when: (jobs_to_cancel | list | length) > 0
+
+- name: schedule the job on euler using slurm (sbatch)
+  vars:
+    experiment_name: "{{ job.job_info | safe_job_info_string }}"
+    output_file: "{{ job.exp_working_dir }}/results/stdout.log"
+    error_file: "{{ job.exp_working_dir }}/results/stderr.log"
+    gpu_cmd: >-
+      {{ '--gpus=' + euler_gpu_number | string + ' --gres=gpumem:' + euler_gpu_min_mem_per_gpu_mb | string
+      if euler_gpu_model is none
+      else
+      '--gpus=' + euler_gpu_model + ':' +  euler_gpu_number | string }}
+    cpu_cmd: --time={{ euler_job_minutes }} -n {{ euler_cpu_cores }} --mem-per-cpu={{ euler_cpu_mem_per_core_mb }}
+  register: sbatch_output
+  shell: |
+    source /etc/profile
+    source ~/.bash_profile
+    . /cluster/apps/local/env2lmod.sh
+    module load {{ euler_env }}
+    sbatch -J {{ experiment_name }} -o {{ output_file }} -e {{ error_file }} --open-mode=truncate {{ cpu_cmd }} {{ gpu_cmd if euler_gpu_number | int > 0 }} --wrap "{{ job.exp_run_cmd | replace('"', "'") }}"
+  args:
+    chdir: "{{ job.exp_working_dir }}"
+    executable: /bin/bash
+  delegate_to: "{{ job.host_info.public_dns_name }}"
+  loop: "{{ exp_jobs_to_enqueue }}"
+  loop_control:
+    loop_var: job

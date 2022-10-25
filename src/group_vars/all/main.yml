@@ -8,4 +8,4 @@ ssh_key_name: "{{ lookup('env', 'DOES_SSH_KEY_NAME') }}"
 
 euler_user: "{{ lookup('env', 'DOES_EULER_USER') }}"
 cloud: "aws"
-job_scheduler: "{{ 'bsub' if cloud == 'euler' else 'tsp' }}"
+job_scheduler: "{{ 'slurm' if cloud == 'euler' else 'tsp' }}"
