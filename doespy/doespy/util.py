@@ -255,4 +255,11 @@ def jinja2_env(loader, undefined, variable_start_string="{{", variable_end_strin
 
     env.filters["json_query"] = json_query
 
+    from distutils.util import strtobool
+    env.filters["bool"] = strtobool
+
+    from math import ceil, floor
+    env.filters["ceil"] = ceil
+    env.filters["floor"] = floor
+
     return env
