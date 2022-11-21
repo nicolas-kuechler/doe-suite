@@ -560,11 +560,13 @@ def _parse_factors(experiment: Dict) -> list:
 
         if k == "$FACTOR$":
             # inline factor
-            factor = path[-1]
+            factor = ".".join(path)
+
             factor_columns.append(factor)
         elif v == "$FACTOR$":
             # factor defined in factor_levels
-            factor_columns.append(k)
+            factor = ".".join([*path, k])
+            factor_columns.append(factor)
 
     return factor_columns
 

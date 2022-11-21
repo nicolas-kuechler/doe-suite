@@ -73,7 +73,10 @@ def extend(suite_design, exp_specific_vars):
                 template = json.dumps(run_config)
                 while "[%" in template and "%]" in template:
                     # temporary convert to a dict
-                    run_config = json.loads(template)
+                    try:
+                        run_config = json.loads(template)
+                    except ValueError:
+                        raise ValueError(f"JSONDecodeError in template: {template}")
                     del run_config[
                         "$CMD$"
                     ]  # temporary delete of cmd
@@ -82,6 +85,9 @@ def extend(suite_design, exp_specific_vars):
                     template = env.from_string(template)
                     template = template.render(my_run=run_config, **exp_vars)
                 run_config = json.loads(template)
+
+                # TODO [nku] could we validate that the commands is a syntactically correct shell command?
+
                 exp_runs_ext.append(run_config)
 
         suite_ext[exp_name] = exp_runs_ext
