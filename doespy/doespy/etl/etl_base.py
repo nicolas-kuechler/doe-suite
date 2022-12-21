@@ -88,6 +88,7 @@ def run_etl(
     suite_id_map = pipeline_design["$SUITE_ID$"]
 
     output_dfs = {}
+
     # go over pipelines and run them
     for pipeline_name, pipeline in etl_config.items():
 
@@ -370,12 +371,27 @@ def _load_available_processes():
     import pkgutil
     import warnings
 
+    # Find location of doespy ETL classes
+    import doespy
+    assert len(doespy.__path__) == 1, "doespy.__path__ should only have one path. If this fails open an issue for @hiddely."
+    doespy_path = doespy.__path__[0]
+    doespy_parent_path = os.path.normpath(os.path.join(doespy_path, "../"))
+
+    # Find location of custom ETL classes
+    # doe-suite-config is fixed relative to DOES_PROJECT_DIR
+    doe_suite_config_path = os.path.join(os.environ['DOES_PROJECT_DIR'], "doe-suite-config")
+
+    paths = [
+        doespy_parent_path,  # doe-suite provided etl steps
+        doe_suite_config_path,  # custom steps
+    ]
     with warnings.catch_warnings(record=True):
         for _importer, modname, _ispkg in pkgutil.walk_packages(
-            path=None, onerror=lambda x: None
+            path=paths, onerror=lambda _: None
         ):
-            warnings.simplefilter("ignore")
-            if ETL_CUSTOM_PACKAGE in modname or "doespy" in modname:
+            should_import = ETL_CUSTOM_PACKAGE in modname or "doespy" in modname
+            # print("Found submodule %s (is a pack/age: %s), will import %s" % (modname, _ispkg, should_import))
+            if should_import:
                 _load_processes(modname, extractors, transformers, loaders)
 
     return extractors, transformers, loaders
