@@ -498,6 +498,9 @@ def extract(
                         for file in files:
                             d_lst = _parse_file(host_dir, file, extractors)
                             for d in d_lst:
+                                if d is None:
+                                    warnings.warn(f"SKIP EMPTY FILE={file} in {host_dir}")
+                                    continue
                                 d_flat = _flatten_d(d)
                                 res = {**job_info, "source_file": file, **config_flat, **d_flat}
                                 res_lst.append(res)
