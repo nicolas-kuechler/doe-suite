@@ -6,6 +6,8 @@ src/inventory/
 *.retry
 .boto
 
+doespy/docs/build
+
 # Python
 Pipfile.lock
 

@@ -263,3 +263,20 @@ def jinja2_env(loader, undefined, variable_start_string="{{", variable_end_strin
     env.filters["floor"] = floor
 
     return env
+
+
+def get_suite_design_etl_template_dir():
+    return os.path.join(get_suite_design_dir(), "etl_templates")
+
+def get_suites():
+    get_suite_design_dir()
+
+
+def get_host_types():
+    host_types = [x for x in os.listdir(get_suite_group_vars_dir()) if x not in ["all", "ansible_controller"]]
+    return host_types
+
+
+def get_setup_roles():
+    roles = os.listdir(get_suite_roles_dir())
+    return roles

@@ -1,20 +1,94 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any
+from typing import Dict, Any, List
+
+import pandas as pd
+import inspect
+import sys
+
+from pydantic import BaseModel
 
 import pandas as pd
 
 from doespy.etl.etl_util import expand_factors
 
 
-class Transformer(ABC):
+class Transformer(BaseModel, ABC):
+
+    class Config:
+        extra = "forbid"
+
     @abstractmethod
     def transform(self, df: pd.DataFrame, options: Dict) -> pd.DataFrame:
         pass
 
 
-class ConditionalTransformer(Transformer):
+class DfTransformer(Transformer):
+
     def transform(self, df: pd.DataFrame, options: Dict) -> pd.DataFrame:
-        # TODO [nku] docstring
+
+        # TODO [nku] here I could define the different things for the df.x
+        pass
+
+class ConditionalTransformer(Transformer):
+
+    col: str
+    dest: str
+    value: Dict[Any, Any]
+
+    r"""The `ConditionalTransformer` replaces the value in the ``dest`` column with ``repl``
+    if the value in ``col`` is ``value``, i.e., ``if df.col == value: df.dest = repl``
+
+    :param col: Name of condition column in data frame.
+
+    :param dest: Name of destination column in data frame.
+
+    :param value: Dictionary of replacement rules:
+                  The dict key is the entry in the condition ``col`` and
+                  the value is the replacement for the ``repl`` column.
+
+    .. code-block:: yaml
+       :caption: Example ETL Pipeline Design
+
+        $ETL$:
+            transformers:
+              - name: ConditionalTransformer:
+                col: Country
+                dest: Code
+                value:
+                    Switzerland: CH
+                    Germany: DE
+
+    Example
+
+    .. container:: twocol
+
+        .. container:: leftside
+
+            ============  ====
+            Country       Code
+            ============  ====
+            Germany
+            Switzerland
+            France
+            ============  ====
+
+        .. container:: middle
+
+            |:arrow_right:|
+
+        .. container:: rightside
+
+            ============  ====
+            Country       Code
+            ============  ====
+            Germany       DE
+            Switzerland   CH
+            France
+            ============  ====
+
+    """
+
+    def transform(self, df: pd.DataFrame, options: Dict) -> pd.DataFrame:
         col = options["col"]
         value = options["value"]
         dest = options.get("dest", col)
@@ -27,17 +101,65 @@ class ConditionalTransformer(Transformer):
 
 class RepAggTransformer(Transformer):
 
-    """
-    Transformer to aggregate over the repetitions of the same experiment run.
+    r"""The `RepAggTransformer` aggregates over the repetitions of the same experiment run.
+    GroupBy all columns of df except ``data_columns`` and ``rep`` column.
+    Afterward, apply specified aggregate functions ``agg_functions`` on the ``data_columns``.
 
-    GroupBy all columns of df except `data_columns` and `rep` column.
-    Afterward, apply specified aggregate functions
-     `agg_functions` on the `data_columns`.
+    :param ignore_columns: List of columns to ignore within group_by condition (apart from repetition column ``rep``), defaults to ``[]``
+
+    :param data_columns: The columns that contain the data to aggregate, see ``agg_function``.
+
+    :param agg_functions: List of aggregate function to apply on ``data_columns``, defaults to ``["mean", "min", "max", "std", "count"]``
+
+    .. code-block:: yaml
+       :caption: Example ETL Pipeline Design
+
+        $ETL$:
+            transformers:
+              - name: RepAggTransformer:
+                ignore_columns: [$CMD$]
+                data_columns: [Lat]
+                agg_functions: [mean]
+
+    Example
+
+    .. container:: twocol
+
+        .. container:: leftside
+
+            ===  ==== === ===== ===
+            Run  ...  Rep $CMD$ Lat
+            ===  ==== === ===== ===
+            0         0   xyz   0.1
+            0         1   xyz   0.3
+            1         0   xyz   0.5
+            1         1   xyz   0.5
+            ===  ==== === ===== ===
+
+        .. container:: middle
+
+            |:arrow_right:|
+
+        .. container:: rightside
+
+            ===  ==== ========
+            Run  ...  Lat_mean
+            ===  ==== ========
+            0         0.2
+            1         0.5
+            ===  ==== ========
+
     """
+
+    ignore_columns: List[str] = []
+
+    data_columns: List[str]
+
+    agg_functions: List[str] = ["mean", "min", "max", "std", "count"]
+
+    # TODO [nku] can we remove this transformer by unifying it with GroupByAggTransformer? -> I think we could remove this here and replace it only with the GroupByAggTransformer and include rep in Groupby cols
 
     def transform(self, df: pd.DataFrame, options: Dict) -> pd.DataFrame:
-        # TODO [nku] test and remove
-        # return df
         if df.empty:
             return df
 
@@ -86,12 +208,65 @@ class RepAggTransformer(Transformer):
 
 class GroupByAggTransformer(Transformer):
 
-    """
-    Transformer to aggregate over specified factors of the same experiment run.
+    r"""The `GroupByAggTransformer` performs a group by followed by a set of aggregate functions.
+    GroupBy all columns of data frame except ``data_columns``.
+    Afterward, apply specified aggregate functions ``agg_functions`` on the ``data_columns``.
 
-    GroupBy `groupby_columns` of df.
-    Afterward, apply specified aggregate functions `agg_functions` on the `data_columns`
+    :param groupby_columns: The columns to perform the group by.
+                            The list can contain the magic entry `$FACTORS$` that expands to all factors of the experiment.
+                            e.g., [exp_name, host_type, host_idx, $FACTORS$] would perform a group by of each run.
+
+
+    :param data_columns: The columns that contain the data to aggregate, see ``agg_function``.
+
+    :param agg_functions: List of aggregate function to apply on ``data_columns``, defaults to ``["mean", "min", "max", "std", "count"]``
+
+    .. code-block:: yaml
+       :caption: Example ETL Pipeline Design
+
+        $ETL$:
+            transformers:
+              - name: GroupByAggTransformer:
+                groupby_columns: [Run, $FACTORS$]
+                data_columns: [Lat]
+                agg_functions: [mean]
+
+    Example
+
+    .. container:: twocol
+
+        .. container:: leftside
+
+            ===  ==== === ===== ===
+            Run  ...  Rep $CMD$ Lat
+            ===  ==== === ===== ===
+            0         0   xyz   0.1
+            0         1   xyz   0.3
+            1         0   xyz   0.5
+            1         1   xyz   0.5
+            ===  ==== === ===== ===
+
+        .. container:: middle
+
+            |:arrow_right:|
+
+        .. container:: rightside
+
+            ===  ==== ========
+            Run  ...  Lat_mean
+            ===  ==== ========
+            0         0.2
+            1         0.5
+            ===  ==== ========
+
     """
+
+    def custom_tail_build(self, custom_tail_length):
+
+        def custom_tail(data):
+            return data.tail(custom_tail_length).mean()
+
+        return custom_tail
 
     def transform(self, df: pd.DataFrame, options: Dict) -> pd.DataFrame:
         if df.empty:
@@ -151,15 +326,12 @@ class GroupByAggTransformer(Transformer):
 
         return df
 
-    def custom_tail_build(self, custom_tail_length):
-        def custom_tail(data):
-            return data.tail(custom_tail_length).mean()
 
-        return custom_tail
 
 
 class FilterColumnTransformer(Transformer):
     # TODO []
+
     """
     Simple transformer to filter rows out of a dataframe by column values.
 
@@ -180,7 +352,7 @@ class FilterColumnTransformer(Transformer):
 
         warnings.warn(
             """FilterColumnTransformer is deprecated, instead you can directly use
-            df.query(col == 'A') in the etl definition 
+            df.query(col == 'A') in the etl definition
             i.e., transformers: [df.query: {expr: col == 'A'}]""",
             DeprecationWarning
         )
@@ -205,3 +377,7 @@ class FilterColumnTransformer(Transformer):
                 "This is probably not supposed to happen"
             )
         return df
+
+
+
+__all__ = [name for name, cl in inspect.getmembers(sys.modules[__name__], inspect.isclass) if name!="Transformer" and issubclass(cl, Transformer) ]

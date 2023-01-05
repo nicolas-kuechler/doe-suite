@@ -8,19 +8,25 @@
   <h3 align="center">DoES - Design of Experiments Suite</h3>
 
   <p align="center">
-   Orchestrate multi-instance, e.g., client-server, or single-instance experiments on AWS EC2 instances.
+   Orchestrate benchmarking experiments on AWS EC2 machines or the ETHZ Euler cluster. Besides supporting experiments on a single instance, e.g., train an ML model, we also support multi-instance experiments, e.g., client-server.
   </p>
 </p>
 
 
 ## About The Project
 
-The Design of Experiments Suite (DoES) automatically orchestrates and executes a set of experiments, i.e., an experiment suite, based on a simple declarative `YAML` design file.
-Each experiment of a suite defines the involved computing resources (e.g., AWS EC2 instances) and a list of run configurations.
+The Design of Experiment Suite (DoES) automatically orchestrates and executes a set of experiments, i.e., an experiment suite, based on a simple declarative `YAML`  design file. In essence, the design file follows a DSL to specify experiments.
+Each experiment of a suite defines the involved computing resources (e.g., AWS EC2 instances) as well as a list of run configurations.
 DoES follows the naming conventions of [DoE](https://en.wikipedia.org/wiki/Design_of_experiments):
 A `factor` is a parameter that changes between different runs, and in each run, a `factor` takes a particular `level`, i.e., value.
-DoES downloads generated result files and processes them in an ETL pipeline to create summaries and plots.
+For example, we could have a `factor` to vary the load and find the saturation point of a system.
 
+First DoES creates the required resources (e.g., AWS EC2 instances), installs packages, and builds the artifact.
+Afterward, DoES executes jobs according to the suite design.
+We support multi-factor and multi-level experiment designs with repetition,
+i.e., it is possible to vary multiple parameters and repeat each run.
+After completing a job, DoES automatically downloads generated result files and processes them in an ETL pipeline to generate summaries and plots.
+Finally, all created resources are automatically cleaned up.
 
 ### Example: Suite Design
 
@@ -164,9 +170,14 @@ Start an experiment suite on a specific cloud:
   make run suite=example01-minimal id=new cloud=euler
   ```
 
-:warning: Use `make clean` to terminate compute resources.
+Start an experiment suite with the explicit choice (`run-keep`, `run-stop`, `run-terminate`) what to do after suite is complete:
+  ```sh
+  make run-keep suite=example01-minimal id=new
+  make run-stop suite=example01-minimal id=new
+  make run-terminate suite=example01-minimal id=new
+  ```
 
-### ETL - Extract Transform Load
+### ETL
 
 Run ETL results pipeline:
   ```sh
@@ -176,10 +187,10 @@ Run ETL results pipeline:
 
 Run Super-ETL results pipeline:
   ```sh
-  # config: file in `doe-suite-config/super_etl`
-  # out: output path of loader results
-  make etl-super config=demo_plots out=~/paper/figures
+  # can set `out` for example to a figures folder of a paper
+  make etl-super config=demo_plots out=.
   ```
+
 ### Status and Info
 
 Get information about available suites and experiments:

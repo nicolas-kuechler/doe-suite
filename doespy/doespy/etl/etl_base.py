@@ -8,6 +8,8 @@ import warnings
 
 import pandas as pd
 import yaml
+from pydantic import ValidationError
+
 from doespy import util
 from doespy import status
 from doespy.design import validate_extend
@@ -224,7 +226,7 @@ def _load_super_etl_design(name):
     if "$SUITE_ID$" not in pipeline_design:
         raise ValueError(f"super etl {name}  does not contain $SUITE_ID$")
 
-    # TODO [nku] the include functionality does not exist yet
+    # TODO [nku] the include functionality does not exist yet in the SUPER ETL
 
     return pipeline_design
 
@@ -314,6 +316,7 @@ def load_selected_processes(extractors_sel, transformers_sel, loaders_sel):
         regex = options.get("file_regex")
 
         d = {
+            # TODO [nku] change the way we load extractors to use pydantic model? and pass options
             "extractor": extractors_avl[name](regex),
             "options": options,
         }
@@ -327,6 +330,8 @@ def load_selected_processes(extractors_sel, transformers_sel, loaders_sel):
                 raise ValueError(f"transformer not found: {trans_sel['name']}")
 
             d = {
+                # TODO [nku] change the way we load transformers to use pydantic model? and pass options
+                # transformers_avl[trans_sel["name"]](**options),
                 "transformer": transformers_avl[trans_sel["name"]](),
                 "options": trans_sel,
             }
@@ -354,6 +359,8 @@ def load_selected_processes(extractors_sel, transformers_sel, loaders_sel):
             raise ValueError(f"loader not found: {name}")
 
         d = {
+            # TODO [nku] change the way we load loaders to use pydantic model? and pass options
+            # "loader": loaders_avl[name](**options),
             "loader": loaders_avl[name](),
             "options": options,
         }
@@ -417,13 +424,22 @@ def _load_processes(module_name, extractors, transformers, loaders):
         try:
             etl_candidate = getattr(module, member_name)
             if issubclass(etl_candidate, Extractor):
-                etl_candidate()
+                try:
+                    etl_candidate()
+                except ValidationError:
+                    pass # TODO [nku] here we would handle if ETL Step validation fails
                 extractors[member_name] = etl_candidate
             elif issubclass(etl_candidate, Transformer):
-                etl_candidate()
+                try:
+                    etl_candidate()
+                except ValidationError:
+                    pass # TODO [nku] here we would handle if ETL Step validation fails
                 transformers[member_name] = etl_candidate
             elif issubclass(etl_candidate, Loader):
-                etl_candidate()
+                try:
+                    etl_candidate()
+                except ValidationError:
+                    pass # TODO [nku] here we would handle if ETL Step validation fails
                 loaders[member_name] = etl_candidate
 
         except TypeError:

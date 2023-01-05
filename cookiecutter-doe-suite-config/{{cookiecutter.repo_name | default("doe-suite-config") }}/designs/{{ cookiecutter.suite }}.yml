@@ -1,2 +1,35 @@
 ---
-# TODO [nku] could add default skeleton for design
+
+
+{{ cookiecutter.experiment_name }}: # experiment name
+  n_repetitions: 1 # no repetition
+  host_types:
+    {{ cookiecutter.host_name }}:
+      n: 1
+      $CMD$: "echo \"[% my_run.constant %] [% my_run.factor1 %][% my_run.factor2 %]\""
+  base_experiment:
+    constant: hello
+    factor1:
+      $FACTOR$: [world, universe] # varied parameter between runs (factor)
+    factor2: $FACTOR$
+  factor_levels:
+    - factor2: "."
+    - factor2: "!"
+
+# -> can add other experiments here
+
+
+$ETL$:
+  pipeline1: # pipeline_name
+    experiments: [{{ cookiecutter.experiment_name }}] # or "*" for all experiments
+    extractors:
+      ErrorExtractor: {} # raise error on unexpected, non-empty file
+      IgnoreExtractor: {} # expect and ignore stdout.log
+    transformers: []
+    #  - df.filter: {items: ["exp_name", "x", "y"]}
+    #  - name: RepAggTransformer
+    #    data_columns: [latency]
+    loaders:
+      CsvSummaryLoader: {}
+
+  # -> can add other pipelines here
