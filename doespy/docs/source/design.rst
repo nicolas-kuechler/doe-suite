@@ -5,7 +5,7 @@ Experiment Design
 .. autopydantic_model:: doespy.design.design.Suite
     :noindex:
     :validator-list-fields: True
-
+    :model-show-field-summary: False
 
 
 Experiment
@@ -13,6 +13,12 @@ Experiment
 .. autopydantic_model:: doespy.design.design.Experiment
     :noindex:
     :validator-list-fields: True
+    :field-list-validators: False
+
+|
+
+.. autoclass:: doespy.design.design.BaseExperiment
+    :members:
 
 
 Host Type
@@ -21,13 +27,22 @@ Host Type
     :noindex:
     :validator-list-fields: True
 
-.. autoclass:: doespy.design.design.HostTypeId
+|
+
+.. autoenum:: doespy.design.design.HostTypeId
+    :members:
+
+|
+
+.. autoenum:: doespy.design.design.SetupRoleId
     :members:
     :inherited-members:
     :undoc-members:
 
-ETL
-===
+
+
+ETL Pipeline
+============
 .. autopydantic_model:: doespy.design.design.ETLPipeline
     :noindex:
     :validator-list-fields: True

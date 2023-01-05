@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Any, List
-from importlib_metadata import Deprecated
 
 import pandas as pd
 import inspect

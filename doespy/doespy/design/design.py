@@ -12,6 +12,7 @@ from pydantic import PydanticValueError
 
 
 
+
 import re
 import inspect
 import sys
@@ -154,8 +155,17 @@ loaders = {ld: ld for ld in avl_loaders.keys()}
 loaders["INCLUDE_STEPS"] = "$INCLUDE_STEPS$"
 LoaderId = enum.Enum("LoaderId", loaders)
 
-HostTypeId = enum.Enum("HostTypeId", {ht: ht for ht in util.get_host_types()})
-SetupRoleId = enum.Enum("SetupRoleId", {x:  x for x in util.get_setup_roles()})
+
+
+#print(f"loaders={loaders}   avl_loaders={avl_loaders}")
+
+#raise ValueError("blockers")
+
+HostTypeId = enum.Enum("HostTypeId", {ht.replace("-", "_"): ht for ht in util.get_host_types()})
+"""Name of a host type and corresponds to folder in `doe-suite-config/group_vars`."""
+
+SetupRoleId = enum.Enum("SetupRoleId", {x.replace("-", "_"):  x for x in util.get_setup_roles()})
+"""Name of an Ansible role to setup a host. The role is located in folder: `doe-suite-config/roles`."""
 
 class Extractor(MyBaseModel):
 
@@ -339,7 +349,14 @@ class HostType(MyBaseModel):
 
 class BaseExperiment(MyBaseModel):
 
+    """Dictionary with basic experiment config.
+    """
+
     include_vars: Optional[Union[str, List[str]]] = Field(alias="$INCLUDE_VARS$")
+
+    # TODO [nku] Can we define custom schemas for project and then enforce
+    # that they must be present in a certain form across all suites/experiments?
+    # (maybe should always be marked as optional but if present, than in that form)
 
     class Config:
         extra = "allow"
@@ -353,20 +370,30 @@ class BaseExperiment(MyBaseModel):
 
 
 class Experiment(MyBaseModel):
+    """An experiment is composed of a set of runs, each with its own unique configuration.
+    The configurations of the runs vary different experiment factors, e.g., number of clients.
+    Additionally, an experiment also specifies the hosts responsible for executing the runs.
+    """
+
     n_repetitions: int = 1
-    """number of repetitions"""
+    """Number of repetitions with the same experiment run configuration."""
 
     common_roles: Union[SetupRoleId, List[SetupRoleId]] = []
-    """ansible roles executed during the setup of all host types"""
+    """Ansible roles executed during the setup of all host types."""
 
     host_types: Dict[HostTypeId, HostType]
-    """host types"""
+    """The different :ref`host types<Host Type>` involved in the experiment."""
 
     base_experiment: BaseExperiment
-    """experiment run configuration"""
+    """Defines constants and factors of an experiment."""
 
     factor_levels: List[Dict] = []
-    """list of factors"""
+    """For the factors of an experiment, lists the different levels.
+    For example, `n_clients` can be a factor with two levels: 1 and 100."""
+
+    inherited_suite_vars: BaseExperiment = Field(None, alias="$INHERITED_SUITE_VARS$", hidden=True)
+
+    # TODO [nku] for variable inheritance: introduce $BLOCKER$ that stops the include vars from going deeper and instead do a replacement. or $INCLUDE_REPLACE$
 
     class Config:
         extra = "forbid"
@@ -396,6 +423,21 @@ class SuiteDesign(MyBaseModel):
     class Config:
         extra = "forbid"
 
+    @root_validator(pre=True)
+    def distribute_suite_vars(cls, values):
+
+        # set the suite vars as a field in all experiment designs
+        suite_vars = values.get("$SUITE_VARS$")
+
+        for _, exp in values.get("experiment_designs").items():
+            exp["$INHERITED_SUITE_VARS$"] = suite_vars
+        return values
+
+    @validator("experiment_designs", pre=True)
+    def demo(cls, v, values):
+        print(f"\n\ndemo v={v} \n\n\nvalues={values}")
+        return v
+
     @validator("experiment_designs")
     def check_exp_names(cls, v):
         # TODO [nku] check min length and forbidden keywords
@@ -405,12 +447,6 @@ class SuiteDesign(MyBaseModel):
              assert len(exp_name) <= 200, f'experiment name: "{exp_name}" is not allowed (too long, limit=200)'
 
              assert re.match(r"^[A-Za-z0-9_]+$", exp_name), f'experiment name: "{exp_name}" is not allowed (must consist of alphanumeric chars or _)'
-
-        if not :
-            raise ValueError(
-                f"exp_name must consist of alphanumeric chars or _ ({exp_name})"
-            )
-
         return v
 
     @root_validator
@@ -440,16 +476,31 @@ class SuiteDesign(MyBaseModel):
 
 class Suite(MyBaseModel):
 
+    """
+    A suite is a collection of experiments, denoted as `<EXP1>`, `<EXP2>`, etc.
+    Each experiment has its own set of config variables.
+    It is also possible to define variables that are shared by
+    all experiments in the suite, referred to as `SUITE_VARS`.
+    In addition to the experiments, a suite can also define an
+    `ETL` (extract, transform, load) pipeline,
+    which outlines the steps for processing the resulting files.
+    """
+
     suite_vars: BaseExperiment = Field(alias="$SUITE_VARS$", default={})
+    """Shared variables belonging to every experiment of the suite."""
 
-    exp1: Experiment
-    """A suite needs to contain at least one experiment."""
+    # TODO [nku] add a link
 
-    exp2: Optional[Experiment]
-    """Further experiments are optional."""
+    exp1: Experiment = Field(alias="<EXP1>")
+    """A suite needs to contain at least one :ref:`experiment<Experiment>`.
+    Choose a descriptive experiment name for the placeholder `<EXP1>`."""
+
+    exp2: Optional[Experiment] = Field(alias="<EXP2>")
+    """Further :ref:`experiments<Experiment>` are optional.
+    Choose a descriptive experiment name for the placeholder `<EXP2>`, `<EXP3>`, etc."""
 
     etl: Dict[str, ETLPipeline] = Field(alias="$ETL$", default={})
-    """ETL Pipeline to process the result files."""
+    """:ref:`ETL Pipeline` to process the result files."""
 
 
 def check_suite(suite):

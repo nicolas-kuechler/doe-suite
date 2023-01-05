@@ -2,9 +2,9 @@ import os
 import sys
 
 #sys.path.insert(0, os.path.abspath('../doespy/etl/steps'))
-
 sys.path.append(os.path.abspath('../doespy/etl/steps'))
 sys.path.append(os.path.abspath('..'))
+
 # Configuration file for the Sphinx documentation builder.
 #
 # For the full list of built-in configuration values, see the documentation:
@@ -21,13 +21,19 @@ release = '1.0'
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ["sphinx.ext.autodoc", "sphinx.ext.viewcode", 'sphinxemoji.sphinxemoji', 'sphinx.ext.autosectionlabel', 'enum_tools.autoenum', 'sphinxcontrib.autodoc_pydantic'] #,
+#extensions = ["sphinx.ext.autodoc", "sphinx.ext.viewcode", 'sphinxemoji.sphinxemoji', 'sphinx.ext.autosectionlabel', 'enum_tools.autoenum', 'sphinxcontrib.autodoc_pydantic', 'sphinx.ext.napoleon'] #,
+extensions = ["sphinx.ext.viewcode", 'sphinxemoji.sphinxemoji', 'sphinxcontrib.autodoc_pydantic', "sphinx.ext.autosectionlabel", 'enum_tools.autoenum'] #,
+
 numpydoc_show_class_members = False
+
+python_use_unqualified_type_names = True
+#autodoc_unqualified_typehints = True
+#autodoc_typehints = "description"
 
 autodoc_class_signature = "separated"
 autodoc_member_order = 'bysource'
 
-
+autodoc_pydantic_model_show_field_summary = False
 autodoc_pydantic_model_show_json = False
 autodoc_pydantic_settings_show_json = False
 autodoc_pydantic_model_show_config_summary = False
