@@ -8,6 +8,74 @@ from ansible.utils.vars import merge_hash
 from doespy import util
 
 
+def extend_experiment(exp_design, exp_vars):
+
+    exp_runs_ext = []
+
+
+    base_experiment, cross_factor_levels = extract_cross_product(
+        exp_design["base_experiment"]
+    )
+
+    for factor_level in exp_design["factor_levels"]:
+        # these are the list of factor_levels when $FACTOR$ is used
+        #  as the key in base_experiment -> builds the cross product
+        for cross_factor_level in cross_factor_levels:
+
+            factor_level = merge_hash(
+                factor_level, cross_factor_level, recursive=True
+            )
+            run_config = copy.deepcopy(base_experiment)
+
+            # overwrite $FACTOR$ with the concrete level of the run
+            # (via recursive merging dicts)
+            run_config = merge_hash(run_config, factor_level, recursive=True)
+
+            # copy the cmds from host_types
+            run_config["$CMD$"] = {}
+            for host_type in exp_design["host_types"].keys():
+                run_config["$CMD$"][host_type] = exp_design["host_types"][host_type][
+                    "$CMD$"
+                ]
+
+            # resolve [% %] for specific factor level
+            env = util.jinja2_env(
+                loader=None,
+                undefined=jinja2.StrictUndefined,
+                variable_start_string="[%",
+                variable_end_string="%]",
+            )
+
+            template = json.dumps(run_config)
+            while "[%" in template and "%]" in template:
+                # temporary convert to a dict
+                try:
+                    run_config = json.loads(template)
+                except ValueError:
+                    raise ValueError(f"JSONDecodeError in template: {template}")
+                del run_config[
+                    "$CMD$"
+                ]  # temporary delete of cmd
+                # (should not be available as var for templating)
+
+                template = env.from_string(template)
+                template = template.render(my_run=run_config, **exp_vars)
+            run_config = json.loads(template)
+
+            # TODO [nku] could we validate that the commands is a syntactically correct shell command?
+            #  -> yes with shellcheck: echo "printf 'x: 1\\ny: 5' > results/coordinates.yaml" | poetry run  shellcheck --shell=bash  /dev/stdin
+
+            print(f"RUN CONFIG = {run_config}")
+
+            exp_runs_ext.append(run_config)
+
+    return exp_runs_ext
+
+
+# echo "printf 'x: 1\\ny: 5' > results/coordinates.yaml" | poetry run  shellcheck /dev/stdin
+
+
+
 def extend(suite_design, exp_specific_vars):
     """_summary_
 
@@ -148,6 +216,7 @@ def extract_cross_product(base_experiment_in):
     return base_experiment, cross_factor_levels
 
 
+# TODO [nku] does this need to be different from design.util.nested_dict_iter?
 def _nested_dict_iter(nested, p=[]):
     for key, value in nested.items():
         if isinstance(value, collections.abc.Mapping):
@@ -163,19 +232,3 @@ def _insert_config(config, key, parent_path, value):
             d[k] = {}
         d = d[k]
     d[key] = value
-
-
-def _set_nested_value(base, path, value, overwrite=False):
-
-    d = base
-    for i, k in enumerate(path):
-
-        if k not in d:
-            if i == len(path) - 1:  # last
-                d[k] = value
-            else:
-                d[k] = {}
-        elif overwrite and i == len(path) - 1:  # last + overwrite
-            d[k] = value
-
-        d = d[k]

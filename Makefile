@@ -312,4 +312,4 @@ design-validate: install-silent
 # TODO [nku] temporary target to check new design with pydantic
 design2: install
 	@cd $(does_config_dir) && \
-	poetry run python $(PWD)/doespy/doespy/design/design.py
+	poetry run python $(PWD)/doespy/doespy/design/exp_design.py

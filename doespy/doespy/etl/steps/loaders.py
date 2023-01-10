@@ -11,9 +11,6 @@ from typing import Optional
 from pydantic import BaseModel
 
 class Loader(BaseModel, ABC):
-
-    output_dir: Optional[str]
-
     class Config:
         extra = "forbid"
 
@@ -86,9 +83,11 @@ class CsvSummaryLoader(Loader):
                     output_dir: dir1
     """
 
+    skip_empty: bool = False
+
     def load(self, df: pd.DataFrame, options: Dict, etl_info: Dict) -> None:
 
-        if options.get("skip_empty", False) and df.empty:
+        if options.get("skip_empty", False) and df.empty: # TODO [nku]: switch to use self.skip_empty
             return
         elif df.empty:
             raise ValueError("CsvSummaryLoader: DataFrame is empty so not creating an output file.")

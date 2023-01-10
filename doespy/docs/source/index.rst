@@ -11,7 +11,7 @@ Welcome to DoES's documentation!
 .. toctree::
    design
    etl
-   :maxdepth: 4
+   :maxdepth: 3
    :caption: Contents:
 
 

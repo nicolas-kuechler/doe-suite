@@ -3,9 +3,11 @@ import os
 import re
 import jinja2
 import json
-from collections import abc
+
 
 from doespy import util
+
+from doespy.design import dutil
 
 KEYWORDS = {
     "general": [
@@ -367,7 +369,7 @@ def _validate_and_default_experiment(exp_raw, dirs, suite_vars):
             if x not in exp_raw["base_experiment"]["$INCLUDE_VARS$"]:
                 exp_raw["base_experiment"]["$INCLUDE_VARS$"].append(x)
 
-    _include_vars(exp_raw["base_experiment"], suite_vars)
+    dutil.include_vars(exp_raw["base_experiment"], suite_vars)
 
 
     # load external vars (marked with $INCLUDE_VARS$)
@@ -384,9 +386,11 @@ def _validate_and_default_experiment(exp_raw, dirs, suite_vars):
     _validate_factor_levels(exp_raw["factor_levels"], expected_factor_paths)
 
 
+
 def _load_external_vars(conf, external_dir):
 
-    for path, value in nested_dict_iter(conf.copy()):
+
+    for path, value in dutil.nested_dict_iter(conf.copy()):
 
         if path[-1] == "$INCLUDE_VARS$":
             d = conf
@@ -402,13 +406,10 @@ def _load_external_vars(conf, external_dir):
                 # value is the path relative to external dir
                 with open(f"{external_dir}/{external_file}", "r") as f:
                     vars = yaml.load(f, Loader=yaml.SafeLoader)
-                _include_vars(d, vars)
+                dutil.include_vars(d, vars)
 
 
-def _include_vars(base, vars):
 
-    for path, value in nested_dict_iter(vars):
-        _set_nested_value(base, path, value)
 
 
 def _validate_and_default_host_type(host_type_name, host_type_raw, dirs):
@@ -518,7 +519,7 @@ def _validate_base_experiment(base_experiment_raw):
     factors = []
     # extract `path`of all factors from base experiment
 
-    for path, value in nested_dict_iter(base_experiment_raw):
+    for path, value in dutil.nested_dict_iter(base_experiment_raw):
 
         if value == "$FACTOR$":
             factors.append(path)
@@ -541,7 +542,7 @@ def _validate_factor_levels(factor_levels_raw, expected_factors):
     for run in factor_levels_raw:
 
         actual_factors = []
-        for path, value in nested_dict_iter(run):
+        for path, value in dutil.nested_dict_iter(run):
             actual_factors.append(path)
 
         if sorted(expected_factors) != sorted(actual_factors):
@@ -550,29 +551,3 @@ def _validate_factor_levels(factor_levels_raw, expected_factors):
                 f"  expected={expected_factors}",
                 f"  actual={actual_factors}",
             )
-
-
-def nested_dict_iter(nested, path=[]):
-    for key, value in nested.items():
-        path_c = path + [key]
-
-        if isinstance(value, abc.Mapping):
-            yield from nested_dict_iter(value, path=path_c)
-        else:
-            yield path_c, value
-
-
-def _set_nested_value(base, path, value, overwrite=False):
-
-    d = base
-    for i, k in enumerate(path):
-
-        if k not in d:
-            if i == len(path) - 1:  # last
-                d[k] = value
-            else:
-                d[k] = {}
-        elif overwrite and i == len(path) - 1:  # last + overwrite
-            d[k] = value
-
-        d = d[k]

@@ -20,10 +20,12 @@ def display_info():
     print("------------------")
 
 
-def get_suite_designs():
+def get_suite_designs(designs_dir=None):
 
-    config_dir = util.get_config_dir()
-    designs_dir = os.path.join(config_dir, "designs", "*.yml")
+    if designs_dir is None:
+        designs_dir = util.get_suite_design_dir()
+
+    designs_dir = os.path.join(designs_dir, "*.yml")
 
     designs = []
     for path in glob.glob(designs_dir):
@@ -31,6 +33,7 @@ def get_suite_designs():
         suite = os.path.splitext(os.path.basename(path))[0]
         designs.append(suite)
     return designs
+
 
 
 def get_experiments(suite):
@@ -48,8 +51,8 @@ def get_experiments(suite):
     return exps
 
 
-def get_etl_pipelines(suite):
-    design = util.get_suite_design(suite)
+def get_etl_pipelines(suite, designs_dir=None):
+    design = util.get_suite_design(suite, folder=designs_dir)
     if "$ETL$" in design:
         pipelines = list(design["$ETL$"].keys())
     else:

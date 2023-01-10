@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod, abstractproperty
 from typing import List, Dict, Union
 from typing import ClassVar
 
@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 import sys
 import inspect
 
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 
 
 class Extractor(BaseModel, ABC):
@@ -21,19 +21,29 @@ class Extractor(BaseModel, ABC):
     class Config:
         extra = "forbid"
 
-    @property
+    #@abstractproperty
+    #def file_regex(self):
+    #    pass
+
+    @classmethod
     @abstractmethod
-    def file_regex_default(self):
+    def default_file_regex():
         pass
 
-    def regex(self):
-        if self.file_regex:
-            if isinstance(self.file_regex, str):
-                return [self.file_regex]
-            else:
-                return self.file_regex
-        else:
-            return self.file_regex_default()
+
+
+    @validator("file_regex", pre=True, always=True)
+    def set_default_regex(cls, value):
+        return value or cls.default_file_regex()
+#
+    #def regex(self):
+    #    if self.file_regex:
+    #        if isinstance(self.file_regex, str):
+    #            return [self.file_regex]
+    #        else:
+    #            return self.file_regex
+    #    else:
+    #        return self.file_regex_default()
 
     #@abstractmethod
     #def file_regex_default():
@@ -62,7 +72,8 @@ class Extractor(BaseModel, ABC):
 
 class YamlExtractor(Extractor):
 
-    file_regex_default:  ClassVar[List[str]] = [r".*\.yaml$", r".*\.yml$"]
+    def default_file_regex():
+        return [r".*\.yaml$", r".*\.yml$"]
 
     r"""The `YamlExtractor` reads result files as YAML.
     The YAML file can contain either a single object (result)
@@ -87,7 +98,10 @@ class YamlExtractor(Extractor):
 
 
 class JsonExtractor(Extractor):
-    file_regex_default:  ClassVar[List[str]] = [r".*\.json$"]
+
+    def default_file_regex():
+        return [r".*\.json$"]
+
 
     r"""The `JsonExtractor` reads result files as JSON.
     The JSON file can contain either a single object (result)
@@ -114,7 +128,7 @@ class JsonExtractor(Extractor):
 
 
 class CsvExtractor(Extractor):
-    file_regex_default:  ClassVar[List[str]] = [r".*\.csv$"]
+
 
     delimiter: str = ","
 
@@ -122,6 +136,8 @@ class CsvExtractor(Extractor):
 
     fieldnames: List[str] = None
 
+    def default_file_regex():
+        return [r".*\.csv$"]
 
     r"""The `CsvExtractor` reads result files as CSV.
     The CSV file contains a result per line and by default starts with a header row,
@@ -162,7 +178,8 @@ class CsvExtractor(Extractor):
 
 class ErrorExtractor(Extractor):
 
-    file_regex_default:  ClassVar[List[str]] = ["^stderr.log$"]
+    def default_file_regex():
+        return ["^stderr.log$"]
 
     r"""The `ErrorExtractor` provides a mechanism to detect potential errors in an experiment job.
     For experiments with a large number of jobs, it is easy to overlook an error
@@ -178,9 +195,6 @@ class ErrorExtractor(Extractor):
                     file_regex: [stderr.log, error.log]
     """
 
-    #def file_regex_default(self):
-    #    # by default, matches the filename `stderr.log`
-    #    return ["^stderr.log$"]
 
     def extract(self, path: str, options: Dict) -> List[Dict]:
         # if the file is present and not empty, then throws a warning
@@ -198,7 +212,8 @@ class ErrorExtractor(Extractor):
 
 class IgnoreExtractor(Extractor):
 
-    file_regex_default:  ClassVar[List[str]] = ["^stdout.log$"]
+    def default_file_regex():
+        return ["^stdout.log$"]
 
     r"""The `IgnoreExtractor` provides a mechanism to detect potential errors in an experiment job.
     For experiments with a large number of jobs, it is easy to overlook an error
@@ -216,9 +231,6 @@ class IgnoreExtractor(Extractor):
                     file_regex: [stdout.log, other.txt]
     """
 
-    #def file_regex_default(self):
-    #    # by default, matches the filename `stdout.log`
-    #    return ["^stdout.log$"]
 
     def extract(self, path: str, options: Dict) -> List[Dict]:
         # ignore this file
