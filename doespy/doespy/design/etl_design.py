@@ -105,8 +105,8 @@ class IncludeEtlSource(MyETLBaseModel):
 
         if values.get("suite") is not None:
             design = util.get_suite_design(values["suite"])
-        elif values.get("template") is not None:
 
+        elif values.get("template") is not None:
             templ_dir = util.get_suite_design_etl_template_dir()
             design = util.get_suite_design(suite=values["template"], folder=templ_dir)
 
@@ -115,15 +115,14 @@ class IncludeEtlSource(MyETLBaseModel):
         if "experiments" in etl_pipeline:
             del etl_pipeline["experiments"]
 
-        try:
-            values["etl_pipeline"] = ETLPipelineBase(**etl_pipeline)
-            if "experiments" in values["etl_pipeline"]:
-                del values["etl_pipeline"]["experiments"]
+        #try:
+        values["etl_pipeline"] = ETLPipelineBase(**etl_pipeline)
+        if "experiments" in values["etl_pipeline"]:
+            del values["etl_pipeline"]["experiments"]
             # TODO [nku] not sure this custom error reporting is worth to explore
-        except ValidationError as e:
-            print(e.json())
-            raise EtlIncludeError(suite=values.get("suite"), template=values.get("template"), pipeline=values.get("pipeline"))
-
+        #except ValidationError as e:
+            #print(e.json())
+         #   raise EtlIncludeError(suite=values.get("suite"), template=values.get("template"), pipeline=values.get("pipeline"))
         return values
 
 
@@ -179,11 +178,17 @@ class Extractor(MyETLBaseModel):
 
 
 class Transformer(MyETLBaseModel):
-    # TODO does not deal with df.x syntax
-    name: Optional[TransformerId]
+    pass
 
-    # TODO [nku] add val idation that it's present with name, and df. syntax
-    include_steps: Optional[IncludeEtlSource] = Field(alias="$INCLUDE_STEPS$")
+class IncludeStepTransformer(Transformer):
+    include_steps: IncludeEtlSource = Field(alias="$INCLUDE_STEPS$")
+
+    class Config:
+        extra = "forbid"
+
+
+class NamedTransformer(Transformer):
+    name: TransformerId
 
     class Config:
         extra = "allow"
@@ -193,6 +198,29 @@ class Transformer(MyETLBaseModel):
         _build_extra(cls, values)
         return values
 
+
+
+import pandas as pd
+import inspect
+
+avl_df_functions = set()
+for name, _ in inspect.getmembers(pd.DataFrame, predicate=inspect.isfunction):
+    if not name.startswith("_"):
+        avl_df_functions.add(f"df.{name}")
+
+
+class DfTransformer(Transformer):
+
+    class Config:
+        extra = "allow"
+
+    @root_validator(skip_on_failure=True)
+    def check_df_function(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+
+        for v in values.keys():
+            assert v in avl_df_functions, f"{v} is unknown df function"
+
+        return values
 
 class Loader(MyETLBaseModel):
     include_steps: Optional[List[IncludeEtlSource]] = Field(alias="$INCLUDE_STEPS$")
@@ -214,7 +242,7 @@ class ETLPipelineBase(MyETLBaseModel):
 
     extractors: Dict[ExtractorId, Union[Extractor, List[IncludeEtlSource]]] = {}
 
-    transformers: List[Transformer] = []
+    transformers: List[Union[IncludeStepTransformer, NamedTransformer, DfTransformer]] = []
 
     loaders: Dict[LoaderId, Union[Loader, List[IncludeEtlSource]]] = {}
 
@@ -239,11 +267,11 @@ class ETLPipelineBase(MyETLBaseModel):
     @root_validator(skip_on_failure=True)
     def inc_extractors(cls, values):
         assert "extractors" in values
-        if ExtractorId.INCLUDE_STEPS in values['extractors']:
-            for include_etl_source in values['extractors'][ExtractorId.INCLUDE_STEPS]:
+        if ExtractorId.INCLUDE_STEPS.value in values['extractors']:
+            for include_etl_source in values['extractors'][ExtractorId.INCLUDE_STEPS.value]:
                 for k, v in include_etl_source.etl_pipeline.extractors.items():
                     values['extractors'][k] = v
-            del values['extractors'][ExtractorId.INCLUDE_STEPS]
+            del values['extractors'][ExtractorId.INCLUDE_STEPS.value]
 
         return values
 
@@ -253,8 +281,7 @@ class ETLPipelineBase(MyETLBaseModel):
         assert "transformers" in values
         steps = []
         for t in values["transformers"]:
-            # TODO [nku] could also deal with df. syntax here?
-            if t.include_steps is not None:
+            if isinstance(t, IncludeStepTransformer):
                 for step in t.include_steps.etl_pipeline.transformers:
                     steps.append(step)
             else:
@@ -266,11 +293,11 @@ class ETLPipelineBase(MyETLBaseModel):
     @root_validator(skip_on_failure=True)
     def inc_loader(cls, values):
         assert "loaders" in values
-        if LoaderId.INCLUDE_STEPS in values['loaders']:
-            for include_etl_source in values['loaders'][LoaderId.INCLUDE_STEPS]:
+        if LoaderId.INCLUDE_STEPS.value in values['loaders']:
+            for include_etl_source in values['loaders'][LoaderId.INCLUDE_STEPS.value]:
                 for k, v in include_etl_source.etl_pipeline.loaders.items():
                     values['loaders'][k] = v
-            del values['loaders'][LoaderId.INCLUDE_STEPS]
+            del values['loaders'][LoaderId.INCLUDE_STEPS.value]
         return values
 
 
@@ -320,7 +347,7 @@ class ETLPipeline(ETLPipelineBase):
             from itertools import chain
 
             for step in chain(values["extractors"].values(), values["transformers"], values["loaders"].values()):
-                if len(step.extra) > 0:
+                if hasattr(step, 'extra') and len(step.extra) > 0:
                     step.extra = include_etl_vars(step.extra, etl_vars)
 
         return values
@@ -347,9 +374,9 @@ class ETLPipeline(ETLPipelineBase):
         assert "transformers" in values
         steps = []
         for t in values["transformers"]:
-            assert t.include_steps is None
-            # TODO [nku] could also deal with df. syntax here?
-            if isinstance(t, Transformer) and t.name is not None:
+            assert not isinstance(t, IncludeStepTransformer)
+
+            if isinstance(t, NamedTransformer) and t.name is not None:
                 trans = avl_transformers[t.name](**t.extra)
                 steps.append(trans)
             else:

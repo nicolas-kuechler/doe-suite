@@ -298,13 +298,8 @@ class SuiteDesign(MyBaseModel):
         for _, exp in values.get("experiment_designs").items():
             exp["$INHERITED_SUITE_VARS$"] = suite_vars
 
-        #raise ValueError(f"BLOCKER!!!!!!!!! values={values}\n\n")
         return values
 
-    @validator("experiment_designs", pre=True)
-    def demo(cls, v, values):
-        #print(f"\n\ndemo v={v} \n\n\nvalues={values}")
-        return v
 
     @validator("experiment_designs")
     def check_exp_names(cls, v):
@@ -464,13 +459,12 @@ def pydantic_to_dict(model):
 
     for name, exp in model.experiment_designs.items():
 
-        # TODO [nku] not sure why I need to exclude those specifically here
+        # TODO [nku] not sure why I need to exclude those specifically here -> should try out PrivateAttr
         exp_design = exp.json(by_alias=True, exclude={"base_experiment": {"$PATHS_REQUIRE_FACTOR_LEVEL$", "inherited_suite_vars"}, "inherited_suite_vars": True})
 
         suite_design[name] = json.loads(exp_design)
 
 
-    print(model.etl)
     suite_design["$ETL$"] = {}
     for name, pipeline in model.etl.items():
 
@@ -509,12 +503,12 @@ if __name__ == "__main__":
     #suite = util.get_suite_design(suite="example02-single")
     #validate(suite_design_raw=suite, exp_filter=None)
 
-    #check_suite(suite="example01-minimal")
-    #check_suite(suite="example02-single")
-    #check_suite(suite="example03-format")
-    #check_suite(suite="example04-multi")
-    #check_suite(suite="example05-complex")
-    #check_suite(suite="example06-vars")
+    check_suite(suite="example01-minimal")
+    check_suite(suite="example02-single")
+    check_suite(suite="example03-format")
+    check_suite(suite="example04-multi")
+    check_suite(suite="example05-complex")
+    check_suite(suite="example06-vars")
     check_suite(suite="example07-etl") #TODO [nku] at the moment this does not work yet
 
     # model = Experiment(**exp)
