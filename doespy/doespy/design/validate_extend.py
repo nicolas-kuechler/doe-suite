@@ -3,8 +3,8 @@ import yaml
 import argparse
 
 from doespy import util
-from doespy.design import validate, extend
-
+from doespy.design import validate
+from doespy.design import extend
 
 def main(
     suite,
@@ -17,12 +17,6 @@ def main(
     exp_specific_vars={},
     ignore_undefined_vars=False,
 ):
-
-    dirs = {
-        "designvars": util.get_suite_design_vars_dir(),
-        "groupvars": util.get_suite_group_vars_dir(),
-        "roles": util.get_suite_roles_dir(),
-    }
 
     # ignore if {{ }} is undefined
     undefined = (
@@ -41,12 +35,13 @@ def main(
             template = env.from_string(suite_design)
             suite_design = template.render(**template_vars)
 
+    # TODO [nku] this would be a place to enforce a stricter yaml syntax
     suite_design = yaml.load(suite_design, Loader=UniqueKeyLoader)
 
     # validate the suite design
     prj_id = util.get_project_id()
     suite_design = validate.validate(
-        suite_design, prj_id=prj_id, suite=suite, dirs=dirs, exp_filter=exp_filter
+        suite_design, suite=suite, exp_filter=exp_filter
     )
 
     # output suite design

@@ -44,15 +44,69 @@ SetupRoleId = enum.Enum("SetupRoleId", {x.replace("-", "_"):  x for x in util.ge
 """Name of an Ansible role to setup a host. The role is located in folder: `doe-suite-config/roles`."""
 
 
+class Cmd(MyBaseModel):
+    __root__: str
+
 class HostType(MyBaseModel):
     n: int = 1
     check_status: bool = True
     init_roles: Union[SetupRoleId, List[SetupRoleId]] = []
-    cmd: Union[str, List[str], List[Dict[str, str]]] = Field(alias="$CMD$")
+    cmd: Union[Cmd, List[Cmd], List[Dict[Literal["main"], Cmd]]] = Field(alias="$CMD$")
 
     class Config:
         extra = "forbid"
+        smart_union = True
 
+
+    @root_validator(skip_on_failure=True)
+    def convert_cmd(cls, values):
+
+        """
+        `cmd` is a list of length n,
+        and each element is a dict that contains at least one entry with key "main"
+
+        # minimal example
+        n: 1
+        $CMD$:
+            - main: X
+
+        # two instances, one command
+        n: 2
+        $CMD$:
+            - main: X
+            - main: Y
+
+        # two instances, multiple commands per instance
+        n: 2
+        $CMD$:
+            - main: X
+            monitor: Z  # on first host instance also start `monitor` cmd Z
+            - main: Y
+
+        """
+
+        # GOAL: $CMD$: [{"main": cmd1}, {"main": cmd2}] for n==2
+        cmd = values["cmd"]
+
+        if isinstance(cmd, Cmd):
+            print(f"yes")
+            # not a list => # repeat the same cmd for all `n` hosts of this type
+            values["cmd"] = [cmd] * values["n"]
+
+        # host_type_raw["$CMD$"] is a list of length n
+        assert isinstance(values["cmd"], list) and len(values["cmd"]) == values["n"], "cmd list length does not match the number of instances `n` of host type"
+        cmds = []
+        for cmd in values["cmd"]:
+            if isinstance(cmd, Cmd):
+                cmd = {"main": cmd}
+            elif isinstance(cmd, dict):
+                assert "main" in cmd, "missing cmd for main"
+            else:
+                raise ValueError("unknown type")
+        cmds.append(cmd)
+
+        values["cmd"] = cmds
+        return values
 
 class ExperimentConfigDict(MyBaseModel):
 
@@ -147,10 +201,6 @@ class Context(MyBaseModel):
 
     my_experiment_factor_paths_levellist: List[str] = []
     my_experiment_factor_paths_cross: List[str] = []
-
-
-
-
 
 
 class BaseExperimentConfigDict(ExperimentConfigDict):
@@ -328,7 +378,6 @@ class SuiteDesign(MyBaseModel):
 
         ctx = values["_CTX"]
 
-
         ctx["experiment_names"] = list(values["experiment_designs"].keys())
         ctx["etl_pipeline_names"] = list(values.get("$ETL$", {}).keys())
 
@@ -397,7 +446,7 @@ class Suite(MyBaseModel):
 
 
 # TODO [nku] move to extend the extend case
-class Cmd(MyBaseModel):
+class CmdExt(MyBaseModel):
     __root__: str
 
     @root_validator(skip_on_failure=True)
@@ -419,7 +468,7 @@ class Cmd(MyBaseModel):
 
 class RunConfig(MyBaseModel):
 
-    cmd: Dict[HostTypeId, Union[Cmd, List[Cmd], List[Dict[Literal['main'], Cmd]]]] = Field(alias="$CMD$")
+    cmd: Dict[HostTypeId, Union[CmdExt, List[CmdExt], List[Dict[Literal['main'], CmdExt]]]] = Field(alias="$CMD$")
 
     class Config:
         extra = "allow"

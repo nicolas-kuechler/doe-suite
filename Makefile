@@ -307,9 +307,3 @@ design: install-silent
 design-validate: install-silent
 	@cd $(does_config_dir) && \
 	poetry run python $(PWD)/doespy/doespy/design/validate_extend.py --suite $(suite) --ignore-undefined-vars --only-validate
-
-
-# TODO [nku] temporary target to check new design with pydantic
-design2: install
-	@cd $(does_config_dir) && \
-	poetry run python $(PWD)/doespy/doespy/design/validate.py
