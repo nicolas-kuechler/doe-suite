@@ -268,8 +268,8 @@ def jinja2_env(loader, undefined, variable_start_string="{{", variable_end_strin
 def get_suite_design_etl_template_dir():
     return os.path.join(get_suite_design_dir(), "etl_templates")
 
-def get_suites():
-    get_suite_design_dir()
+#def get_suites():
+#    get_suite_design_dir()
 
 
 def get_host_types():

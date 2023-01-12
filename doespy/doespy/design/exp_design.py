@@ -1,16 +1,15 @@
 from typing import List
 from typing import Dict
 from typing import Optional, Any
-from doespy.design import etl_design
+from typing import Literal
+from typing import Union
 
 from pydantic import Field
-from typing import Union
 from pydantic import BaseModel
 from pydantic import root_validator
 from pydantic import validator
 from pydantic import ValidationError
 from pydantic import PydanticValueError
-
 
 import warnings
 import os
@@ -22,18 +21,20 @@ import enum
 import json
 
 from doespy import util
-from doespy import info
 from doespy.design import dutil
-from doespy.design import extend
+from doespy.design import etl_design
 
-# TODO [nku] shoudl never access values["abc"] in root_validator because if abc failed -> will not be there
-# TODO [nku] root validators should maybe use skip_on_failure=True because as soon as the first thing failed we don't want to conitnue?
+
+
+# TODO [nku] because of yaml parsing problems we should switch to ruaml which supports yaml 1.2 -> also look at ruamel.yaml.jinja2
+# or use strictyaml as an alternative
+
 
 class MyBaseModel(BaseModel):
     class Config:
         extra = "forbid"
         smart_union = True
-        use_enum_values = True #TODO [nku] could think about this
+        use_enum_values = True
 
 
 HostTypeId = enum.Enum("HostTypeId", {ht.replace("-", "_"): ht for ht in util.get_host_types()})
@@ -130,16 +131,36 @@ class ExperimentConfigDict(MyBaseModel):
 class SuiteVarsConfigDict(ExperimentConfigDict):
     pass
 
+
+class Context(MyBaseModel):
+
+    prj_id: str
+    suite_name: str
+
+    suite_vars: SuiteVarsConfigDict = None
+
+    experiment_names: List[str]
+
+    etl_pipeline_names: List[str]
+
+    my_experiment_name: str = None
+
+    my_experiment_factor_paths_levellist: List[str] = []
+    my_experiment_factor_paths_cross: List[str] = []
+
+
+
+
+
+
 class BaseExperimentConfigDict(ExperimentConfigDict):
 
     # TODO [later] Can we define custom schemas for project and then enforce
     # that they must be present in a certain form across all suites/experiments?
     # (maybe should always be marked as optional but if present, than in that form)
 
-    # TODO [nku] try PrivateAttr() instead of Field()
-    _inherited_suite_vars: SuiteVarsConfigDict = Field(None, alias="$INHERITED_SUITE_VARS$", hidden=True)
-
-    _paths_require_factor_level: List[List[str]] = Field(None, alias="$PATHS_REQUIRE_FACTOR_LEVEL$", hidden=True, exclude=True)
+    ctx: Context = Field(alias="_CTX", exclude=True)
+    """:meta private:"""
 
     @root_validator(skip_on_failure=True)
     def merge_suite_vars(cls, values):
@@ -153,19 +174,23 @@ class BaseExperimentConfigDict(ExperimentConfigDict):
         # at this point, both the suite_vars and the vars here resolved all the $INCLUDE_VARS$ individually
         # -> now need to merge them and the base_experiment vars have precedence
 
-        suite_vars = values.pop("$INHERITED_SUITE_VARS$", None)
+        ctx = values["ctx"]
 
-        if suite_vars is not None and len(suite_vars) > 0:
-            skipped_info, included_info = dutil.include_vars(values, suite_vars)
+        if ctx.suite_vars is not None:
 
-            # TODO [nku] could try to properly log this or move away from validation
-            print(f"  $MERGE_SUITE_VARS$")
-            print(f"    SKIPPED (already present):")
-            for s in skipped_info:
-                print(f"      {s}:")
-            print(f"    INCLUDED:")
-            for s in included_info:
-                print(f"      {s}:")
+            suite_vars_d = ctx.suite_vars.dict()
+            if len(suite_vars_d) > 0:
+
+                skipped_info, included_info = dutil.include_vars(values, suite_vars_d)
+
+                # TODO [nku] could try to properly log this or move away from validation
+                print(f"  $MERGE_SUITE_VARS$")
+                print(f"    SKIPPED (already present):")
+                for s in skipped_info:
+                    print(f"      {s}:")
+                print(f"    INCLUDED:")
+                for s in included_info:
+                    print(f"      {s}:")
 
         return values
 
@@ -177,7 +202,8 @@ class BaseExperimentConfigDict(ExperimentConfigDict):
 
         Case 2: A ``$FACTOR$`` can be a key, but then the corresponding value must be a list of factor levels for this factor.
         """
-        factors = []
+        factors_levellist = []
+        factors_cross = []
         # extract `path`of all factors from base experiment
 
         info = []
@@ -186,7 +212,7 @@ class BaseExperimentConfigDict(ExperimentConfigDict):
 
             if value == "$FACTOR$":
                 info += [f"$FACTOR$ (Level Syntax) -> {'.'.join(['d'] + path)}: $FACTOR$"]
-                factors.append(path)
+                factors_levellist.append(path)
 
             if path[-1] == "$FACTOR$":
                 if not isinstance(value, list):
@@ -195,8 +221,10 @@ class BaseExperimentConfigDict(ExperimentConfigDict):
                         f"(path={path} value={value})",
                     )
                 info += [f"$FACTOR$ (Cross Syntax) -> {'.'.join(['d'] + path)}: {value}"]
+                factors_cross.append(path)
 
-        values["$PATHS_REQUIRE_FACTOR_LEVEL$"] = factors
+        values["ctx"].my_experiment_factor_paths_levellist = factors_levellist
+        values["ctx"].my_experiment_factor_paths_cross = factors_cross
 
         # TODO [nku] could try to properly log this or move away from validation
         for i in info:
@@ -210,6 +238,9 @@ class Experiment(MyBaseModel):
     The configurations of the runs vary different experiment factors, e.g., number of clients.
     Additionally, an experiment also specifies the hosts responsible for executing the runs.
     """
+
+    ctx: Context = Field(None, alias="_CTX", exclude=True)
+    """:meta private:"""
 
     n_repetitions: int = 1
     """Number of repetitions with the same experiment run configuration."""
@@ -227,28 +258,21 @@ class Experiment(MyBaseModel):
     """For the factors of an experiment, lists the different levels.
     For example, `n_clients` can be a factor with two levels: 1 and 100."""
 
-    inherited_suite_vars: SuiteVarsConfigDict = Field(None, alias="$INHERITED_SUITE_VARS$")
-    """:meta private:"""
-
 
     class Config:
         extra = "forbid"
 
-
     @root_validator(pre=True, skip_on_failure=True)
-    def _propagate_suite_vars(cls, values):
-
-
-
-        # this is only a utility validator that sets the inherited suite vars in the base experiment
-        # where they are merged
+    def context(cls, values):
 
         base_experiment = values.get("base_experiment")
 
-        if base_experiment:
-            base_experiment["$INHERITED_SUITE_VARS$"] = values.get("$INHERITED_SUITE_VARS$")
+        # we remove the ctx because it becomes out of date (due to setting factors in base_experiment)
+        ctx = values.pop("_CTX")
 
-        #raise ValueError(f"blocker={values}")
+        if base_experiment:
+            base_experiment["_CTX"] = ctx
+
         return values
 
 
@@ -258,16 +282,14 @@ class Experiment(MyBaseModel):
         (i.e., $FACTOR$ is value).
         This validator checks that this set of $FACTOR$s matches each list entry of ``factor_levels``.
         """
-        base_experiment = values.get("base_experiment")
-        factor_levels_raw =  values.get("factor_levels")
 
-        if base_experiment is None or factor_levels_raw is None:
-            # nothing for this validator to check (another validator must have failed before)
-            return values
+        # after setting factor fields in base_experiment, the ctx is here up to date again
+        values['ctx'] = values["base_experiment"].ctx
+        values["base_experiment"].ctx = None
 
-        expected_factor_paths = base_experiment.dict().get("$PATHS_REQUIRE_FACTOR_LEVEL$")
+        expected_factor_paths = values['ctx'].my_experiment_factor_paths_levellist
 
-        for run in factor_levels_raw:
+        for run in values.get("factor_levels"):
 
             actual_factors = []
             for path, _value in dutil.nested_dict_iter(run):
@@ -280,8 +302,20 @@ class Experiment(MyBaseModel):
 
 # TODO [nku] could also extract some of them automatically from pydantic models?
 RESERVED_KEYWORDS = ["state", "$FACTOR$", "is_controller_yes", "is_controller_no", "check_status_yes", "check_status_no", "localhost", "n_repetitions", "common_roles", "host_types", "base_experiment", "factor_levels", "n", "init_roles", "check_status", "$CMD$"]
+def get_keywords():
+    keywords = set()
+    for name, cl in inspect.getmembers(sys.modules[__name__], inspect.isclass):
+        if issubclass(cl, BaseModel):
+            for k in cl.__fields__.keys():
+                keywords.add(k)
+    return keywords
+
 
 class SuiteDesign(MyBaseModel):
+
+    ctx: Context = Field(alias="_CTX", exclude=True)
+    """:meta private:"""
+
     suite_vars: SuiteVarsConfigDict = Field(alias="$SUITE_VARS$", default={})
     experiment_designs: Dict[str, Experiment]
     etl: Dict[str, etl_design.ETLPipeline] = Field(alias="$ETL$", default={})
@@ -290,15 +324,32 @@ class SuiteDesign(MyBaseModel):
         extra = "forbid"
 
     @root_validator(pre=True, skip_on_failure=True)
-    def distribute_suite_vars(cls, values):
+    def context(cls, values):
 
-        # set the suite vars as a field in all experiment designs
-        suite_vars = values.get("$SUITE_VARS$")
+        ctx = values["_CTX"]
 
-        for _, exp in values.get("experiment_designs").items():
-            exp["$INHERITED_SUITE_VARS$"] = suite_vars
+
+        ctx["experiment_names"] = list(values["experiment_designs"].keys())
+        ctx["etl_pipeline_names"] = list(values.get("$ETL$", {}).keys())
+
+
+        # ETLContext
+        for etl_name, etl_pipeline in values.get("$ETL$", {}).items():
+            etl_ctx = ctx.copy()
+            etl_ctx["my_etl_pipeline_name"] = etl_name
+            etl_pipeline["_CTX"] = etl_ctx
+
+        # EXPContext
+        ctx["suite_vars"] = values.get("$SUITE_VARS$", None)
+        for exp_name, exp in values.get("experiment_designs").items():
+            exp_ctx = ctx.copy()
+            exp_ctx["my_experiment_name"] = exp_name
+            exp["_CTX"] = exp_ctx
 
         return values
+
+
+
 
 
     @validator("experiment_designs")
@@ -311,30 +362,6 @@ class SuiteDesign(MyBaseModel):
 
              assert re.match(r"^[A-Za-z0-9_]+$", exp_name), f'experiment name: "{exp_name}" is not allowed (must consist of alphanumeric chars or _)'
         return v
-
-    @root_validator(skip_on_failure=True)
-    def check_experiments(cls, values):
-        """Checks that ETL Pipelines only reference existing experiments and replaces "*" with all experiments."""
-        assert "experiment_designs" in values
-
-        avl_experiments = set(values["experiment_designs"].keys())
-
-        if "etl" not in values:
-            raise ValueError("failure in etl")
-
-        for pipeline_name, config in values["etl"].items():
-
-            if config.experiments == "*":
-                config.experiments = list(avl_experiments)
-            else:
-                missing = list(set(config.experiments).difference(avl_experiments))
-
-                if len(missing) > 0:
-                    raise ValueError(
-                        f"pipeline={pipeline_name} references non-existing experiments: {missing}"
-                    )
-
-        return values
 
 
 class Suite(MyBaseModel):
@@ -367,19 +394,6 @@ class Suite(MyBaseModel):
 
 
 
-def check_suite(suite):
-    suite = util.get_suite_design(suite=suite)
-    validate(suite_design_raw=suite, exp_filter=None)
-
-
-    #model = SuiteExt.parse_obj(exp_design_ext)
-
-
-
-
-    print("=======================")
-    #print(f"\n\nDesign={_model.experiment_designs}")
-
 
 
 # TODO [nku] move to extend the extend case
@@ -405,8 +419,6 @@ class Cmd(MyBaseModel):
 
 class RunConfig(MyBaseModel):
 
-    from typing import Literal
-
     cmd: Dict[HostTypeId, Union[Cmd, List[Cmd], List[Dict[Literal['main'], Cmd]]]] = Field(alias="$CMD$")
 
     class Config:
@@ -421,16 +433,9 @@ class RunConfig(MyBaseModel):
 class SuiteExt(MyBaseModel):
     __root__: List[RunConfig]
 
-def get_keywords():
-    keywords = set()
-    for name, cl in inspect.getmembers(sys.modules[__name__], inspect.isclass):
-        if issubclass(cl, BaseModel):
-            for k in cl.__fields__.keys():
-                keywords.add(k)
-    return keywords
 
 
-def dict_to_pydantic(suite_design_raw):
+def dict_to_pydantic(suite_name, suite_design_raw):
     suite_design = {"experiment_designs": {}}
 
     for exp_name, design in suite_design_raw.items():
@@ -443,6 +448,11 @@ def dict_to_pydantic(suite_design_raw):
         elif exp_name == "$SUITE_VARS$":
             suite_design["$SUITE_VARS$"] = design
 
+    ctx = {
+        "prj_id": util.get_project_id(),
+        "suite_name": suite_name
+    }
+    suite_design["_CTX"] = ctx
 
     # check the pydantic model to check
     model = SuiteDesign(**suite_design)
@@ -453,62 +463,21 @@ def pydantic_to_dict(model):
 
     suite_design = {}
 
-    # TODO [nku] do we even want to keep them separately? -> they are already included into the base experiment?
-    #suite_vars = model.suite_vars.json()
-    #suite_design["$SUITE_VARS$"] = json.loads(suite_vars)
-
     for name, exp in model.experiment_designs.items():
 
-        # TODO [nku] not sure why I need to exclude those specifically here -> should try out PrivateAttr
-        exp_design = exp.json(by_alias=True, exclude={"base_experiment": {"$PATHS_REQUIRE_FACTOR_LEVEL$", "inherited_suite_vars"}, "inherited_suite_vars": True})
+        exp_design = exp.json(by_alias=True, exclude_none=True)
 
         suite_design[name] = json.loads(exp_design)
-
 
     suite_design["$ETL$"] = {}
     for name, pipeline in model.etl.items():
 
-        etl_pipeline = pipeline.json(by_alias=True, exclude_none=True, exclude={"$INCLUDE_PIPELINE$"})
-
+        etl_pipeline = pipeline.json(by_alias=True, exclude_none=True)
         suite_design["$ETL$"][name] = json.loads(etl_pipeline)
-
-
-    #etl = model.etl
-
-    #suite_design["$ETL$"] = model.etl #json.loads(etl)
-
 
     return suite_design
 
-# TODO [nku] continue structure
-def validate(suite_design_raw, exp_filter):
-
-
-
-    model = dict_to_pydantic(suite_design_raw)
-
-    suite_design = pydantic_to_dict(model)
-
-    print(f"Suite Design:")
-    print("================================")
-    print(suite_design)
-    print("================================")
-
-    #if exp_filter is not None:
-    #    _apply_experiment_re_filter(design_raw=suite_design, exp_filter=exp_filter)
 
 if __name__ == "__main__":
 
-
-    #suite = util.get_suite_design(suite="example02-single")
-    #validate(suite_design_raw=suite, exp_filter=None)
-
-    check_suite(suite="example01-minimal")
-    check_suite(suite="example02-single")
-    check_suite(suite="example03-format")
-    check_suite(suite="example04-multi")
-    check_suite(suite="example05-complex")
-    check_suite(suite="example06-vars")
-    check_suite(suite="example07-etl") #TODO [nku] at the moment this does not work yet
-
-    # model = Experiment(**exp)
+    print(get_keywords())

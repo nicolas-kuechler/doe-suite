@@ -1,9 +1,9 @@
 from typing import List
 from typing import Dict
 from typing import Optional, Any
+from typing import Union
 
 from pydantic import Field
-from typing import Union
 from pydantic import BaseModel
 from pydantic import root_validator
 from pydantic import validator
@@ -19,10 +19,12 @@ import sys
 import yaml
 import jinja2
 import json
+import enum
+import pandas as pd
 
 from doespy import util
 from doespy import info
-from doespy.design import dutil
+from doespy.etl.etl_base import _load_available_processes
 
 
 
@@ -31,6 +33,17 @@ class MyETLBaseModel(BaseModel):
         extra = "forbid"
         smart_union = True
         use_enum_values = True
+
+class ETLContext(MyETLBaseModel):
+
+    prj_id: str
+    suite_name: str
+
+    experiment_names: List[str]
+
+    etl_pipeline_names: List[str]
+
+    my_etl_pipeline_name: str = None
 
 
 class IncludeEtlSource(MyETLBaseModel):
@@ -143,12 +156,8 @@ def _build_extra(cls, values: Dict[str, Any]):
     return values
 
 
-from doespy.etl.etl_base import _load_available_processes
 
 avl_extractors, avl_transformers, avl_loaders = _load_available_processes()
-
-
-import enum
 
 extractors = {ext: ext for ext in avl_extractors.keys()}
 extractors["INCLUDE_STEPS"] = "$INCLUDE_STEPS$"
@@ -199,10 +208,6 @@ class NamedTransformer(Transformer):
         return values
 
 
-
-import pandas as pd
-import inspect
-
 avl_df_functions = set()
 for name, _ in inspect.getmembers(pd.DataFrame, predicate=inspect.isfunction):
     if not name.startswith("_"):
@@ -238,7 +243,7 @@ class Loader(MyETLBaseModel):
 
 class ETLPipelineBase(MyETLBaseModel):
 
-    include_pipeline: Optional[IncludeEtlSource] = Field(alias="$INCLUDE_PIPELINE$")
+    include_pipeline: Optional[IncludeEtlSource] = Field(alias="$INCLUDE_PIPELINE$", exclude=True)
 
     extractors: Dict[ExtractorId, Union[Extractor, List[IncludeEtlSource]]] = {}
 
@@ -301,24 +306,44 @@ class ETLPipelineBase(MyETLBaseModel):
         return values
 
 
+class ExperimentNames(MyETLBaseModel):
+    __root__: Union[str, List[str]]
+
+    @validator("__root__")
+    def check_exp(cls, v):
+        assert v == "*" or isinstance(v, list), f"experiments must be a list of strings or * but is: {v}"
+        return v
 
 class ETLPipeline(ETLPipelineBase):
-    experiments: Union[str, List[str]]
+
+    ctx: ETLContext = Field(alias="_CTX", exclude=True)
+    """:meta private:"""
+
+    experiments: ExperimentNames
 
     etl_vars: Optional[Dict[str, Any]] = Field(alias="$ETL_VARS$")
+
 
     class Config:
         smart_union = True
         extra = "forbid"
 
-    @validator("experiments")
-    def check_experiments(cls, v):
-        """``experiments`` must be '*' to refer to all experiments
-        or a list of strings with experiment names.
+    @root_validator(skip_on_failure=True)
+    def check_experiments(cls, values):
+        """Resolves * in experiments and
+        ensures that every experiment listed, also exists in the suite
         """
-        if v == "*" or isinstance(v, list):
-            return v
-        raise ValueError(f"experiments must be a list of strings or * but is: {v}")
+
+        experiments = values['experiments'].__root__
+        avl_experiments = values['ctx'].experiment_names
+
+        if experiments == "*":
+            values['experiments'].__root__ = avl_experiments
+        else:
+            missing = list(set(experiments).difference(avl_experiments))
+            assert len(missing) == 0, f"Non-existing experiments: {missing}   (Ctx={values['ctx']})"
+
+        return values
 
 
     @root_validator(skip_on_failure=True)
@@ -398,3 +423,118 @@ class ETLPipeline(ETLPipelineBase):
                 d[name_enum] = loader
         values["loaders"] = d
         return values
+
+
+
+SuiteName = enum.Enum("SuiteName", {s.replace("-", "_"): s for s in info.get_suite_designs()})
+"""Name of the available experiment suites in `doe-suite-config/designs`."""
+
+
+class SuperETLContext(MyETLBaseModel):
+
+    class SuperETLSuiteContext(MyETLBaseModel):
+
+        experiment_names: List[str]
+
+        etl_pipeline_names: List[str]
+
+
+    prj_id: str
+    suites: Dict[SuiteName, SuperETLSuiteContext]
+
+    my_etl_pipeline_name: str = None
+
+
+class SuperETLPipeline(ETLPipeline):
+
+    ctx: SuperETLContext = Field(alias="_CTX", exclude=True)
+    """:meta private:"""
+
+    experiments: Dict[SuiteName, ExperimentNames]
+
+    # etl_vars: Note -> inherited from ETLPipeline
+
+
+    @root_validator(skip_on_failure=True)
+    def check_experiments(cls, values):
+        """Resolves * in experiments and
+        #ensures that every experiment listed, also exists in the suite
+        """
+
+        for suite_name, experiments in values.get("experiments", {}).items():
+
+            experiments = experiments.__root__
+
+            # TODO [nku] this may need to be debugged first
+            avl_experiments = values['ctx'].suites[suite_name].experiment_names
+
+            if experiments.__root__ == "*":
+                # TODO [nku] need to test that the proper things are set
+                experiments.__root__ = avl_experiments
+            else:
+                missing = list(set(experiments.__root__).difference(avl_experiments))
+                assert len(missing) == 0, f"Non-existing experiments: {missing}   (Ctx={values['ctx']})"
+
+        return values
+
+# TODO [nku] the super ETL things are untested
+
+class SuperETL(MyETLBaseModel):
+
+    ctx: SuperETLContext = Field(alias="_CTX", exclude=True)
+    """:meta private:"""
+
+    suite_id: Dict[SuiteName, Union[List[str], str]] = Field(alias="$SUITE_ID$")
+
+    etl: Dict[str, SuperETLPipeline] = Field(alias="$ETL$")
+
+
+    @root_validator(pre=True, skip_on_failure=True)
+    def context(cls, values):
+
+        suites = {}
+        for suite in info.get_suite_designs():
+            suites[suite] = {
+                "experiment_names": [d["exp_name"] for d in info.get_experiments(suite)],
+                "etl_pipeline_names": info.get_etl_pipelines(suite)
+            }
+
+        ctx = {
+            "prj_id": util.get_project_id(),
+            "suites": suites
+        }
+
+        values["_CTX"] = ctx
+
+        # ETLContext
+        for etl_name, etl_pipeline in values.get("$ETL$", {}).items():
+            etl_ctx = ctx.copy()
+            etl_ctx["my_etl_pipeline_name"] = etl_name
+            etl_pipeline["_CTX"] = etl_ctx
+
+        return values
+
+    @validator("suite_id")
+    def check_suite_id(cls, v):
+        """Check that all suite id's that the super etl references also actually exist as results.
+        """
+
+        # build info on avl suite ids
+        existing_suite_ids = {}
+        for d in util.get_all_suite_results_dir():
+            if d['suite'] not in existing_suite_ids:
+                existing_suite_ids[d['suite']] = set()
+
+            existing_suite_ids[d['suite']].add(d['suite_id'])
+
+
+        for suite_name, suite_id_entry in v.items():
+            assert suite_name in existing_suite_ids, f"no results for suite={suite_name} exist"
+
+            if isinstance(suite_id_entry, str):
+                suite_id_entry = [suite_id_entry]
+
+            for suite_id in suite_id_entry:
+                assert suite_id in existing_suite_ids[suite_name], f"suite_id={suite_id} for suite={suite_name} does not exist"
+
+        return v
