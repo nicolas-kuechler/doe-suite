@@ -238,6 +238,7 @@ class Loader(MyETLBaseModel):
     @root_validator(pre=True, skip_on_failure=True)
     def build_extra(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         _build_extra(cls, values)
+
         return values
 
 
@@ -316,17 +317,18 @@ class ExperimentNames(MyETLBaseModel):
 
 class ETLPipeline(ETLPipelineBase):
 
-    ctx: ETLContext = Field(alias="_CTX", exclude=True)
+    ctx: ETLContext = Field(alias="_CTX", exclude=True, )
     """:meta private:"""
 
     experiments: ExperimentNames
 
     etl_vars: Optional[Dict[str, Any]] = Field(alias="$ETL_VARS$")
 
-
     class Config:
         smart_union = True
         extra = "forbid"
+
+
 
     @root_validator(skip_on_failure=True)
     def check_experiments(cls, values):
@@ -385,7 +387,12 @@ class ETLPipeline(ETLPipelineBase):
         d = {}
         for name_enum, extractor in values["extractors"].items():
             if isinstance(extractor, Extractor):
-                ext = avl_extractors[name_enum](**extractor.extra)
+                args = extractor.dict()
+                if "extra" in args:
+                    del args["extra"]
+                args = {**extractor.extra, **args}
+
+                ext = avl_extractors[name_enum](**args)
                 d[name_enum] = ext
             else:
                 d[name_enum] = extractor

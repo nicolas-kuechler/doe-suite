@@ -58,6 +58,13 @@ class HostType(MyBaseModel):
         smart_union = True
 
 
+    @validator("init_roles")
+    def convert_init_roles(cls, v):
+        if not isinstance(v, list):
+            return [v]
+        else:
+            return v
+
     @root_validator(skip_on_failure=True)
     def convert_cmd(cls, values):
 
@@ -89,7 +96,6 @@ class HostType(MyBaseModel):
         cmd = values["cmd"]
 
         if isinstance(cmd, Cmd):
-            print(f"yes")
             # not a list => # repeat the same cmd for all `n` hosts of this type
             values["cmd"] = [cmd] * values["n"]
 
@@ -103,7 +109,7 @@ class HostType(MyBaseModel):
                 assert "main" in cmd, "missing cmd for main"
             else:
                 raise ValueError("unknown type")
-        cmds.append(cmd)
+            cmds.append(cmd)
 
         values["cmd"] = cmds
         return values
@@ -112,6 +118,7 @@ class ExperimentConfigDict(MyBaseModel):
 
     class Config:
         extra = "allow"
+
 
     @root_validator(skip_on_failure=True)
     def include_vars(cls, values):
@@ -124,6 +131,11 @@ class ExperimentConfigDict(MyBaseModel):
         All the variables in the external file, are included at the level of where ``$INCLUDE_VARS$`` is located.
         If a variable is already present, then the variable is skipped.
         """
+
+        return ExperimentConfigDict.resolve_include_vars(values)
+
+
+    def resolve_include_vars(values):
 
         info = []
         info_len = None
@@ -199,9 +211,75 @@ class Context(MyBaseModel):
 
     my_experiment_name: str = None
 
-    my_experiment_factor_paths_levellist: List[str] = []
-    my_experiment_factor_paths_cross: List[str] = []
+    my_experiment_factor_paths_levellist: List[List[str]] = []
+    my_experiment_factor_paths_cross: List[List[str]] = []
 
+def merge_suite_vars(ctx, values):
+    """The ``$SUITE_VARS$`` can define a config that belongs to every experiment of the suite.
+    Each experiment defines it's own config in ``base_experiment`` but also inherits config from ``$SUITE_VARS$``.
+
+    When merging the config from ``$SUITE_VARS$`` into the ``base_experiment``, the config in ``base_experiment`` takes precedence, i.e., is not overwritten.
+    (Config in the ``base_experiment`` can overwrite config defined in ``$SUITE_VARS$``)
+    """
+
+    # at this point, both the suite_vars and the vars here resolved all the $INCLUDE_VARS$ individually
+    # -> now need to merge them and the base_experiment vars have precedence
+
+    #ctx = values["ctx"]
+
+    if ctx['suite_vars'] is not None:
+
+        suite_vars_d = ctx['suite_vars']
+        if len(suite_vars_d) > 0:
+
+            skipped_info, included_info = dutil.include_vars(values, suite_vars_d)
+
+            # TODO [nku] could try to properly log this or move away from validation
+            print(f"  $MERGE_SUITE_VARS$")
+            print(f"    SKIPPED (already present):")
+            for s in skipped_info:
+                print(f"      {s}:")
+            print(f"    INCLUDED:")
+            for s in included_info:
+                print(f"      {s}:")
+
+    return values
+
+def identify_factors(values):
+    """Validates the ``$FACTOR$`` syntax.
+
+    Case 1: A ``$FACTOR$`` can be a value, and thus requires an entry in the ``factor_levels`` of the experiment.
+
+    Case 2: A ``$FACTOR$`` can be a key, but then the corresponding value must be a list of factor levels for this factor.
+    """
+    factors_levellist = []
+    factors_cross = []
+    # extract `path`of all factors from base experiment
+
+    info = []
+
+    for path, value in dutil.nested_dict_iter(values):
+
+        if value == "$FACTOR$":
+            info += [f"$FACTOR$ (Level Syntax) -> {'.'.join(['d'] + path)}: $FACTOR$"]
+            factors_levellist.append(path)
+
+        if path[-1] == "$FACTOR$":
+            if not isinstance(value, list):
+                raise ValueError(
+                    "if $FACTOR$ is the key, then value must be a list of levels",
+                    f"(path={path} value={value})",
+                )
+            info += [f"$FACTOR$ (Cross Syntax) -> {'.'.join(['d'] + path)}: {value}"]
+            factors_cross.append(path)
+
+    #values["ctx"].my_experiment_factor_paths_levellist = factors_levellist
+    #values["ctx"].my_experiment_factor_paths_cross = factors_cross
+
+    # TODO [nku] could try to properly log this or move away from validation
+    for i in info:
+        print(f"  {i}")
+    return factors_levellist, factors_cross
 
 class BaseExperimentConfigDict(ExperimentConfigDict):
 
@@ -212,74 +290,46 @@ class BaseExperimentConfigDict(ExperimentConfigDict):
     ctx: Context = Field(alias="_CTX", exclude=True)
     """:meta private:"""
 
-    @root_validator(skip_on_failure=True)
-    def merge_suite_vars(cls, values):
-        """The ``$SUITE_VARS$`` can define a config that belongs to every experiment of the suite.
-        Each experiment defines it's own config in ``base_experiment`` but also inherits config from ``$SUITE_VARS$``.
 
-        When merging the config from ``$SUITE_VARS$`` into the ``base_experiment``, the config in ``base_experiment`` takes precedence, i.e., is not overwritten.
-        (Config in the ``base_experiment`` can overwrite config defined in ``$SUITE_VARS$``)
-        """
+    def __init__(self, *args, **kwargs):
+    # HACK: Because Pydantic does not preserve order for extra parameters (https://github.com/samuelcolvin/pydantic/issues/1234)
+    #       we assign them in order after the class has been created
 
-        # at this point, both the suite_vars and the vars here resolved all the $INCLUDE_VARS$ individually
-        # -> now need to merge them and the base_experiment vars have precedence
+        # separate extra vars from non extra vars
+        non_extra_fields = set()
+        for k, v in self.__fields__.items():
+            non_extra_fields.add(k)
+            if v.alias is not None:
+                non_extra_fields.add(v.alias)
 
-        ctx = values["ctx"]
+        extra_kwargs = {}
+        for k in list(kwargs):
+            if k not in non_extra_fields:
+                extra_kwargs[k] = kwargs.pop(k)
 
-        if ctx.suite_vars is not None:
 
-            suite_vars_d = ctx.suite_vars.dict()
-            if len(suite_vars_d) > 0:
+        # first resolve the $INCLUDE_VARS$
+        extra_kwargs = ExperimentConfigDict.resolve_include_vars(extra_kwargs)
 
-                skipped_info, included_info = dutil.include_vars(values, suite_vars_d)
+        # add the variables from the $SUITE_VARS$
+        extra_kwargs = merge_suite_vars(kwargs["_CTX"], extra_kwargs)
 
-                # TODO [nku] could try to properly log this or move away from validation
-                print(f"  $MERGE_SUITE_VARS$")
-                print(f"    SKIPPED (already present):")
-                for s in skipped_info:
-                    print(f"      {s}:")
-                print(f"    INCLUDED:")
-                for s in included_info:
-                    print(f"      {s}:")
+        # identify factors in extra values
+        factors_levellist, factors_cross = identify_factors(extra_kwargs)
+        kwargs["_CTX"]["my_experiment_factor_paths_levellist"] = factors_levellist
+        kwargs["_CTX"]["my_experiment_factor_paths_cross"] = factors_cross
 
-        return values
+        # init the actual class
+        super().__init__(*args, **kwargs)
 
-    @root_validator(skip_on_failure=True)
-    def identify_factors(cls, values):
-        """Validates the ``$FACTOR$`` syntax.
 
-        Case 1: A ``$FACTOR$`` can be a value, and thus requires an entry in the ``factor_levels`` of the experiment.
+        # restoring the extra values
+        old_allow_mutation = self.__config__.allow_mutation
+        self.__config__.allow_mutation = True
+        for k, v in extra_kwargs.items():
+            setattr(self, k, v)
+        self.__config__.allow_mutation = old_allow_mutation
 
-        Case 2: A ``$FACTOR$`` can be a key, but then the corresponding value must be a list of factor levels for this factor.
-        """
-        factors_levellist = []
-        factors_cross = []
-        # extract `path`of all factors from base experiment
-
-        info = []
-
-        for path, value in dutil.nested_dict_iter(values):
-
-            if value == "$FACTOR$":
-                info += [f"$FACTOR$ (Level Syntax) -> {'.'.join(['d'] + path)}: $FACTOR$"]
-                factors_levellist.append(path)
-
-            if path[-1] == "$FACTOR$":
-                if not isinstance(value, list):
-                    raise ValueError(
-                        "if $FACTOR$ is the key, then value must be a list of levels",
-                        f"(path={path} value={value})",
-                    )
-                info += [f"$FACTOR$ (Cross Syntax) -> {'.'.join(['d'] + path)}: {value}"]
-                factors_cross.append(path)
-
-        values["ctx"].my_experiment_factor_paths_levellist = factors_levellist
-        values["ctx"].my_experiment_factor_paths_cross = factors_cross
-
-        # TODO [nku] could try to properly log this or move away from validation
-        for i in info:
-            print(f"  {i}")
-        return values
 
 
 
@@ -522,7 +572,12 @@ def pydantic_to_dict(model):
     for name, pipeline in model.etl.items():
 
         etl_pipeline = pipeline.json(by_alias=True, exclude_none=True)
-        suite_design["$ETL$"][name] = json.loads(etl_pipeline)
+
+        d = json.loads(etl_pipeline)
+        # custom reordering of experiments
+        exps = d.pop("experiments")
+        d = {"experiments": exps, **d}
+        suite_design["$ETL$"][name] = d
 
     return suite_design
 

@@ -1,12 +1,13 @@
 minimal:
   n_repetitions: 1
+  common_roles: []
   host_types:
     small:
       n: 1
-      $CMD$:
-      - main: echo "[% my_run.arg1 %] [% my_run.arg2 %][% my_run.arg3 %] "
       check_status: true
       init_roles: []
+      $CMD$:
+      - main: echo "[% my_run.arg1 %] [% my_run.arg2 %][% my_run.arg3 %] "
   base_experiment:
     arg1: hello
     arg2:
@@ -17,7 +18,6 @@ minimal:
       $FACTOR$:
       - .
       - '!'
-  common_roles: []
   factor_levels:
   - {}
 $ETL$:
@@ -25,7 +25,11 @@ $ETL$:
     experiments:
     - minimal
     extractors:
-      ErrorExtractor: {}
-      IgnoreExtractor: {}
+      ErrorExtractor:
+        file_regex:
+        - ^stderr.log$
+      IgnoreExtractor:
+        file_regex:
+        - ^stdout.log$
     transformers: []
     loaders: {}

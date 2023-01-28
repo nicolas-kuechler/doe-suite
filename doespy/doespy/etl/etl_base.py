@@ -313,11 +313,11 @@ def load_selected_processes(extractors_sel, transformers_sel, loaders_sel):
         if name not in extractors_avl:
             raise ValueError(f"extractor not found: {name}")
 
-        regex = options.get("file_regex")
+        #regex = options.get("file_regex")
 
         d = {
             # TODO [nku] change the way we load extractors to use pydantic model? and pass options
-            "extractor": extractors_avl[name](regex),
+            "extractor": extractors_avl[name](**options),
             "options": options,
         }
 
@@ -332,7 +332,7 @@ def load_selected_processes(extractors_sel, transformers_sel, loaders_sel):
             d = {
                 # TODO [nku] change the way we load transformers to use pydantic model? and pass options
                 # transformers_avl[trans_sel["name"]](**options),
-                "transformer": transformers_avl[trans_sel["name"]](),
+                "transformer": transformers_avl[trans_sel["name"]](**trans_sel),
                 "options": trans_sel,
             }
             transformers.append(d)
@@ -361,7 +361,7 @@ def load_selected_processes(extractors_sel, transformers_sel, loaders_sel):
         d = {
             # TODO [nku] change the way we load loaders to use pydantic model? and pass options
             # "loader": loaders_avl[name](**options),
-            "loader": loaders_avl[name](),
+            "loader": loaders_avl[name](**options),
             "options": options,
         }
         loaders.append(d)
@@ -529,8 +529,7 @@ def _parse_file(path: str, file: str, extractors: List[Dict]) -> List[Dict]:
     has_match = False
 
     for extractor_d in extractors:
-
-        patterns = extractor_d["extractor"].regex
+        patterns = extractor_d["extractor"].file_regex
         if not isinstance(patterns, list):
             patterns = [patterns]
 

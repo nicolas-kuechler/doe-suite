@@ -44,7 +44,11 @@ $ETL$:
     experiments:
     - exp_client_server
     extractors:
-      ErrorExtractor: {}
-      IgnoreExtractor: {}
+      ErrorExtractor:
+        file_regex:
+        - ^stderr.log$
+      IgnoreExtractor:
+        file_regex:
+        - ^stdout.log$
     transformers: []
     loaders: {}
