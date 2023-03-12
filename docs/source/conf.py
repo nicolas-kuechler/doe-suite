@@ -5,6 +5,10 @@ import sys
 sys.path.append(os.path.abspath('../../doespy/etl/steps'))
 sys.path.append(os.path.abspath('../..'))
 
+
+sys.path.append(os.path.abspath("./ext"))
+
+
 if "DOES_PROJECT_DIR" not in os.environ:
     raise ValueError("env variable: DOES_PROJECT_DIR not set")
 
@@ -27,8 +31,14 @@ release = '1.0'
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-#extensions = ["sphinx.ext.autodoc", "sphinx.ext.viewcode", 'sphinxemoji.sphinxemoji', 'sphinx.ext.autosectionlabel', 'enum_tools.autoenum', 'sphinxcontrib.autodoc_pydantic', 'sphinx.ext.napoleon'] #,
-extensions = ["sphinx.ext.autodoc", "sphinx.ext.viewcode", 'sphinxemoji.sphinxemoji', 'sphinxcontrib.autodoc_pydantic', "sphinx.ext.autosectionlabel", 'enum_tools.autoenum'] #,
+#extensions = ["sphinx.ext.autodoc", "sphinx.ext.viewcode", 'sphinxemoji.sphinxemoji', 'sphinx.ext.autosectionlabel', 'enum_tools.autoenum', 'sphinxcontrib.autodoc_pydantic', 'sphinx.ext.napoleon'] #, # "sphinxcontrib.autoyaml"
+extensions = ["sphinx.ext.todo", "sphinx_tabs.tabs", "sphinx_toolbox.collapse", "sphinxcontrib.programoutput", "sphinx.ext.autodoc", "sphinx.ext.viewcode", 'sphinxemoji.sphinxemoji', 'sphinxcontrib.autodoc_pydantic', "sphinx.ext.autosectionlabel", 'enum_tools.autoenum', "myautoyaml"] #,
+
+myautoyaml_root = "../.."
+myautoyaml_doc_delimiter = "###"
+
+todo_include_todos = True
+
 
 numpydoc_show_class_members = False
 
@@ -62,6 +72,10 @@ exclude_patterns = []
 
 html_theme = 'alabaster'
 html_static_path = ['_static']
+
+html_theme_options = {
+    "page_width":  "1280px" #"940px"
+}
 
 html_css_files = [
     'css/custom.css',

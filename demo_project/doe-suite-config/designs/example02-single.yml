@@ -27,7 +27,6 @@ experiment_1:
     opt:
       $FACTOR$: [True, False]
 
-
 # experiment with one factor, with 3 levels, and three repetitions (each)
 experiment_2:
   n_repetitions: 3 # (4) each of the 3 run configurations is repeated 3x -> 9 jobs
@@ -74,9 +73,9 @@ $ETL$:
       CsvExtractor:
         file_regex: '.*\.csv$'
       ErrorExtractor:
-        file_regex: 'stderr.log'
+        file_regex: '^stderr.log$'
       IgnoreExtractor:
-        file_regex: 'stdout.log'
+        file_regex: '^stdout.log$'
     transformers: [] # no transformation
     loaders:
       CsvSummaryLoader: {}

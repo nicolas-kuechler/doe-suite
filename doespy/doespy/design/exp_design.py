@@ -16,18 +16,13 @@ import os
 import re
 import inspect
 import sys
-import yaml
+import ruamel.yaml
 import enum
 import json
 
 from doespy import util
 from doespy.design import dutil
 from doespy.design import etl_design
-
-
-
-# TODO [nku] because of yaml parsing problems we should switch to ruaml which supports yaml 1.2 -> also look at ruamel.yaml.jinja2
-# or use strictyaml as an alternative
 
 
 class MyBaseModel(BaseModel):
@@ -170,7 +165,7 @@ class ExperimentConfigDict(MyBaseModel):
                         assert os.path.exists(file), f"File not found: {file} for {info_str}"
 
                         with open(file, "r") as f:
-                            vars = yaml.load(f, Loader=yaml.SafeLoader)
+                            vars = ruamel.yaml.safe_load(f)
                         skipped_info, included_info = dutil.include_vars(d, vars)
 
                         info += [(info_str, {"skipped": skipped_info, "included": included_info})]
@@ -375,6 +370,13 @@ class Experiment(MyBaseModel):
 
         return values
 
+    @validator("common_roles")
+    def convert_common_roles(cls, v):
+        if not isinstance(v, list):
+            return [v]
+        else:
+            return v
+
 
     @root_validator(skip_on_failure=True)
     def check_factor_levels(cls, values):
@@ -490,48 +492,6 @@ class Suite(MyBaseModel):
 
     etl: Dict[str, etl_design.ETLPipeline] = Field(alias="$ETL$", default={})
     """:ref:`ETL Pipeline` to process the result files."""
-
-
-
-
-
-# TODO [nku] move to extend the extend case
-class CmdExt(MyBaseModel):
-    __root__: str
-
-    @root_validator(skip_on_failure=True)
-    def check_cmd_syntax(cls, values):
-        print(f"COMMAND={values}")
-
-        cmd = values.get("__root__")
-
-        import subprocess
-
-        # echo "printf 'x: 1\\ny: 5' > results/coordinates.yaml" | poetry run  shellcheck --shell=bash  /dev/stdin
-        # TODO [nku] We have the difficulty of relying on {{ }} commands => here is not possible to verify this
-        # -> can only verify this in context of the suite
-        result = subprocess.run([f'echo "{cmd}" | shellcheck --shell=bash /dev/stdin'], check=True, text=True, capture_output=True, shell=True)
-        print('output: ', result.stdout)
-        print('error: ', result.stderr)
-
-        return values
-
-class RunConfig(MyBaseModel):
-
-    cmd: Dict[HostTypeId, Union[CmdExt, List[CmdExt], List[Dict[Literal['main'], CmdExt]]]] = Field(alias="$CMD$")
-
-    class Config:
-        extra = "allow"
-        arbitrary_types_allowed = True
-
-    @validator("cmd")
-    def check_cmd_syntax(cls, v):
-        print(f"COMMAND in RUN ={v}")
-        return v
-
-class SuiteExt(MyBaseModel):
-    __root__: List[RunConfig]
-
 
 
 def dict_to_pydantic(suite_name, suite_design_raw):

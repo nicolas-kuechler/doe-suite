@@ -1,4 +1,3 @@
-import yaml
 import os
 import re
 import jinja2

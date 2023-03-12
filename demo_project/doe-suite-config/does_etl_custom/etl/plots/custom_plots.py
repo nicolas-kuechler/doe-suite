@@ -15,6 +15,9 @@ class DemoLatencyPlotLoader(PlotLoader):
 
     def plot(self, df):
 
+        # for a single entry the std is NaN
+        df["latency_std"].fillna(0, inplace=True)
+
         scale_factor = 2.4
         figsize = [
             scale_factor * 1.618,
@@ -30,22 +33,26 @@ class DemoLatencyPlotLoader(PlotLoader):
         df_opt = df[df["opt"]]
         df_no_opt = df[df["opt"] == False]  # noqa: E712
 
-        plt.errorbar(
-            x=df_opt["payload_size_mb"],
-            y=df_opt["latency_mean"],
-            yerr=df_opt["latency_std"],
-            label="w/ opt",
-            capsize=5,
-            marker=".",
-        )
-        plt.errorbar(
-            x=df_no_opt["payload_size_mb"],
-            y=df_no_opt["latency_mean"],
-            yerr=df_no_opt["latency_std"],
-            label="w/o opt",
-            capsize=5,
-            marker=".",
-        )
+        if not df_opt.empty:
+
+            plt.errorbar(
+                x=df_opt["payload_size_mb"],
+                y=df_opt["latency_mean"],
+                yerr=df_opt["latency_std"],
+                label="w/ opt",
+                capsize=5,
+                marker=".",
+            )
+
+        if not df_no_opt.empty:
+            plt.errorbar(
+                x=df_no_opt["payload_size_mb"],
+                y=df_no_opt["latency_mean"],
+                yerr=df_no_opt["latency_std"],
+                label="w/o opt",
+                capsize=5,
+                marker=".",
+            )
 
         plt.legend()
 

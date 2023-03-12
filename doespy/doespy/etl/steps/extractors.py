@@ -3,7 +3,7 @@ from typing import List, Dict, Union
 from typing import ClassVar
 
 import warnings
-import yaml
+import ruamel.yaml
 import json
 import csv
 from dataclasses import dataclass, field
@@ -34,27 +34,15 @@ class Extractor(BaseModel, ABC):
 
     @validator("file_regex", pre=True, always=True)
     def set_default_regex(cls, value):
-        return value or cls.default_file_regex()
-#
-    #def regex(self):
-    #    if self.file_regex:
-    #        if isinstance(self.file_regex, str):
-    #            return [self.file_regex]
-    #        else:
-    #            return self.file_regex
-    #    else:
-    #        return self.file_regex_default()
 
-    #@abstractmethod
-    #def file_regex_default():
-    #    """Define regex patterns for matching files based on their name.
-    #        All files with a matching name are fed to `extract(..)`
-#
-    #    Returns:
-    #        List[str]: list of regex patterns as raw strings
-    #    """
-    #    pass
-#
+        if value is None:
+            value = cls.default_file_regex()
+
+        if not isinstance(value, list):
+            value = [value]
+
+        return value
+
     @abstractmethod
     def extract(self, path: str, options: Dict) -> List[Dict]:
         """Reads the file defined by `path`, and converts it into a list of dicts.
@@ -91,7 +79,7 @@ class YamlExtractor(Extractor):
     def extract(self, path: str, options: Dict) -> List[Dict]:
         # load file as yaml: if top level element is object -> return one element list
         with open(path, "r") as f:
-            data = yaml.load(f, yaml.SafeLoader)
+            data = ruamel.yaml.safe_load(f)
         if not isinstance(data, list):
             data = [data]
         return data

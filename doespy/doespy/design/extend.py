@@ -3,81 +3,23 @@ import itertools
 import collections
 import jinja2
 import json
+import subprocess
 from ansible.utils.vars import merge_hash
 
 from doespy import util
 
+from typing import List
+from typing import Dict
+from typing import Literal
+from typing import Union
 
-def extend_experiment(exp_design, exp_vars):
-
-    exp_runs_ext = []
-
-
-    base_experiment, cross_factor_levels = extract_cross_product(
-        exp_design["base_experiment"]
-    )
-
-    for factor_level in exp_design["factor_levels"]:
-        # these are the list of factor_levels when $FACTOR$ is used
-        #  as the key in base_experiment -> builds the cross product
-        for cross_factor_level in cross_factor_levels:
-
-            factor_level = merge_hash(
-                factor_level, cross_factor_level, recursive=True
-            )
-            run_config = copy.deepcopy(base_experiment)
-
-            # overwrite $FACTOR$ with the concrete level of the run
-            # (via recursive merging dicts)
-            run_config = merge_hash(run_config, factor_level, recursive=True)
-
-            # copy the cmds from host_types
-            run_config["$CMD$"] = {}
-            for host_type in exp_design["host_types"].keys():
-                run_config["$CMD$"][host_type] = exp_design["host_types"][host_type][
-                    "$CMD$"
-                ]
-
-            # resolve [% %] for specific factor level
-            env = util.jinja2_env(
-                loader=None,
-                undefined=jinja2.StrictUndefined,
-                variable_start_string="[%",
-                variable_end_string="%]",
-            )
-
-            template = json.dumps(run_config)
-            while "[%" in template and "%]" in template:
-                # temporary convert to a dict
-                try:
-                    run_config = json.loads(template)
-                except ValueError:
-                    raise ValueError(f"JSONDecodeError in template: {template}")
-                del run_config[
-                    "$CMD$"
-                ]  # temporary delete of cmd
-                # (should not be available as var for templating)
-
-                template = env.from_string(template)
-                template = template.render(my_run=run_config, **exp_vars)
-            run_config = json.loads(template)
-
-            # TODO [nku] could we validate that the commands is a syntactically correct shell command?
-            #  -> yes with shellcheck: echo "printf 'x: 1\\ny: 5' > results/coordinates.yaml" | poetry run  shellcheck --shell=bash  /dev/stdin
-
-            print(f"RUN CONFIG = {run_config}")
-
-            exp_runs_ext.append(run_config)
-
-    return exp_runs_ext
+from pydantic import Field
+from pydantic import BaseModel
+from pydantic import root_validator
 
 
-# echo "printf 'x: 1\\ny: 5' > results/coordinates.yaml" | poetry run  shellcheck /dev/stdin
-
-
-
-def extend(suite_design, exp_specific_vars):
-    """_summary_
+def extend(suite_design, exp_specific_vars, use_cmd_shellcheck=False):
+    """
 
     Args:
         suite_design (Dict): suite design (not extended)
@@ -138,6 +80,11 @@ def extend(suite_design, exp_specific_vars):
                     variable_end_string="%]",
                 )
 
+                # TODO [nku] can we do the templating for each host in $CMD$ separately?
+                # -> this would allow setting `host_type_idx` as exp_vars and then we can use it in multi instance experiments
+                # (In MPC audit would allow a single command rather than a list of commands that only differs by a player id)
+                # -> should probably not be a big issue if $CMD$ already follows the list structure at this point
+
                 template = json.dumps(run_config)
                 while "[%" in template and "%]" in template:
                     # temporary convert to a dict
@@ -154,10 +101,11 @@ def extend(suite_design, exp_specific_vars):
                     template = template.render(my_run=run_config, **exp_vars)
                 run_config = json.loads(template)
 
-                # TODO [nku] could we validate that the commands is a syntactically correct shell command?
-
                 exp_runs_ext.append(run_config)
 
+        # validate the extended suite (check commands)
+        if use_cmd_shellcheck:
+            SuiteExt(__root__=exp_runs_ext)
         suite_ext[exp_name] = exp_runs_ext
 
     return suite_ext
@@ -232,3 +180,41 @@ def _insert_config(config, key, parent_path, value):
             d[k] = {}
         d = d[k]
     d[key] = value
+
+
+class MyExtBaseModel(BaseModel):
+    class Config:
+        extra = "forbid"
+        smart_union = True
+        use_enum_values = True
+
+class CmdExt(MyExtBaseModel):
+    __root__: str
+
+    @root_validator(skip_on_failure=True)
+    def check_cmd_syntax(cls, values):
+
+        cmd = values.get("__root__")
+
+        # echo "printf 'x: 1\\ny: 5' > results/coordinates.yaml" | poetry run  shellcheck --shell=bash  /dev/stdin
+        result = subprocess.run([f'echo "{cmd}" | shellcheck --shell=bash /dev/stdin'], text=True, capture_output=True, shell=True) # check=True,
+
+        if result.returncode != 0:
+            print("=====================")
+            print("shellcheck output: ")
+            print(result.stdout)
+            print("=====================")
+            raise ValueError(f"$CMD$ is invalid bash syntax! (see shellcheck output above)")
+
+        return values
+
+class RunConfig(MyExtBaseModel):
+
+    cmd: Dict[str, Union[CmdExt, List[CmdExt], List[Dict[Literal['main'], CmdExt]]]] = Field(alias="$CMD$")
+
+    class Config:
+        extra = "allow"
+        arbitrary_types_allowed = True
+
+class SuiteExt(MyExtBaseModel):
+    __root__: List[RunConfig]

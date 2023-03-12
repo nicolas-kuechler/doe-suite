@@ -16,7 +16,6 @@ import os
 import re
 import inspect
 import sys
-import yaml
 import jinja2
 import json
 import enum
@@ -128,14 +127,9 @@ class IncludeEtlSource(MyETLBaseModel):
         if "experiments" in etl_pipeline:
             del etl_pipeline["experiments"]
 
-        #try:
         values["etl_pipeline"] = ETLPipelineBase(**etl_pipeline)
         if "experiments" in values["etl_pipeline"]:
             del values["etl_pipeline"]["experiments"]
-            # TODO [nku] not sure this custom error reporting is worth to explore
-        #except ValidationError as e:
-            #print(e.json())
-         #   raise EtlIncludeError(suite=values.get("suite"), template=values.get("template"), pipeline=values.get("pipeline"))
         return values
 
 

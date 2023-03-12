@@ -1,5 +1,5 @@
 import os
-import yaml
+import ruamel.yaml
 import argparse
 
 from doespy import util
@@ -37,7 +37,7 @@ def get_suite_status(dir):
             continue
 
         with open(state_file) as file:
-            state = yaml.load(file, Loader=yaml.SafeLoader)
+            state = ruamel.yaml.safe_load(file)
         suite_status[exp] = {}
         suite_status[exp]["n_jobs"] = len(state["exp_job_ids"])
         suite_status[exp]["n_jobs_unfinished"] = len(state["exp_job_ids_unfinished"])

@@ -7,7 +7,7 @@ from typing import Dict, List
 import warnings
 
 import pandas as pd
-import yaml
+import ruamel.yaml
 from pydantic import ValidationError
 
 from doespy import util
@@ -596,7 +596,7 @@ def _parse_factors(experiment: Dict) -> list:
 
 def _load_config_yaml(path, file="config.json"):
     with open(os.path.join(path, file)) as file:
-        config = yaml.load(file, Loader=yaml.FullLoader)
+        config = ruamel.yaml.safe_load(file)
     return config
 
 

@@ -6,13 +6,25 @@
 Welcome to DoES's documentation!
 ================================
 
-
+User's Guide
+------------
 
 .. toctree::
-   design
-   etl
-   :maxdepth: 3
-   :caption: Contents:
+   :maxdepth: 2
+
+   installation
+   quickstart
+   tutorial
+   commands
+   design/index
+
+..   layout
+   ansible
+
+
+
+Developer's Guide
+-----------------
 
 
 Indices and tables

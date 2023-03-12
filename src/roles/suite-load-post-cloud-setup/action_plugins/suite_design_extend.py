@@ -4,7 +4,6 @@
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
-import yaml, os
 from doespy.design import validate_extend
 
 from ansible.plugins.action import ActionBase
