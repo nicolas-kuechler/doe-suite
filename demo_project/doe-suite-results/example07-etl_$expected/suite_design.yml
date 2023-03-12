@@ -8,7 +8,7 @@ square:
       init_roles:
       - setup-small
       $CMD$:
-      - main: 'printf ''x: [% my_run.x %]\ny: [% my_run.y %]'' > results/coordinates.yaml'
+      - main: "printf 'x: [% my_run.x %]\\ny: [% my_run.y %]' > results/coordinates.yaml"
   base_experiment:
     x:
       $FACTOR$:
@@ -32,7 +32,7 @@ plus:
       init_roles:
       - setup-small
       $CMD$:
-      - main: 'printf ''x: [% my_run.x if my_run.orient in [''N'', ''S''] else  my_run.x + my_run.dist if my_run.orient == ''E'' else my_run.x - my_run.dist %] \ny: [% my_run.y if my_run.orient in [''W'', ''E''] else  my_run.y + my_run.dist if my_run.orient == ''N'' else my_run.y - my_run.dist %]'' > results/coordinates.yaml'
+      - main: "printf 'x: [% my_run.x if my_run.orient in ['N', 'S'] else  my_run.x + my_run.dist if my_run.orient == 'E' else my_run.x - my_run.dist %] \\ny: [% my_run.y if my_run.orient in ['W', 'E'] else  my_run.y + my_run.dist if my_run.orient == 'N' else my_run.y - my_run.dist %]' > results/coordinates.yaml"
   base_experiment:
     x: 8
     y: 5
@@ -58,7 +58,7 @@ triangle1:
       init_roles:
       - setup-small
       $CMD$:
-      - main: 'printf ''x: [% my_run.x %]\ny: [% my_run.y %]'' > results/coordinates.yaml'
+      - main: "printf 'x: [% my_run.x %]\\ny: [% my_run.y %]' > results/coordinates.yaml"
   base_experiment:
     x:
       $FACTOR$:
@@ -81,7 +81,7 @@ triangle2:
       init_roles:
       - setup-small
       $CMD$:
-      - main: 'printf ''x: [% my_run.x %]\ny: [% my_run.y %]'' > results/coordinates.yaml'
+      - main: "printf 'x: [% my_run.x %]\\ny: [% my_run.y %]' > results/coordinates.yaml"
   base_experiment:
     x: $FACTOR$
     y: $FACTOR$
