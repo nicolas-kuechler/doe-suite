@@ -16,6 +16,7 @@ Experiment Design
 
 Experiment
 ==========
+
 .. autopydantic_model:: doespy.design.exp_design.Experiment
     :validator-list-fields: True
     :field-list-validators: False
@@ -23,7 +24,6 @@ Experiment
     :model-show-validator-members: True
 
 
-|
 
 .. autoclass:: doespy.design.exp_design.BaseExperimentConfigDict
     :members:

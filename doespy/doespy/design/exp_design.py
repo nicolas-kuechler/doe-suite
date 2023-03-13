@@ -483,15 +483,15 @@ class Suite(MyBaseModel):
     # TODO [nku] add a link
 
     exp1: Experiment = Field(alias="<EXP1>")
-    """A suite needs to contain at least one :ref:`experiment<Experiment>`.
+    """A suite needs to contain at least one :ref:`experiment<design/design:Experiment>`.
     Choose a descriptive experiment name for the placeholder `<EXP1>`."""
 
     exp2: Optional[Experiment] = Field(alias="<EXP2>")
-    """Further :ref:`experiments<Experiment>` are optional.
+    """Further :ref:`experiments<design/design:Experiment>` are optional.
     Choose a descriptive experiment name for the placeholder `<EXP2>`, `<EXP3>`, etc."""
 
     etl: Dict[str, etl_design.ETLPipeline] = Field(alias="$ETL$", default={})
-    """:ref:`ETL Pipeline` to process the result files."""
+    """:ref:`design/design:ETL Pipeline` to process the result files."""
 
 
 def dict_to_pydantic(suite_name, suite_design_raw):

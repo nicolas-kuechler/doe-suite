@@ -9,9 +9,6 @@ sys.path.append(os.path.abspath('../..'))
 sys.path.append(os.path.abspath("./ext"))
 
 
-if "DOES_PROJECT_DIR" not in os.environ:
-    raise ValueError("env variable: DOES_PROJECT_DIR not set")
-
 sys.path.append(os.path.join(os.environ["DOES_PROJECT_DIR"], "doe-suite-config"))
 #sys.path.insert(0, os.path.abspath('../..'))
 
@@ -23,7 +20,7 @@ sys.path.append(os.path.join(os.environ["DOES_PROJECT_DIR"], "doe-suite-config")
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'DoES'
+project = 'DoE-Suite'
 copyright = '2022, Nicolas Kuechler'
 author = 'Nicolas Kuechler'
 release = '1.0'
@@ -48,6 +45,8 @@ python_use_unqualified_type_names = True
 
 autodoc_class_signature = "separated"
 autodoc_member_order = 'bysource'
+
+autosectionlabel_prefix_document = True
 
 autodoc_pydantic_model_show_field_summary = False
 autodoc_pydantic_model_show_json = False

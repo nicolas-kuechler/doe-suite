@@ -17,15 +17,20 @@ User's Guide
    tutorial
    commands
    design/index
-
-..   layout
-   ansible
+   execution/index
 
 
 
 Developer's Guide
 -----------------
 
+.. toctree::
+   :maxdepth: 2
+
+   developer/clouds
+   developer/etl
+   developer/exp_design
+   developer/devguide
 
 Indices and tables
 ==================

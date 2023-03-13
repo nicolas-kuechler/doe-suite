@@ -2,9 +2,10 @@
 Suite Design By Example
 =======================
 
-.. todo::
+In this section we show a series of examples that demonstrate the features for suite designs.
+The examples start with the minimal suite design and then become more complex.
 
-    link to design section
+More information, about the design format and defaults, can be found in :ref:`design/design:experiment design`.
 
 
 example01-minimal
@@ -117,6 +118,8 @@ The ``suite=example05-complex`` shows complex experiments with:
 example06-vars
 --------------
 
+The ``suite=example06-vars`` demonstrates the re-usability of variables in the design.
+
 .. literalinclude:: ../../../demo_project/doe-suite-config/designs/example06-vars.yml
    :language: yaml
    :caption: doe-suite-config/designs/example06-vars.yml
@@ -129,6 +132,9 @@ example06-vars
 
 example07-etl
 -------------
+
+The ``suite=example07-etl`` demonstrates advance usages of ETL results processing.
+
 
 .. literalinclude:: ../../../demo_project/doe-suite-config/designs/example07-etl.yml
    :language: yaml
