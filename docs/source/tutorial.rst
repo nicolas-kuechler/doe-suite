@@ -164,6 +164,20 @@ Suite Design
     TODO: Add description of designs and maybe include make design
 
 
+The figure above shows that a suite design consists of one or more experiments.
+Each experiment defines the computational environment (i.e., how many machines of which type) and a list of run configurations (i.e., concrete parameters) that we want to execute.
+Within the run configurations we distinguish between constants and factors.
+Constant remain the same across all runs, while for factors, we use in each run a unique combination of their levels.
+To improve validity, we support repeating a run multiple times.
+
+Different experiments in the suite are executed on a different set of host instances **in parallel**, while run configurations within an experiment are executed **sequentially** on the same set of host instances.
+
+For each experiment, one instance is the controller which is logically responsible for coordination.
+
+
+The experiment suite runs experiments based on `YAML` files in `doe-suite-config/designs`.
+The `YAML` files represent the structure discussed above.
+
 
 ------------
 
@@ -388,7 +402,7 @@ You can call ``make`` or ``make help`` to see an overview of the functionality:
 .. collapse:: Show Output
 
    .. command-output:: make help
-      :cwd: ../../..
+      :cwd: ../..
       :shell:
 
 

@@ -59,8 +59,9 @@ in commands
 
    poetry run python src/super_etl.py --config pipeline
 
+
 Custom output location
-^^^^^^^^^^^^^^^^^^^^^^
+----------------------
 
 The default option is to place results in
 ``doe-suite-results/super_etl``. This may be overridden using the
@@ -180,7 +181,7 @@ the dataframe.
 
 Full example
 
-.. code:: jupyterpython
+.. code:: python
 
    %env DOES_PROJECT_DIR= # place correct dir here
    import sys

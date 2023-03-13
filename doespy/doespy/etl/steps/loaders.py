@@ -25,6 +25,8 @@ class Loader(BaseModel, ABC):
 
     @abstractmethod
     def load(self, df: pd.DataFrame, options: Dict, etl_info: Dict) -> None:
+        # NOTE: Extending classes should not use the `options: Dict` and instead use instance variables for parameters
+
         pass
 
 
@@ -69,9 +71,12 @@ class PlotLoader(Loader):
 
 class CsvSummaryLoader(Loader):
 
+    skip_empty: bool = False
+
     r"""The `CsvSummaryLoader` creates a CSV file of the data frame from the `Transformer` stage.
 
     :param output_dir: path relative to the etl output directory to store the csv.
+    :param skip_empty: ignore empty df.
 
     .. code-block:: yaml
        :caption: Example ETL Pipeline Design
@@ -83,11 +88,9 @@ class CsvSummaryLoader(Loader):
                     output_dir: dir1
     """
 
-    skip_empty: bool = False
-
     def load(self, df: pd.DataFrame, options: Dict, etl_info: Dict) -> None:
 
-        if options.get("skip_empty", False) and df.empty: # TODO [nku]: switch to use self.skip_empty
+        if self.skip_empty and df.empty:
             return
         elif df.empty:
             raise ValueError("CsvSummaryLoader: DataFrame is empty so not creating an output file.")

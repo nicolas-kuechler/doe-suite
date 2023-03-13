@@ -47,6 +47,7 @@ Loaders
 -------
 The `Loader` stage can be used to create visualizations, plots, and other files based on the data frame from the `Transformer` stage.
 
-.. automodule:: doespy.loaders
-    :members:
-    :exclude-members: load, PlotLoader
+.. COMMENT
+    .. automodule:: doespy.loaders
+        :members:
+        :exclude-members: load, PlotLoader

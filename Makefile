@@ -307,3 +307,20 @@ design: install-silent
 design-validate: install-silent
 	@cd $(does_config_dir) && \
 	poetry run python $(PWD)/doespy/doespy/design/validate_extend.py --suite $(suite) --ignore-undefined-vars --only-validate
+
+
+#################################
+#  ___   ___   ___ ___
+# |   \ / _ \ / __/ __|
+# | |) | (_) | (__\__ \
+# |___/ \___/ \___|___/
+#
+#################################
+
+docs-build: install
+	@cd doespy && \
+	poetry install && \
+	poetry run make html -C ../docs
+
+docs: docs-build
+	@open docs/build/html/index.html

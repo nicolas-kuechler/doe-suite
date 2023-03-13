@@ -2,6 +2,11 @@
 
 src/inventory/
 
+docs/build
+_build
+
+remote/
+
 ### Ansible ###
 *.retry
 .boto

@@ -25,6 +25,9 @@ class Transformer(BaseModel, ABC):
 
     @abstractmethod
     def transform(self, df: pd.DataFrame, options: Dict) -> pd.DataFrame:
+
+        # NOTE: Extending classes should not use the `options: Dict` and instead use instance variables for parameters
+
         pass
 
 
@@ -32,7 +35,7 @@ class DfTransformer(Transformer):
 
     def transform(self, df: pd.DataFrame, options: Dict) -> pd.DataFrame:
 
-        # TODO [nku] here I could define the different things for the df.x
+        # TODO [nku] here I could define the different things for the df.x -> at the moment unused
         pass
 
 class ConditionalTransformer(Transformer):
@@ -95,9 +98,11 @@ class ConditionalTransformer(Transformer):
     """
 
     def transform(self, df: pd.DataFrame, options: Dict) -> pd.DataFrame:
-        col = options["col"]
-        value = options["value"]
-        dest = options.get("dest", col)
+
+
+        col = self.col
+        value = self.value
+        dest = self.dest
 
         for cur, repl in value.items():
             df.loc[df[col] == cur, dest] = repl
@@ -169,13 +174,11 @@ class RepAggTransformer(Transformer):
         if df.empty:
             return df
 
-        data_columns = options.get("data_columns")
+        data_columns = self.data_columns
 
-        ignore_columns = options.get("ignore_columns", [])
+        ignore_columns = self.ignore_columns
 
-        agg_functions = options.get(
-            "agg_functions", ["mean", "min", "max", "std", "count"]
-        )
+        agg_functions = self.agg_functions
 
         if not set(data_columns).issubset(df.columns.values):
             raise ValueError(
@@ -213,6 +216,14 @@ class RepAggTransformer(Transformer):
 
 
 class GroupByAggTransformer(Transformer):
+
+    data_columns: List[str]
+
+    groupby_columns: List[str]
+
+    agg_functions: List[str] = ["mean", "min", "max", "std", "count"]
+
+    custom_tail_length: int =  5
 
     r"""The `GroupByAggTransformer` performs a group by followed by a set of aggregate functions.
     GroupBy all columns of data frame except ``data_columns``.
@@ -278,12 +289,10 @@ class GroupByAggTransformer(Transformer):
         if df.empty:
             return df
 
-        data_columns = options.get("data_columns")
+        data_columns = self.data_columns
         # here, we get factor_columns
-        groupby_columns = expand_factors(df, options.get("groupby_columns"))
-        agg_functions = options.get(
-            "agg_functions", ["mean", "min", "max", "std", "count"]
-        )
+        groupby_columns = expand_factors(df, self.groupby_columns)
+        agg_functions = self.agg_functions
 
         # To configure size of the 'tail' to calculate the mean over
         custom_tail_length = options.get("custom_tail_length", 5)
@@ -333,10 +342,7 @@ class GroupByAggTransformer(Transformer):
         return df
 
 
-
-
 class FilterColumnTransformer(Transformer):
-    # TODO []
 
     """
     Simple transformer to filter rows out of a dataframe by column values.

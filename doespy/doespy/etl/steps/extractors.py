@@ -53,6 +53,10 @@ class Extractor(BaseModel, ABC):
         Returns:
             List[Dict]: results found in the file
         """
+
+        # NOTE: Extending classes should not use the `options: Dict` and instead use instance variables for parameters
+
+
         pass
 
 # TODO [nku] add docstrings to classes to automatically generate documentation

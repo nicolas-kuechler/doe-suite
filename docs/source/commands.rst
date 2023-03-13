@@ -61,12 +61,9 @@ For more information on the experiment suite design, see :ref:`design/index:suit
 
 
 .. code-block:: sh
-    :caption: Start suite with the explicit choice (``run-keep``, ``run-stop``, ``run-terminate``) what to do with the hosts after the suite is complete
+    :caption: Start suite with the explicit choice ``run-keep``: Keep instances running after suite is complete
 
     make run-keep suite=example01-minimal id=new
-    make run-stop suite=example01-minimal id=new
-    make run-terminate suite=example01-minimal id=new   # default
-
 
 .. warning::
 

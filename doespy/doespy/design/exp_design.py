@@ -480,8 +480,6 @@ class Suite(MyBaseModel):
     suite_vars: SuiteVarsConfigDict = Field(alias="$SUITE_VARS$", default={})
     """Shared variables belonging to every experiment of the suite."""
 
-    # TODO [nku] add a link
-
     exp1: Experiment = Field(alias="<EXP1>")
     """A suite needs to contain at least one :ref:`experiment<design/design:Experiment>`.
     Choose a descriptive experiment name for the placeholder `<EXP1>`."""

@@ -9,7 +9,6 @@ from doespy import util
 
 def validate(suite_design_raw, suite, exp_filter):
 
-    # TODO [nku] for some reason cannot have this above
     from doespy.design import exp_design
 
     _validate_setup()

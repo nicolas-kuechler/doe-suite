@@ -313,12 +313,9 @@ def load_selected_processes(extractors_sel, transformers_sel, loaders_sel):
         if name not in extractors_avl:
             raise ValueError(f"extractor not found: {name}")
 
-        #regex = options.get("file_regex")
-
         d = {
-            # TODO [nku] change the way we load extractors to use pydantic model? and pass options
             "extractor": extractors_avl[name](**options),
-            "options": options,
+            "options": options, # TODO: eventually this can be removed in a newer version
         }
 
         extractors.append(d)
@@ -330,13 +327,14 @@ def load_selected_processes(extractors_sel, transformers_sel, loaders_sel):
                 raise ValueError(f"transformer not found: {trans_sel['name']}")
 
             d = {
-                # TODO [nku] change the way we load transformers to use pydantic model? and pass options
-                # transformers_avl[trans_sel["name"]](**options),
                 "transformer": transformers_avl[trans_sel["name"]](**trans_sel),
-                "options": trans_sel,
+                "options": trans_sel, # TODO: eventually this can be removed in a newer version
             }
             transformers.append(d)
         elif len(trans_sel.keys()) == 1:
+
+            # TODO: Could switch to  DfTransformer(Transformer) and implement the functionality there.
+
             func_name = next(iter(trans_sel))
             args = trans_sel[func_name]
 
@@ -359,10 +357,8 @@ def load_selected_processes(extractors_sel, transformers_sel, loaders_sel):
             raise ValueError(f"loader not found: {name}")
 
         d = {
-            # TODO [nku] change the way we load loaders to use pydantic model? and pass options
-            # "loader": loaders_avl[name](**options),
             "loader": loaders_avl[name](**options),
-            "options": options,
+            "options": options, # TODO: eventually this can be removed in a newer version
         }
         loaders.append(d)
 
@@ -427,19 +423,25 @@ def _load_processes(module_name, extractors, transformers, loaders):
                 try:
                     etl_candidate()
                 except ValidationError:
-                    pass # TODO [nku] here we would handle if ETL Step validation fails
+                    # TODO: Should we warn or fail if ETL Step Validation failed?
+                    warnings.warn(f"ETL Validation failed for Extractor: {member_name}")
+                    pass
                 extractors[member_name] = etl_candidate
             elif issubclass(etl_candidate, Transformer):
                 try:
                     etl_candidate()
                 except ValidationError:
-                    pass # TODO [nku] here we would handle if ETL Step validation fails
+                    # TODO: Should we warn or fail if ETL Step Validation failed?
+                    warnings.warn(f"ETL Validation failed for Extractor: {member_name}")
+                    pass
                 transformers[member_name] = etl_candidate
             elif issubclass(etl_candidate, Loader):
                 try:
                     etl_candidate()
                 except ValidationError:
-                    pass # TODO [nku] here we would handle if ETL Step validation fails
+                    # TODO: Should we warn or fail if ETL Step Validation failed?
+                    warnings.warn(f"ETL Validation failed for Extractor: {member_name}")
+                    pass
                 loaders[member_name] = etl_candidate
 
         except TypeError:

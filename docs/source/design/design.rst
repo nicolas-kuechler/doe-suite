@@ -73,7 +73,3 @@ Loader
 ------
 .. autopydantic_model:: doespy.design.etl_design.Loader
     :validator-list-fields: True
-
-
-.. autopydantic_model:: doespy.loaders.CsvSummaryLoader
-    :validator-list-fields: True

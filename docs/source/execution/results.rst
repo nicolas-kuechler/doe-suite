@@ -18,7 +18,7 @@ Locally, each experiment job (repetition of an experiment run with a specific co
 ``<DOES_PROJECT_DIR>/doe-suite-results/<SUITE>_<SUITE ID>/<EXPERIMENT>/run_<RUN>/rep_<REPETITION>``
 
 - ``RUN`` is the index of the run (starts at 0)
-- ``REPETITION``is the index of the repetitions (starts at 0)
+- ``REPETITION`` is the index of the repetitions (starts at 0)
 
 In this folder, we group the involved hosts by host type and have a separate folder for each involved EC2 instance where all result files are downloaded.
 

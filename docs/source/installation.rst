@@ -20,13 +20,13 @@ We assume that you already have an existing project for which you want to run be
 AWS - Specific Prerequisites
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* Create a ``key pair for AWS`` in the region ``eu-central-1`` `(see instructions) <https://docs.aws.amazon.com/servicecatalog/latest/adminguide/getstarted-keypair.html>`_.
+* Create a ``key pair for AWS`` in the region ``eu-central-1`` `(see instructions for AWS Keypair) <https://docs.aws.amazon.com/servicecatalog/latest/adminguide/getstarted-keypair.html>`_.
 
 
 ETHZ Euler - Specific Prerequisites
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* Ensure that you can connect to ``euler.ethz.ch`` with ssh `(see instructions) <https://scicomp.ethz.ch/wiki/Accessing_the_clusters#SSH>`_.
+* Ensure that you can connect to ``euler.ethz.ch`` with ssh `(see instructions for Euler) <https://scicomp.ethz.ch/wiki/Accessing_the_clusters#SSH>`_.
 
 
 Base Installation
@@ -94,9 +94,9 @@ AWS-Specific
 AWS CLI
 ~~~~~~~
 
-Install AWS CLI version 2 `(see instructions) <https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html>`_.
+Install AWS CLI version 2 `(see instructions for AWS) <https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html>`_.
 
-Configure AWS credentials for Boto `(see instructions) <https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html>`_:
+Configure AWS credentials for Boto `(see instructions for Boto) <https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html>`_:
 
 .. code-block:: sh
 
@@ -105,8 +105,8 @@ Configure AWS credentials for Boto `(see instructions) <https://boto3.amazonaws.
 By default, credentials should be in ``~/.aws/credentials``.
 
 
-SSH Config
-~~~~~~~~~~
+SSH Config (AWS)
+~~~~~~~~~~~~~~~~
 
 Configure SSH Config - add a section for EC2 instances:
 
@@ -119,8 +119,8 @@ Configure SSH Config - add a section for EC2 instances:
         ForwardAgent yes
 
 
-Environment Variables
-~~~~~~~~~~~~~~~~~~~~~
+Environment Variables (AWS)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Add an additional environment variable:
 
@@ -133,8 +133,8 @@ Add an additional environment variable:
 
 
 
-Check Installation
-~~~~~~~~~~~~~~~~~~
+Check Installation (AWS)
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 You can check that the ``example01-minimal.yml`` of the ``demo_project`` runs in your setup.
 In the ``doe-suite`` repository, run the command below to run the example on AWS:
@@ -149,8 +149,8 @@ In the ``doe-suite`` repository, run the command below to run the example on AWS
 ETHZ Euler - Specific
 ---------------------
 
-SSH Config
-~~~~~~~~~~
+SSH Config (Euler)
+~~~~~~~~~~~~~~~~~~
 
 Configure SSH Config - add a section for the Euler login node:
 
@@ -163,8 +163,8 @@ Configure SSH Config - add a section for the Euler login node:
         ForwardAgent yes
 
 
-Environment Variables
-~~~~~~~~~~~~~~~~~~~~~
+Environment Variables (Euler)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Add an additional environment variable:
 
@@ -176,8 +176,8 @@ Add an additional environment variable:
     # Note: don't forget DOES_PROJECT_DIR and DOES_PROJECT_ID_SUFFIX from above
 
 
-Check Installation
-~~~~~~~~~~~~~~~~~~
+Check Installation (Euler)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Check that the ``example01-minimal.yml`` of the ``demo_project`` runs in your setup.
 In the ``doe-suite`` repository, run the command below to run the example on Euler:
