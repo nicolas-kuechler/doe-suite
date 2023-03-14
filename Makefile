@@ -11,7 +11,11 @@ state?=$(DOES_CLOUD_STATE) # env variable with default (terminate)
 
 
 epoch=$(shell date +%s)
-suite_id= $(shell [ $(id) = new ] && echo $(epoch) || echo $(id))
+
+# if id=last -> need to find the last suite id (based on suite name)
+_suite_id= $(shell [ $(id) = last ] && (cd $(does_results_dir) && find . -type d -regex './$(suite)_[0-9]+' | sort | tail -n 1 | grep -o '[0-9]*$$') || echo $(id))
+suite_id= $(shell [ $(id) = new ] && echo $(epoch) || echo $(_suite_id))
+
 ansible_inventory=$(does_results_dir)/$(suite)_$(suite_id)/.inventory
 
 # add prefix if defined for playbook run cmd
