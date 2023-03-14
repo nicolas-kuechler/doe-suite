@@ -206,8 +206,9 @@
 
 
 - name: Wait for SSH of the created EC2 instances to come up
-  delegate_to: "{{ public_dns_name }}"
-  wait_for_connection:
+  ansible.builtin.wait_for:
+    host: "{{ public_dns_name }}"
+    port: 22 # ssh
     connect_timeout: 3
     timeout: 320
   loop: "{{ public_dns_names }}"

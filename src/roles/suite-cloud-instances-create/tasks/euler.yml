@@ -19,10 +19,12 @@
     public_dns_hostname: "{{ hostvars[groups['euler'][0]]['ansible_host'] }}"
 
 - name: Test connection with Euler
-  delegate_to: "{{ public_dns_hostname }}"
-  wait_for_connection:
+  ansible.builtin.wait_for:
+    host: "{{ public_dns_hostname }}"
+    port: 22 # ssh
     connect_timeout: 3
     timeout: 320
+
 
 #- debug:
 #    var: host_types

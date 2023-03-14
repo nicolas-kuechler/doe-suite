@@ -17,6 +17,7 @@
     name: "{{ exp_base.vpc_name }}"
     cidr_block: "{{ exp_base.vpc_cidr_block }}"
     region: "{{ exp_base.aws_region }}"
+    purge_tags: True
     state: present
   register: my_vpc
 
