@@ -1,8 +1,5 @@
 name: Docs
-on: #[workflow_dispatch]  # TODO: later change [push, pull_request, workflow_dispatch]
-
-   # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
+on: [push, pull_request, workflow_dispatch]
 
 permissions:
   contents: read
