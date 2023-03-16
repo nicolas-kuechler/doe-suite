@@ -312,10 +312,11 @@ class BaseExperimentConfigDict(ExperimentConfigDict):
         extra_kwargs = ExperimentConfigDict.resolve_include_vars(extra_kwargs)
 
         # then resolve the $INCLUDE_VARS$ in $SUITE_VARS$
-        kwargs["_CTX"]['suite_vars'] = ExperimentConfigDict.resolve_include_vars(kwargs["_CTX"]['suite_vars'])
+        if kwargs["_CTX"]['suite_vars'] is not None:
+            kwargs["_CTX"]['suite_vars'] = ExperimentConfigDict.resolve_include_vars(kwargs["_CTX"]['suite_vars'])
 
-        # add the variables from the $SUITE_VARS$
-        extra_kwargs = merge_suite_vars(kwargs["_CTX"], extra_kwargs)
+            # add the variables from the $SUITE_VARS$
+            extra_kwargs = merge_suite_vars(kwargs["_CTX"], extra_kwargs)
 
         # identify factors in extra values
         factors_levellist, factors_cross = identify_factors(extra_kwargs)
