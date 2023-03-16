@@ -29,7 +29,7 @@ release = '1.0'
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 #extensions = ["sphinx.ext.autodoc", "sphinx.ext.viewcode", 'sphinxemoji.sphinxemoji', 'sphinx.ext.autosectionlabel', 'enum_tools.autoenum', 'sphinxcontrib.autodoc_pydantic', 'sphinx.ext.napoleon'] #, # "sphinxcontrib.autoyaml"
-extensions = ["sphinx.ext.todo", "sphinx_tabs.tabs", "sphinx_toolbox.collapse", "sphinxcontrib.programoutput", "sphinx.ext.autodoc", "sphinx.ext.viewcode", 'sphinxemoji.sphinxemoji', 'sphinxcontrib.autodoc_pydantic', "sphinx.ext.autosectionlabel", 'enum_tools.autoenum', "myautoyaml"] #,
+extensions = ["sphinx.ext.todo", "sphinx_tabs.tabs", "sphinx_toolbox.collapse", "sphinxcontrib.programoutput", "sphinx.ext.autodoc", "sphinx.ext.viewcode", 'sphinxemoji.sphinxemoji', 'sphinxcontrib.autodoc_pydantic', "sphinx.ext.autosectionlabel", 'enum_tools.autoenum'] #,
 
 myautoyaml_root = "../.."
 myautoyaml_doc_delimiter = "###"
