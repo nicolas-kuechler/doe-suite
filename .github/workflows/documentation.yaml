@@ -26,7 +26,9 @@ jobs:
       # checkout repo and setup python + poetry
       #----------------------------------------------
       - uses: actions/checkout@v3
-      - uses: actions/setup-python@v3
+      - uses: actions/setup-python@v4
+        with:
+           python-version: '3.9' 
       - uses: snok/install-poetry@v1
         with:
           virtualenvs-create: true
