@@ -358,6 +358,9 @@ class FilterColumnTransformer(Transformer):
             Defaults to False.
     """
 
+    filters: Dict[str, Any] = {}
+    allow_empty_result: bool = False
+
     def transform(self, df: pd.DataFrame, options: Dict) -> pd.DataFrame:
 
         import warnings
