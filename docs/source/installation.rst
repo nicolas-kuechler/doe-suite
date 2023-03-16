@@ -6,41 +6,43 @@ Installation
 Prerequisites
 -------------
 
-We assume that you already have an existing project for which you want to run benchmarks with DoES (otherwise, just create a dummy project).
+We assume that you already have an existing project available in a remote repository, e.g., GitHub, where you want to integrate the DoE-Suite.
+If not, create a dummy project to work with.
+
+
 
 **Before starting:**
 
-* Ensure that you have `Poetry <https://python-poetry.org/docs/>`_ installed (version >= 1.2.0).
+* Make sure you have  `Poetry <https://python-poetry.org/docs/>`_ installed (**version >= 1.2.0**). The DoE-Suite uses Poetry to manage all required Python packages.
 
-* Ensure that you have `Cookiecutter <https://cookiecutter.readthedocs.io/en/stable/installation.html>`_ installed.
+* Ensure you have `Cookiecutter <https://cookiecutter.readthedocs.io/en/stable/installation.html>`_ installed. Cookiecutter is a tool that helps you generate project templates, which is used by the DoE-Suite to create the necessary configuration structure.
 
-* Ensure you can clone remote repositories with SSH `(see instructions for GitHub) <https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh>`_.
+* Verify that you can clone remote repositories with SSH. This is necessary to access your project repository from the remote experiment environment. If you need help setting up SSH for GitHub, check out the `official documentation <https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh>`_.
+
 
 
 AWS - Specific Prerequisites
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* Create a ``key pair for AWS`` in the region ``eu-central-1`` `(see instructions for AWS Keypair) <https://docs.aws.amazon.com/servicecatalog/latest/adminguide/getstarted-keypair.html>`_.
+To run experiments on AWS, you need to create a ``key pair for AWS`` in the region ``eu-central-1``.
+You can find detailed instructions on how to create a key pair in the `official AWS documentation <https://docs.aws.amazon.com/servicecatalog/latest/adminguide/getstarted-keypair.html>`_.
 
 
 ETHZ Euler - Specific Prerequisites
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* Ensure that you can connect to ``euler.ethz.ch`` with ssh `(see instructions for Euler) <https://scicomp.ethz.ch/wiki/Accessing_the_clusters#SSH>`_.
+To run experiments on ETHZ Euler, you must ensure that you can connect to ``euler.ethz.ch`` with SSH.
+Check the instructions provided by ETHZ Euler for `accessing the clusters using SSH <https://scicomp.ethz.ch/wiki/Accessing_the_clusters#SSH>`_.
 
 
 Base Installation
 -----------------
 
-After this section, it should be possible to run the example designs of the demo project.
-For example:
 
-.. code-block:: sh
-
-    make run suite=example01-minimal id=new
+To run the :repodir:`example designs <demo_project/doe-suite-config/designs>` of the demo project, you need to complete the steps below.
 
 
-First, add the DoES repository as a submodule to your project repository.
+Add the DoE-Suite repository as a submodule to your project repository by running the following command from the root of your project:
 
 .. code-block:: sh
 
@@ -50,65 +52,83 @@ First, add the DoES repository as a submodule to your project repository.
 Configuring SSH-Agent
 ~~~~~~~~~~~~~~~~~~~~~
 
-Afterward, configure ``ssh-agent`` - add the private key for cloning repositories to ssh-agent.
-This allows cloning a repository (e.g., on GitHub) on an remote instance without copying the private key or entering credentials.
-The process depends on your environment but should be as follows `(source) <https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh>`_
+To clone repositories on a remote instance (e.g., from GitHub) without copying the private key or entering credentials, you need to add the SSH private key for cloning repositories to ssh-agent.
+The `official GitHub documentation <https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh>`_ offers detailed instructions on how to configure ssh-agent.
+In principle, you need to follow these steps to configure ssh-agent in your environment:
 
-* Start ssh-agent in the background:
 
-.. code-block:: sh
+1. Start ssh-agent in the background by running the following command in your terminal:
 
-    eval "$(ssh-agent -s)"
+   .. code-block:: sh
 
-* Add SSH private key to ssh-agent (replace with your key):
+        eval "$(ssh-agent -s)"
 
-.. code-block:: sh
 
-    ssh-add ~/.ssh/<YOUR-PRIVATE-SSH-KEY-FOR-GIT>
+2. Add your SSH private key to ssh-agent. Replace `<YOUR-PRIVATE-SSH-KEY-FOR-GIT>` with the name of your private key file. Run the following command:
 
-* (On a MAC, need to add to keychain)
+   .. code-block:: sh
+
+        ssh-add ~/.ssh/<YOUR-PRIVATE-SSH-KEY-FOR-GIT>
+
+
+3. On a Mac, you may also need to add your private key to the Keychain Access app.
+
 
 
 General Environment Variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Finally, set the environment variables listed below.
+To configure your environment for the DoE-Suite, you need to set the following environment variables:
+
+The root directory of your project repository. Later, we will expect the `does-config-dir` to be located in this folder. For now, set this variable to the absolute path of the demo project (`doe-suite/demo_project`). Run the following command in your terminal:
 
 .. code-block:: sh
+    :caption: .envrc
 
-    # the root of your project repository, later we expect does-config-dir in this folder
-    # !!! For now set to absolute path of demo project: `doe-suite/demo_project`
+    # The root directory of your project repository.
+    # Later, we will expect the `does-config-dir` to be located in this folder.
+    # For now, replace `<PATH>` with the absolute path of the demo project,
+    # i.e., (`doe-suite/demo_project`).
     export DOES_PROJECT_DIR=<PATH>
 
-    # your unique shortname, e.g., nku
+
+    #  Your unique short name, such as your organization's acronym or your initials.
     export DOES_PROJECT_ID_SUFFIX=<SUFFIX>
+
+
+The DoE-Suite uses environment variables to enable multiple people to work on the same project together.
+The ``DOES_PROJECT_ID_SUFFIX`` needs to be a unique identifier among all project collaborators to ensure that everyone working on the project can run experiments independently without interfering with each other.
+
 
 ..  tip::
 
-    `Direnv <https://direnv.net/>`_ allows project-specific env vars in an `.envrc` file and is a natural fit to use with the DoE-Suite.
+    To make it easier to manage project-specific environment variables, you can use a tool like `Direnv <https://direnv.net/>`_. Direnv allows you to create project-specific `.envrc` files that set environment variables when you enter the project directory. This is a natural fit to use with the DoE-Suite.
+
 
 
 AWS-Specific
 ------------
 
+To run experiments on AWS, you need to complete the following steps:
+
 AWS CLI
 ~~~~~~~
 
-Install AWS CLI version 2 `(see instructions for AWS) <https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html>`_.
+1. Install AWS CLI version 2 `(see instructions for AWS) <https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html>`_.
 
-Configure AWS credentials for Boto `(see instructions for Boto) <https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html>`_:
+2. Configure AWS credentials for Boto `(see instructions for Boto) <https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html>`_:
 
-.. code-block:: sh
+    .. code-block:: sh
 
-    aws configure
+        aws configure
 
-By default, credentials should be in ``~/.aws/credentials``.
+    By default, credentials should be stored in ``~/.aws/credentials``.
 
 
 SSH Config (AWS)
 ~~~~~~~~~~~~~~~~
 
-Configure SSH Config - add a section for EC2 instances:
+To configure SSH access to AWS EC2 instances, you need to add a section to your ``~/.ssh/config`` file:
 
 .. code-block::
     :caption: ~/.ssh/config
@@ -119,10 +139,17 @@ Configure SSH Config - add a section for EC2 instances:
         ForwardAgent yes
 
 
+Please replace ``<YOUR-PRIVATE-SSH-KEY-FOR-AWS>`` with the actual name of the AWS key file that you created during the :ref:`installation:AWS - Specific Prerequisites` process.
+By using the pattern ``Host ec2*``, we match all AWS EC2 hosts.
+Since the DoE-Suite creates new hosts on demand, it is essential to use a pattern that can match all hosts and we cannot be more restrictive.
+The default user for EC2 instances that are based on Ubuntu is ubuntu.
+To enable SSH agent forwarding, which is required for cloning repositories on a remote instance (such as from GitHub) without entering credentials or copying the private key, it is necessary to include the ForwardAgent yes option.
+
+
 Environment Variables (AWS)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Add an additional environment variable:
+In addition to the environment variables defined in :ref:`installation:General Environment Variables`, you need to set the following environment variable for AWS:
 
 .. code-block:: sh
 
@@ -131,13 +158,14 @@ Add an additional environment variable:
 
     # Note: don't forget DOES_PROJECT_DIR and DOES_PROJECT_ID_SUFFIX from above
 
+The environment variable ``DOES_SSH_KEY_NAME`` defines the key used when creating new EC2 instances and needs to match the IdentityFile specified in the SSH config.
 
 
 Check Installation (AWS)
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can check that the ``example01-minimal.yml`` of the ``demo_project`` runs in your setup.
-In the ``doe-suite`` repository, run the command below to run the example on AWS:
+To ensure that your setup for AWS is configured correctly, you can test the first example ``example01-minimal`` of the :repodir:`demo project <demo_project>`.
+Navigate to the ``doe-suite`` folder and run the following command:
 
 .. code-block:: sh
     :caption: Verify that AWS installation is complete
@@ -145,14 +173,22 @@ In the ``doe-suite`` repository, run the command below to run the example on AWS
     make test-example01-minimal cloud=aws
 
 
+The test will take about ~4 minutes to complete.
+It will set up an EC2 instance on AWS and run the minimal example on it.
+Once the experiment completes, the results will be fetched to your local machine compared to the expected results structure found in the :repodir:`demo_project/doe-suite-results/example01-minimal_$expected <demo_project/doe-suite-results/example01-minimal_$expected/>` directory.
+If the example test runs successfully, you are ready to start with the :ref:`tutorial:tutorial` for your own project.
+
 
 ETHZ Euler - Specific
 ---------------------
 
+The `ETHZ Euler scientific computing cluster <https://scicomp.ethz.ch/wiki/Main_Page>` is an HPC cluster that uses the `Slurm <https://slurm.schedmd.com/documentation.html>` batch system to manage computing jobs.
+To use the DoE-Suite to run experiments on Euler, you need to complete the following steps:
+
 SSH Config (Euler)
 ~~~~~~~~~~~~~~~~~~
 
-Configure SSH Config - add a section for the Euler login node:
+To configure SSH access to the Euler login node, you need to add a section to your ``~/.ssh/config`` file:
 
 .. code-block::
     :caption: ~/.ssh/config
@@ -166,23 +202,32 @@ Configure SSH Config - add a section for the Euler login node:
 Environment Variables (Euler)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Add an additional environment variable:
+In addition to the environment variables defined in :ref:`installation:General Environment Variables`, you need to set the following environment variable for Euler:
 
 .. code-block:: sh
 
-    # for eth euler cluster: your nethz account
+    # Replace <YOUR-NETHZ> with your NETHZ username
     export DOES_EULER_USER=<YOUR-NETHZ>
 
     # Note: don't forget DOES_PROJECT_DIR and DOES_PROJECT_ID_SUFFIX from above
+
+The environment variable ``DOES_EULER_USER`` is required to determine the home directory.
+
 
 
 Check Installation (Euler)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Check that the ``example01-minimal.yml`` of the ``demo_project`` runs in your setup.
-In the ``doe-suite`` repository, run the command below to run the example on Euler:
+To ensure that your setup for Euler is configured correctly, you can run the first example ``example01-minimal`` of the :repodir:`demo project <demo_project>`.
+Navigate to the ``doe-suite`` folder and run the following command:
 
 .. code-block:: sh
     :caption: Verify that Euler installation is complete
 
     make test-example01-minimal cloud=euler
+
+
+The test will connect to the Euler login nodes and schedule the jobs of the minimal example in the Slurm batch system.
+It typically only takes a few minutes to complete, however, the time depends on how long the jobs remain in the scheduling queue.
+Once the experiment completes, the results will be fetched to your local machine and compared to the expected results structure found in the :repodir:`demo_project/doe-suite-results/example01-minimal_$expected <demo_project/doe-suite-results/example01-minimal_$expected/>` directory.
+If the example runs successfully, you are ready to start with the :ref:`tutorial:tutorial` for your own project.

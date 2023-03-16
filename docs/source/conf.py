@@ -29,7 +29,19 @@ release = '1.0'
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 #extensions = ["sphinx.ext.autodoc", "sphinx.ext.viewcode", 'sphinxemoji.sphinxemoji', 'sphinx.ext.autosectionlabel', 'enum_tools.autoenum', 'sphinxcontrib.autodoc_pydantic', 'sphinx.ext.napoleon'] #, # "sphinxcontrib.autoyaml"
-extensions = ["sphinx.ext.todo", "sphinx_tabs.tabs", "sphinx_toolbox.collapse", "sphinxcontrib.programoutput", "sphinx.ext.autodoc", "sphinx.ext.viewcode", 'sphinxemoji.sphinxemoji', 'sphinxcontrib.autodoc_pydantic', "sphinx.ext.autosectionlabel", 'enum_tools.autoenum'] #,
+extensions = [
+    "sphinx_copybutton", # adds a copy button to code blocks
+    "sphinx.ext.extlinks", # allows simplified links, see `extlinks` below
+    "sphinx.ext.todo",
+    "sphinx_tabs.tabs",
+    "sphinx_toolbox.collapse",
+    "sphinxcontrib.programoutput",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.viewcode",
+    'sphinxemoji.sphinxemoji',
+    'sphinxcontrib.autodoc_pydantic',
+    "sphinx.ext.autosectionlabel",
+    'enum_tools.autoenum'] #,
 
 myautoyaml_root = "../.."
 myautoyaml_doc_delimiter = "###"
@@ -42,6 +54,10 @@ numpydoc_show_class_members = False
 python_use_unqualified_type_names = True
 #autodoc_unqualified_typehints = True
 #autodoc_typehints = "description"
+
+extlinks = {
+    'repodir': ('https://github.com/nicolas-kuechler/doe-suite/tree/main/%s', '%s')
+}
 
 autodoc_class_signature = "separated"
 autodoc_member_order = 'bysource'
