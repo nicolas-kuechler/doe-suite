@@ -10,7 +10,7 @@ We assume that you already have an existing project for which you want to run be
 
 **Before starting:**
 
-* Ensure that you have `Poetry <https://python-poetry.org/docs/>`_ installed.
+* Ensure that you have `Poetry <https://python-poetry.org/docs/>`_ installed (version >= 1.2.0).
 
 * Ensure that you have `Cookiecutter <https://cookiecutter.readthedocs.io/en/stable/installation.html>`_ installed.
 
