@@ -98,7 +98,12 @@ def extend(suite_design, exp_specific_vars, use_cmd_shellcheck=False):
                     # (should not be available as var for templating)
 
                     template = env.from_string(template)
-                    template = template.render(my_run=run_config, **exp_vars)
+
+                    try:
+                        template = template.render(my_run=run_config, **exp_vars)
+                    except:
+                        print(f"\n\n==================\nrun_config={run_config}\n==================")
+                        raise
                 run_config = json.loads(template)
 
                 exp_runs_ext.append(run_config)

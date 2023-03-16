@@ -126,8 +126,10 @@ class ExperimentConfigDict(MyBaseModel):
         All the variables in the external file, are included at the level of where ``$INCLUDE_VARS$`` is located.
         If a variable is already present, then the variable is skipped.
         """
+        # do nothing (only here for documentation)
+        # -> the resolving for both suite vars and base exp config happens in BaseExperimentConfig.__init__
+        return values
 
-        return ExperimentConfigDict.resolve_include_vars(values)
 
 
     def resolve_include_vars(values):
@@ -225,6 +227,10 @@ def merge_suite_vars(ctx, values):
     if ctx['suite_vars'] is not None:
 
         suite_vars_d = ctx['suite_vars']
+
+        assert "$INCLUDE_VARS$" not in str(suite_vars_d), f"$INCLUDE_VARS$ not resolved in $SUITE_VARS$: {suite_vars_d}"
+        assert "$INCLUDE_VARS$" not in str(values), f"$INCLUDE_VARS$ not resolved in base_experiment: {values}"
+
         if len(suite_vars_d) > 0:
 
             skipped_info, included_info = dutil.include_vars(values, suite_vars_d)
@@ -302,9 +308,11 @@ class BaseExperimentConfigDict(ExperimentConfigDict):
             if k not in non_extra_fields:
                 extra_kwargs[k] = kwargs.pop(k)
 
-
         # first resolve the $INCLUDE_VARS$
         extra_kwargs = ExperimentConfigDict.resolve_include_vars(extra_kwargs)
+
+        # then resolve the $INCLUDE_VARS$ in $SUITE_VARS$
+        kwargs["_CTX"]['suite_vars'] = ExperimentConfigDict.resolve_include_vars(kwargs["_CTX"]['suite_vars'])
 
         # add the variables from the $SUITE_VARS$
         extra_kwargs = merge_suite_vars(kwargs["_CTX"], extra_kwargs)
@@ -316,7 +324,6 @@ class BaseExperimentConfigDict(ExperimentConfigDict):
 
         # init the actual class
         super().__init__(*args, **kwargs)
-
 
         # restoring the extra values
         old_allow_mutation = self.__config__.allow_mutation
