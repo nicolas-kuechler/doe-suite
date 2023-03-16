@@ -28,7 +28,7 @@ make clean
 
 
 ## More Documentation
-More documentation can be found [here](./docs).
+More documentation can be found [here](https://nicolas-kuechler.github.io/doe-suite/).
 
 
 ## Contributing
