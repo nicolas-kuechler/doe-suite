@@ -13,7 +13,7 @@ If not, create a dummy project to work with.
 
 **Before starting:**
 
-* Make sure you have  `Poetry <https://python-poetry.org/docs/>`_ installed (**version >= 1.2.0**). The DoE-Suite uses Poetry to manage all required Python packages.
+* Make sure you have  `Poetry <https://python-poetry.org/docs/>`_ installed (**version >= 1.4.0**). The DoE-Suite uses Poetry to manage all required Python packages.
 
 * Ensure you have `Cookiecutter <https://cookiecutter.readthedocs.io/en/stable/installation.html>`_ installed. Cookiecutter is a tool that helps you generate project templates, which is used by the DoE-Suite to create the necessary configuration structure.
 
