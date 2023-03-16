@@ -1,11 +1,112 @@
+square:
+  n_repetitions: 1
+  common_roles: []
+  host_types:
+    small:
+      n: 1
+      check_status: true
+      init_roles:
+      - setup-small
+      $CMD$:
+      - main: "printf 'x: [% my_run.x %]\\ny: [% my_run.y %]' > results/coordinates.yaml"
+  base_experiment:
+    x:
+      $FACTOR$:
+      - 0
+      - 1
+      - 2
+    y:
+      $FACTOR$:
+      - 0
+      - 1
+      - 2
+  factor_levels:
+  - {}
+plus:
+  n_repetitions: 1
+  common_roles: []
+  host_types:
+    small:
+      n: 1
+      check_status: true
+      init_roles:
+      - setup-small
+      $CMD$:
+      - main: "printf 'x: [% my_run.x if my_run.orient in ['N', 'S'] else  my_run.x + my_run.dist if my_run.orient == 'E' else my_run.x - my_run.dist %] \\ny: [% my_run.y if my_run.orient in ['W', 'E'] else  my_run.y + my_run.dist if my_run.orient == 'N' else my_run.y - my_run.dist %]' > results/coordinates.yaml"
+  base_experiment:
+    x: 8
+    y: 5
+    dist:
+      $FACTOR$:
+      - 1
+      - 2
+    orient:
+      $FACTOR$:
+      - N
+      - E
+      - S
+      - W
+  factor_levels:
+  - {}
+triangle1:
+  n_repetitions: 1
+  common_roles: []
+  host_types:
+    small_v2:
+      n: 1
+      check_status: true
+      init_roles:
+      - setup-small
+      $CMD$:
+      - main: "printf 'x: [% my_run.x %]\\ny: [% my_run.y %]' > results/coordinates.yaml"
+  base_experiment:
+    x:
+      $FACTOR$:
+      - 0
+      - 1
+      - 2
+    y:
+      $FACTOR$:
+      - 3
+      - 4
+  factor_levels:
+  - {}
+triangle2:
+  n_repetitions: 1
+  common_roles: []
+  host_types:
+    small_v2:
+      n: 1
+      check_status: true
+      init_roles:
+      - setup-small
+      $CMD$:
+      - main: "printf 'x: [% my_run.x %]\\ny: [% my_run.y %]' > results/coordinates.yaml"
+  base_experiment:
+    x: $FACTOR$
+    y: $FACTOR$
+  factor_levels:
+  - x: -1
+    y: 3
+  - x: 3
+    y: 3
+  - x: 1
+    y: 5
 $ETL$:
   coord_square:
     experiments:
     - square
     extractors:
-      YamlExtractor: {}
-      ErrorExtractor: {}
-      IgnoreExtractor: {}
+      YamlExtractor:
+        file_regex:
+        - .*\.yaml$
+        - .*\.yml$
+      ErrorExtractor:
+        file_regex:
+        - ^stderr.log$
+      IgnoreExtractor:
+        file_regex:
+        - ^stdout.log$
     transformers:
     - df.filter:
         items:
@@ -15,15 +116,23 @@ $ETL$:
     - df.eval:
         expr: color = 'black'
     loaders:
-      CsvSummaryLoader: {}
+      CsvSummaryLoader:
+        skip_empty: false
       CoordinateLoader: {}
   coord_plus:
     experiments:
     - plus
     extractors:
-      YamlExtractor: {}
-      ErrorExtractor: {}
-      IgnoreExtractor: {}
+      YamlExtractor:
+        file_regex:
+        - .*\.yaml$
+        - .*\.yml$
+      ErrorExtractor:
+        file_regex:
+        - ^stderr.log$
+      IgnoreExtractor:
+        file_regex:
+        - ^stdout.log$
     transformers:
     - df.filter:
         items:
@@ -33,16 +142,24 @@ $ETL$:
     - df.eval:
         expr: color = 'black'
     loaders:
-      CsvSummaryLoader: {}
+      CsvSummaryLoader:
+        skip_empty: false
       CoordinateLoader: {}
   coord_triangle:
     experiments:
     - triangle1
     - triangle2
     extractors:
-      YamlExtractor: {}
-      ErrorExtractor: {}
-      IgnoreExtractor: {}
+      YamlExtractor:
+        file_regex:
+        - .*\.yaml$
+        - .*\.yml$
+      ErrorExtractor:
+        file_regex:
+        - ^stderr.log$
+      IgnoreExtractor:
+        file_regex:
+        - ^stdout.log$
     transformers:
     - df.filter:
         items:
@@ -52,18 +169,26 @@ $ETL$:
     - df.eval:
         expr: color = 'black'
     loaders:
-      CsvSummaryLoader: {}
+      CsvSummaryLoader:
+        skip_empty: false
       CoordinateLoader: {}
   coord_all:
-    experiments: &id001
+    experiments:
     - square
     - plus
     - triangle1
     - triangle2
     extractors:
-      YamlExtractor: {}
-      ErrorExtractor: {}
-      IgnoreExtractor: {}
+      YamlExtractor:
+        file_regex:
+        - .*\.yaml$
+        - .*\.yml$
+      ErrorExtractor:
+        file_regex:
+        - ^stderr.log$
+      IgnoreExtractor:
+        file_regex:
+        - ^stdout.log$
     transformers:
     - df.filter:
         items:
@@ -79,123 +204,52 @@ $ETL$:
         triangle1: blue
         triangle2: blue
     loaders:
-      CsvSummaryLoader: {}
+      CsvSummaryLoader:
+        skip_empty: false
       CoordinateLoader: {}
   commands:
-    experiments: *id001
+    experiments:
+    - square
+    - plus
+    - triangle1
+    - triangle2
     extractors:
-      YamlExtractor: {}
-      ErrorExtractor: {}
-      IgnoreExtractor: {}
+      YamlExtractor:
+        file_regex:
+        - .*\.yaml$
+        - .*\.yml$
+      ErrorExtractor:
+        file_regex:
+        - ^stderr.log$
+      IgnoreExtractor:
+        file_regex:
+        - ^stdout.log$
     transformers:
     - df.filter:
         regex: \$CMD\$
     loaders:
       CsvSummaryLoader:
-        skip_empty: 'False'
+        skip_empty: false
   commands_stage:
-    experiments: *id001
+    experiments:
+    - square
+    - plus
+    - triangle1
+    - triangle2
     extractors:
-      YamlExtractor: {}
-      ErrorExtractor: {}
-      IgnoreExtractor: {}
+      YamlExtractor:
+        file_regex:
+        - .*\.yaml$
+        - .*\.yml$
+      ErrorExtractor:
+        file_regex:
+        - ^stderr.log$
+      IgnoreExtractor:
+        file_regex:
+        - ^stdout.log$
     transformers:
     - df.filter:
         regex: \$CMD\$
     loaders:
       CsvSummaryLoader:
-        skip_empty: 'True'
-square:
-  n_repetitions: 1
-  host_types:
-    small:
-      n: 1
-      init_roles:
-      - setup-small
-      $CMD$:
-      - main: 'printf ''x: [% my_run.x %]\ny: [% my_run.y %]'' > results/coordinates.yaml'
-      check_status: true
-  base_experiment:
-    x:
-      $FACTOR$:
-      - 0
-      - 1
-      - 2
-    y:
-      $FACTOR$:
-      - 0
-      - 1
-      - 2
-  common_roles: []
-  factor_levels:
-  - {}
-plus:
-  n_repetitions: 1
-  host_types:
-    small:
-      n: 1
-      init_roles:
-      - setup-small
-      $CMD$:
-      - main: 'printf ''x: [% my_run.x if my_run.orient in [''N'', ''S''] else  my_run.x + my_run.dist if my_run.orient == ''E'' else my_run.x - my_run.dist %] \ny: [% my_run.y if my_run.orient in [''W'', ''E''] else  my_run.y + my_run.dist if my_run.orient == ''N'' else my_run.y - my_run.dist %]'' > results/coordinates.yaml'
-      check_status: true
-  base_experiment:
-    x: 8
-    y: 5
-    dist:
-      $FACTOR$:
-      - 1
-      - 2
-    orient:
-      $FACTOR$:
-      - N
-      - E
-      - S
-      - W
-  common_roles: []
-  factor_levels:
-  - {}
-triangle1:
-  n_repetitions: 1
-  host_types:
-    small_v2:
-      n: 1
-      init_roles:
-      - setup-small
-      $CMD$:
-      - main: 'printf ''x: [% my_run.x %]\ny: [% my_run.y %]'' > results/coordinates.yaml'
-      check_status: true
-  base_experiment:
-    x:
-      $FACTOR$:
-      - 0
-      - 1
-      - 2
-    y:
-      $FACTOR$:
-      - 3
-      - 4
-  common_roles: []
-  factor_levels:
-  - {}
-triangle2:
-  n_repetitions: 1
-  host_types:
-    small_v2:
-      n: 1
-      init_roles:
-      - setup-small
-      $CMD$:
-      - main: 'printf ''x: [% my_run.x %]\ny: [% my_run.y %]'' > results/coordinates.yaml'
-      check_status: true
-  base_experiment:
-    x: $FACTOR$
-    y: $FACTOR$
-  factor_levels:
-  - x: -1
-    y: 3
-  - x: 3
-    y: 3
-  - x: 1
-    y: 5
-  common_roles: []
+        skip_empty: true

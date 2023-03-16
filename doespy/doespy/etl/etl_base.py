@@ -7,7 +7,9 @@ from typing import Dict, List
 import warnings
 
 import pandas as pd
-import yaml
+import ruamel.yaml
+from pydantic import ValidationError
+
 from doespy import util
 from doespy import status
 from doespy.design import validate_extend
@@ -224,7 +226,7 @@ def _load_super_etl_design(name):
     if "$SUITE_ID$" not in pipeline_design:
         raise ValueError(f"super etl {name}  does not contain $SUITE_ID$")
 
-    # TODO [nku] the include functionality does not exist yet
+    # TODO [nku] the include functionality does not exist yet in the SUPER ETL
 
     return pipeline_design
 
@@ -311,11 +313,9 @@ def load_selected_processes(extractors_sel, transformers_sel, loaders_sel):
         if name not in extractors_avl:
             raise ValueError(f"extractor not found: {name}")
 
-        regex = options.get("file_regex")
-
         d = {
-            "extractor": extractors_avl[name](regex),
-            "options": options,
+            "extractor": extractors_avl[name](**options),
+            "options": options, # TODO: eventually this can be removed in a newer version
         }
 
         extractors.append(d)
@@ -327,11 +327,14 @@ def load_selected_processes(extractors_sel, transformers_sel, loaders_sel):
                 raise ValueError(f"transformer not found: {trans_sel['name']}")
 
             d = {
-                "transformer": transformers_avl[trans_sel["name"]](),
-                "options": trans_sel,
+                "transformer": transformers_avl[trans_sel["name"]](**trans_sel),
+                "options": trans_sel, # TODO: eventually this can be removed in a newer version
             }
             transformers.append(d)
         elif len(trans_sel.keys()) == 1:
+
+            # TODO: Could switch to  DfTransformer(Transformer) and implement the functionality there.
+
             func_name = next(iter(trans_sel))
             args = trans_sel[func_name]
 
@@ -354,8 +357,8 @@ def load_selected_processes(extractors_sel, transformers_sel, loaders_sel):
             raise ValueError(f"loader not found: {name}")
 
         d = {
-            "loader": loaders_avl[name](),
-            "options": options,
+            "loader": loaders_avl[name](**options),
+            "options": options, # TODO: eventually this can be removed in a newer version
         }
         loaders.append(d)
 
@@ -417,13 +420,28 @@ def _load_processes(module_name, extractors, transformers, loaders):
         try:
             etl_candidate = getattr(module, member_name)
             if issubclass(etl_candidate, Extractor):
-                etl_candidate()
+                try:
+                    etl_candidate()
+                except ValidationError:
+                    # TODO: Should we warn or fail if ETL Step Validation failed?
+                    warnings.warn(f"ETL Validation failed for Extractor: {member_name}")
+                    pass
                 extractors[member_name] = etl_candidate
             elif issubclass(etl_candidate, Transformer):
-                etl_candidate()
+                try:
+                    etl_candidate()
+                except ValidationError:
+                    # TODO: Should we warn or fail if ETL Step Validation failed?
+                    warnings.warn(f"ETL Validation failed for Extractor: {member_name}")
+                    pass
                 transformers[member_name] = etl_candidate
             elif issubclass(etl_candidate, Loader):
-                etl_candidate()
+                try:
+                    etl_candidate()
+                except ValidationError:
+                    # TODO: Should we warn or fail if ETL Step Validation failed?
+                    warnings.warn(f"ETL Validation failed for Extractor: {member_name}")
+                    pass
                 loaders[member_name] = etl_candidate
 
         except TypeError:
@@ -513,8 +531,7 @@ def _parse_file(path: str, file: str, extractors: List[Dict]) -> List[Dict]:
     has_match = False
 
     for extractor_d in extractors:
-
-        patterns = extractor_d["extractor"].regex
+        patterns = extractor_d["extractor"].file_regex
         if not isinstance(patterns, list):
             patterns = [patterns]
 
@@ -581,7 +598,7 @@ def _parse_factors(experiment: Dict) -> list:
 
 def _load_config_yaml(path, file="config.json"):
     with open(os.path.join(path, file)) as file:
-        config = yaml.load(file, Loader=yaml.FullLoader)
+        config = ruamel.yaml.safe_load(file)
     return config
 
 

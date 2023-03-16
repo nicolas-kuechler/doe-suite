@@ -267,8 +267,8 @@ rescomp: install
 test-%:
 	@TMP=$$(echo $*|sed -r 's/example([0-9]*).*/echo "$$((\1*$(test_delay)))"/e') ;\
 	sleep $$TMP
-	@make run suite=$* id=new
-	@make rescomp suite=$* id=last
+	@$(MAKE) run suite=$* id=new
+	@$(MAKE) rescomp suite=$* id=last
 
 
 # make single-test -j5 -O -> to run them in parallel
@@ -279,11 +279,11 @@ multi-test: test-example04-multi test-example05-complex
 
 # runs the listed suites and compares the result with the expected result under `doe-suite-results`
 aws-test:
-	@make single-test multi-test -j9 -O test_delay=10
+	@$(MAKE) single-test multi-test -j9 test_delay=10
 
 # runs all examples compatible with euler (no multi instance experiments)
 euler-test:
-	@make single-test -j5 -O cloud=euler
+	@$(MAKE) single-test -j5 -O cloud=euler
 
 test: aws-test euler-test
 
@@ -311,3 +311,20 @@ design: install-silent
 design-validate: install-silent
 	@cd $(does_config_dir) && \
 	poetry run python $(PWD)/doespy/doespy/design/validate_extend.py --suite $(suite) --ignore-undefined-vars --only-validate
+
+
+#################################
+#  ___   ___   ___ ___
+# |   \ / _ \ / __/ __|
+# | |) | (_) | (__\__ \
+# |___/ \___/ \___|___/
+#
+#################################
+
+docs-build: install
+	@cd doespy && \
+	poetry install && \
+	poetry run make html -C ../docs
+
+docs: docs-build
+	@open docs/build/html/index.html

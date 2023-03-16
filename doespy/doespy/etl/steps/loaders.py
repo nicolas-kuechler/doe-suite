@@ -4,9 +4,16 @@ from typing import List, Dict
 import pandas as pd
 import os
 import matplotlib.pyplot as plt
+import inspect
+import sys
+from typing import Optional
 
+from pydantic import BaseModel
 
-class Loader(ABC):
+class Loader(BaseModel, ABC):
+    class Config:
+        extra = "forbid"
+
     def get_output_dir(self, etl_info):
 
         etl_output_dir = etl_info["etl_output_dir"]
@@ -18,6 +25,8 @@ class Loader(ABC):
 
     @abstractmethod
     def load(self, df: pd.DataFrame, options: Dict, etl_info: Dict) -> None:
+        # NOTE: Extending classes should not use the `options: Dict` and instead use instance variables for parameters
+
         pass
 
 
@@ -61,9 +70,27 @@ class PlotLoader(Loader):
 
 
 class CsvSummaryLoader(Loader):
+
+    skip_empty: bool = False
+
+    r"""The `CsvSummaryLoader` creates a CSV file of the data frame from the `Transformer` stage.
+
+    :param output_dir: path relative to the etl output directory to store the csv.
+    :param skip_empty: ignore empty df.
+
+    .. code-block:: yaml
+       :caption: Example ETL Pipeline Design
+
+        $ETL$:
+            loaders:
+                CsvSummaryLoader: {}     # with default output dir
+                CsvSummaryLoader:        # with custom output dir
+                    output_dir: dir1
+    """
+
     def load(self, df: pd.DataFrame, options: Dict, etl_info: Dict) -> None:
 
-        if options.get("skip_empty", False) and df.empty:
+        if self.skip_empty and df.empty:
             return
         elif df.empty:
             raise ValueError("CsvSummaryLoader: DataFrame is empty so not creating an output file.")
@@ -73,8 +100,19 @@ class CsvSummaryLoader(Loader):
 
 
 class LatexTableLoader(Loader):
-    """
-    Prints dataframe as LaTeX table
+
+    r"""The `LatexTableLoader` creates a tex file of the data frame from the `Transformer` stage formatted as a Latex table.
+
+    :param output_dir: path relative to the etl output directory to store the csv.
+
+    .. code-block:: yaml
+       :caption: Example ETL Pipeline Design
+
+        $ETL$:
+            loaders:
+                LatexTableLoader: {}     # with default output dir
+                LatexTableLoader:        # with custom output dir
+                    output_dir: dir1
     """
 
     def load(self, df: pd.DataFrame, options: Dict, etl_info: Dict) -> None:
@@ -83,7 +121,10 @@ class LatexTableLoader(Loader):
                 "LatexTableLoader: DataFrame is empty so not creating an output file."
             )
 
+        output_dir = self.get_output_dir(etl_info)
         with open(
-            os.path.join(etl_info["suite_dir"], f"{etl_info['pipeline']}.txt"), "w"
+            os.path.join(output_dir, f"{etl_info['pipeline']}.tex"), "w"
         ) as file:
             df.to_latex(buf=file)
+
+__all__ = [name for name, cl in inspect.getmembers(sys.modules[__name__], inspect.isclass) if name!="Loader" and issubclass(cl, Loader) ]

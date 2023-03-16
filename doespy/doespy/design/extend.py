@@ -3,13 +3,23 @@ import itertools
 import collections
 import jinja2
 import json
+import subprocess
 from ansible.utils.vars import merge_hash
 
 from doespy import util
 
+from typing import List
+from typing import Dict
+from typing import Literal
+from typing import Union
 
-def extend(suite_design, exp_specific_vars):
-    """_summary_
+from pydantic import Field
+from pydantic import BaseModel
+from pydantic import root_validator
+
+
+def extend(suite_design, exp_specific_vars, use_cmd_shellcheck=False):
+    """
 
     Args:
         suite_design (Dict): suite design (not extended)
@@ -70,6 +80,11 @@ def extend(suite_design, exp_specific_vars):
                     variable_end_string="%]",
                 )
 
+                # TODO [nku] can we do the templating for each host in $CMD$ separately?
+                # -> this would allow setting `host_type_idx` as exp_vars and then we can use it in multi instance experiments
+                # (In MPC audit would allow a single command rather than a list of commands that only differs by a player id)
+                # -> should probably not be a big issue if $CMD$ already follows the list structure at this point
+
                 template = json.dumps(run_config)
                 while "[%" in template and "%]" in template:
                     # temporary convert to a dict
@@ -83,13 +98,19 @@ def extend(suite_design, exp_specific_vars):
                     # (should not be available as var for templating)
 
                     template = env.from_string(template)
-                    template = template.render(my_run=run_config, **exp_vars)
-                run_config = json.loads(template)
 
-                # TODO [nku] could we validate that the commands is a syntactically correct shell command?
+                    try:
+                        template = template.render(my_run=run_config, **exp_vars)
+                    except:
+                        print(f"\n\n==================\nrun_config={run_config}\n==================")
+                        raise
+                run_config = json.loads(template)
 
                 exp_runs_ext.append(run_config)
 
+        # validate the extended suite (check commands)
+        if use_cmd_shellcheck:
+            SuiteExt(__root__=exp_runs_ext)
         suite_ext[exp_name] = exp_runs_ext
 
     return suite_ext
@@ -148,6 +169,7 @@ def extract_cross_product(base_experiment_in):
     return base_experiment, cross_factor_levels
 
 
+# TODO [nku] does this need to be different from design.util.nested_dict_iter?
 def _nested_dict_iter(nested, p=[]):
     for key, value in nested.items():
         if isinstance(value, collections.abc.Mapping):
@@ -165,17 +187,39 @@ def _insert_config(config, key, parent_path, value):
     d[key] = value
 
 
-def _set_nested_value(base, path, value, overwrite=False):
+class MyExtBaseModel(BaseModel):
+    class Config:
+        extra = "forbid"
+        smart_union = True
+        use_enum_values = True
 
-    d = base
-    for i, k in enumerate(path):
+class CmdExt(MyExtBaseModel):
+    __root__: str
 
-        if k not in d:
-            if i == len(path) - 1:  # last
-                d[k] = value
-            else:
-                d[k] = {}
-        elif overwrite and i == len(path) - 1:  # last + overwrite
-            d[k] = value
+    @root_validator(skip_on_failure=True)
+    def check_cmd_syntax(cls, values):
 
-        d = d[k]
+        cmd = values.get("__root__")
+
+        # echo "printf 'x: 1\\ny: 5' > results/coordinates.yaml" | poetry run  shellcheck --shell=bash  /dev/stdin
+        result = subprocess.run([f'echo "{cmd}" | shellcheck --shell=bash /dev/stdin'], text=True, capture_output=True, shell=True) # check=True,
+
+        if result.returncode != 0:
+            print("=====================")
+            print("shellcheck output: ")
+            print(result.stdout)
+            print("=====================")
+            raise ValueError(f"$CMD$ is invalid bash syntax! (see shellcheck output above)")
+
+        return values
+
+class RunConfig(MyExtBaseModel):
+
+    cmd: Dict[str, Union[CmdExt, List[CmdExt], List[Dict[Literal['main'], CmdExt]]]] = Field(alias="$CMD$")
+
+    class Config:
+        extra = "allow"
+        arbitrary_types_allowed = True
+
+class SuiteExt(MyExtBaseModel):
+    __root__: List[RunConfig]

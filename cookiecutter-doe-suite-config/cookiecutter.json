@@ -1,6 +1,7 @@
 {
     "project_id": "example",
     "suite": "getting-started",
+    "experiment_name": "exp1",
     "host_name": "base",
     "host_ec2_instance_type": "t2.medium",
     "host_ec2_volume_size": 16,

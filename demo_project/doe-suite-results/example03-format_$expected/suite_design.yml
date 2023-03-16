@@ -1,12 +1,13 @@
 format_cross:
   n_repetitions: 1
+  common_roles: []
   host_types:
     small:
       n: 1
-      $CMD$:
-      - main: echo "run app=[% my_run.app.name %] with vec=[% my_run.vector_size %] seed=[% my_run.seed %]"
       check_status: true
       init_roles: []
+      $CMD$:
+      - main: echo "run app=[% my_run.app.name %] with vec=[% my_run.vector_size %] seed=[% my_run.seed %]"
   base_experiment:
     seed: 1234
     vector_size:
@@ -21,18 +22,18 @@ format_cross:
         - app1
         - app2
         - app3
-  common_roles: []
   factor_levels:
   - {}
 format_levellist:
   n_repetitions: 1
+  common_roles: []
   host_types:
     small:
       n: 1
-      $CMD$:
-      - main: echo "run app=[% my_run.app.name %] with hyperparam=[% my_run.app.hyperparam %] seed=[% my_run.seed %]"
       check_status: true
       init_roles: []
+      $CMD$:
+      - main: echo "run app=[% my_run.app.name %] with hyperparam=[% my_run.app.hyperparam %] seed=[% my_run.seed %]"
   base_experiment:
     seed: 1234
     app:
@@ -48,16 +49,16 @@ format_levellist:
   - app:
       name: app3
       hyperparam: 5
-  common_roles: []
 format_mixed:
   n_repetitions: 1
+  common_roles: []
   host_types:
     small:
       n: 1
-      $CMD$:
-      - main: echo "run app=[% my_run.app.name %] with hyperparam=[% my_run.app.hyperparam %] vec=[% my_run.vector_size %] seed=[% my_run.seed %]"
       check_status: true
       init_roles: []
+      $CMD$:
+      - main: echo "run app=[% my_run.app.name %] with hyperparam=[% my_run.app.hyperparam %] vec=[% my_run.vector_size %] seed=[% my_run.seed %]"
   base_experiment:
     seed: 1234
     vector_size:
@@ -79,7 +80,6 @@ format_mixed:
   - app:
       name: app3
       hyperparam: 5
-  common_roles: []
 $ETL$:
   check_error:
     experiments:
@@ -87,7 +87,11 @@ $ETL$:
     - format_levellist
     - format_mixed
     extractors:
-      ErrorExtractor: {}
-      IgnoreExtractor: {}
+      ErrorExtractor:
+        file_regex:
+        - ^stderr.log$
+      IgnoreExtractor:
+        file_regex:
+        - ^stdout.log$
     transformers: []
     loaders: {}

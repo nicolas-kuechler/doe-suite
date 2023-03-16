@@ -5,11 +5,11 @@ exp_single:
   host_types:
     small:
       n: 1
+      check_status: true
       init_roles:
       - setup-small
       $CMD$:
       - main: echo "[% my_run.info %];[% my_run.seed %];[% my_run.opt%]" >> results/out.csv
-      check_status: true
   base_experiment:
     info: $FACTOR$
     seed: 1234
@@ -26,12 +26,12 @@ exp_multi_1:
   host_types:
     client:
       n: 3
+      check_status: true
+      init_roles: []
       $CMD$:
       - main: sleep 5 && echo '[% my_run.host_vars.client.msg %] from client 1' | netcat -q 1 [% exp_host_lst | json_query('[?host_type==`server`].private_dns_name') | default(['<UNDEFINED-DNS>'], true) | first %] [% my_run.port %]
       - main: sleep 5 && echo '[% my_run.host_vars.client.msg %] from client 2' | netcat -q 1 [% exp_host_lst | json_query('[?host_type==`server`].private_dns_name') | default(['<UNDEFINED-DNS>'], true) | first %] [% my_run.port %]
       - main: sleep 5 && echo '[% my_run.host_vars.client.msg %] from client 3' | netcat -q 1 [% exp_host_lst | json_query('[?host_type==`server`].private_dns_name') | default(['<UNDEFINED-DNS>'], true) | first %] [% my_run.port %]
-      check_status: true
-      init_roles: []
     server:
       n: 1
       check_status: false
@@ -57,11 +57,11 @@ exp_multi_2:
   host_types:
     small:
       n: 2
+      check_status: true
+      init_roles: []
       $CMD$:
       - main: 'echo "[% my_run.prefix %] [% my_run.n_parties %] [% my_run.postfix %]" '
       - main: 'echo "[% my_run.prefix %] [% my_run.n_parties %] [% my_run.postfix %]" '
-      check_status: true
-      init_roles: []
   base_experiment:
     n_parties:
       $FACTOR$:
@@ -83,7 +83,9 @@ $ETL$:
     - exp_multi_1
     - exp_multi_2
     extractors:
-      ErrorExtractor: {}
+      ErrorExtractor:
+        file_regex:
+        - ^stderr.log$
       IgnoreExtractor:
         file_regex:
         - stdout.log

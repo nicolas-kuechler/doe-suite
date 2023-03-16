@@ -23,9 +23,11 @@
           volume_type: gp2
   register: ec2_launch
 
-- name: Wait for SSH to come up
-  delegate_to: "{{ public_dns_name }}"
-  ansible.builtin.wait_for_connection:
+
+- name: Wait for SSH of the created EC2 instances to come up
+  ansible.builtin.wait_for:
+    host: "{{ public_dns_name }}"
+    port: 22 # ssh
     connect_timeout: 3
     timeout: 320
   loop: "{{ ec2_launch.instances

@@ -4,7 +4,7 @@
     msg: "-> small only"
   tags: [print_action]
 
-- name: Update repositories cache and install required packages
+- name: Install required packages
   become: True
   apt:
     pkg:

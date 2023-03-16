@@ -1,5 +1,5 @@
 import os
-import yaml
+import ruamel.yaml
 import jinja2
 import jmespath
 from glob import glob
@@ -24,7 +24,7 @@ def get_project_id():
         raise ValueError("env variable:DOES_PROJECT_ID_SUFFIX not set")
     suffix = os.environ["DOES_PROJECT_ID_SUFFIX"]
     with open(os.path.join(get_config_dir(), "group_vars", "all", "main.yml")) as f:
-        vars = yaml.load(f, Loader=yaml.SafeLoader)
+        vars = ruamel.yaml.safe_load(f)
 
     prj_id = (
         jinja2.Environment()
@@ -47,7 +47,7 @@ def get_suite_design(suite, folder=None):
     template_vars = {}
     suite_design = template.render(**template_vars)
 
-    suite_design = yaml.load(suite_design, Loader=yaml.SafeLoader)
+    suite_design = ruamel.yaml.safe_load(suite_design)
     return suite_design
 
 
@@ -263,3 +263,20 @@ def jinja2_env(loader, undefined, variable_start_string="{{", variable_end_strin
     env.filters["floor"] = floor
 
     return env
+
+
+def get_suite_design_etl_template_dir():
+    return os.path.join(get_suite_design_dir(), "etl_templates")
+
+#def get_suites():
+#    get_suite_design_dir()
+
+
+def get_host_types():
+    host_types = [x for x in os.listdir(get_suite_group_vars_dir()) if x not in ["all", "ansible_controller"]]
+    return host_types
+
+
+def get_setup_roles():
+    roles = os.listdir(get_suite_roles_dir())
+    return roles

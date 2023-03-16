@@ -2,9 +2,16 @@
 
 src/inventory/
 
+docs/build
+_build
+
+remote/
+
 ### Ansible ###
 *.retry
 .boto
+
+doespy/docs/build
 
 # Python
 Pipfile.lock
