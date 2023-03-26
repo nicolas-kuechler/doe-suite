@@ -2,45 +2,30 @@
 # NOTE: At the moment `bsub` (LSF) is not used for scheduling tasks
 #       but we leave the scheduler if we want to add a cloud later that uses LSF
 
-# Since bjobs runs multiple jobs in parallel, we ignore `job_id_to_wait_for`.
-# This script waits for any of the active jobs to complete and then sets job_id_to_wait_for as one of the completed jobs.
+# WARNING: Since the introduction of exp_job_ids_completing, the role is untested
 
 - assert:
     that:
       - exp_name is defined
+      - exp_job_ids_queued is defined
+      - exp_job_ids_queued | length > 0
 
-- name: Debug bjobs
-  bjobs_info:
-  register: bjobs_result
-- name: debug bjobs
-  debug:
-    msg: "{{ bjobs_result }}"
-
-- name: Store job_id that system wants us to wait for
-  set_fact:
-    system_job_id: "{{ job_id_to_wait_for }}"
-
-- name: Get bjobs
-  bjobs_info:
-  register: bjobs_result
-  until: (exp_job_ids_queued + exp_job_ids_running) | bsub_jobs_finished(bjobs_result.tasks) | length
-  retries: "{{ job_n_tries }}"
-  delay: "{{ job_check_wait_time }}"
-
+#- name: Debug bjobs
+#  bjobs_info:
+#  register: bjobs_result
 #- name: debug bjobs
 #  debug:
 #    msg: "{{ bjobs_result }}"
 
-# Quick hack to be compatible with what experiment-job expects:
-#   Set job_id_to_wait_for to the jsonified version of job_info
-- set_fact:
-    job_id_to_wait_for: "{{ (exp_job_ids_queued + exp_job_ids_running) | bsub_jobs_finished(bjobs_result.tasks) }}"
 
-#- name: debug wait for
-#  debug:
-#    msg: "{{ job_id_to_wait_for }}"
+- name: Get bjobs
+  bjobs_info:
+  register: bjobs_result
+  until: exp_job_ids_queued | bsub_jobs_finished(bjobs_result.tasks) | length
+  retries: "{{ job_n_tries }}"
+  delay: "{{ job_check_wait_time }}"
 
-- name: Override the job id to wait until finished + update state
+
+- name: Marking jobs ids as completing
   set_fact:
-    exp_job_ids_queued: "{{ (exp_job_ids_queued + [system_job_id]) | difference([job_id_to_wait_for]) }}"
-    exp_job_ids_running: "{{ [job_id_to_wait_for] }}"
+    exp_job_ids_completing: "{{ exp_job_ids_queued | bsub_jobs_finished(bjobs_result.tasks) }}"

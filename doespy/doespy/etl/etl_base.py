@@ -116,9 +116,12 @@ def run_etl(
                 if not has_exp_result:
                     res_dir = util.get_suite_results_dir(suite=suite, id=suite_id)
 
-                    suite_status, _etl_error = status.get_suite_status(res_dir)
-                    if suite_status[experiment]["n_jobs_finished"] > 0:
-                        has_exp_result = True
+                    # check that results from at least one run are present
+                    for x in os.listdir(os.path.join(res_dir, experiment)):
+                        if x.startswith("run_"):
+                            has_exp_result = True
+                            break
+
 
                 suite_design = _load_suite_design(suite, suite_id, etl_from_design)
 
@@ -278,6 +281,7 @@ def _extract_experiments_suite(suite, experiments, suite_id_map):
             raise ValueError(f"Suite Id cannot be None: {d} (set default or suite in suite id map)")
         return d
     else:
+        # TODO [nku] it could also be a feature to have a list of suite ids for the same suite
         raise ValueError("Suite ids must be a value or dict!")
 
 
