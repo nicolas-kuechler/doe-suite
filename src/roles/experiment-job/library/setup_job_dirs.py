@@ -49,12 +49,15 @@ def run_module():
 
     for job in jobs:
 
+        if os.path.exists(job["exp_working_dir"]):
+            continue
+
         os.makedirs(os.path.join(job["exp_working_dir"], "results"))
         os.makedirs(os.path.join(job["exp_working_dir"], "scratch"))
 
         cfg_file = os.path.join(job["exp_working_dir"], "config.json")
         if not os.path.isfile(cfg_file):
-            with open(os.path.join(job["exp_working_dir"], "config.json")  , 'w') as f:
+            with open(os.path.join(job["exp_working_dir"], "config.json") , 'w') as f:
                 json.dump(job["exp_run_config"], f, indent=4, sort_keys=True, separators=(',', ': '))
 
             changed = True

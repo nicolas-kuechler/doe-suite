@@ -121,11 +121,7 @@
       exp_job_ids_pending: "{{  exp_job_ids_pending | difference(exp_job_ids_to_enqueue) }}"
       exp_job_ids_to_enqueue: []
 
-  - name: Save the updated state of the experiment run (save job ids)
-    include_role:
-      name: experiment-state
-    vars:
-      expstate: save
+
 
 ###################################################################
 #  End: Schedule new Jobs (enqueue task in task spooler)        #
@@ -141,6 +137,14 @@
 - name: Wait until new jobs complete
   when: exp_job_ids_queued | length > 0
   block:
+
+  - name: Save the updated state of the experiment run (save job ids)
+    include_role:
+      name: experiment-state
+    vars:
+      expstate: save
+
+
   - name: mark that in the next task, there could be an expected error (number of retires exceeded)
     set_fact:
       is_expected_error: True

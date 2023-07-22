@@ -478,7 +478,9 @@ def extract(
         runs = _list_dir_only(exp_dir)
         factor_columns = _parse_factors(base_experiments[exp])
 
-        for run in runs:
+        from tqdm import tqdm
+
+        for run in tqdm(runs):
             run_dir = os.path.join(exp_dir, run)
             reps = _list_dir_only(run_dir)
 

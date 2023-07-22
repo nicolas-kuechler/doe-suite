@@ -361,6 +361,10 @@ class Experiment(MyBaseModel):
     """For the factors of an experiment, lists the different levels.
     For example, `n_clients` can be a factor with two levels: 1 and 100."""
 
+    except_filters: List[Dict] = []
+    """A list of filters that can be used to exclude certain runs from the experiment.
+    """
+
 
     class Config:
         extra = "forbid"
@@ -408,6 +412,14 @@ class Experiment(MyBaseModel):
             assert sorted(expected_factor_paths) == sorted(actual_factors), \
                 f"expected factors do not match actual factors: \
                     expected={expected_factor_paths} actual={actual_factors}"
+        return values
+
+    @root_validator(skip_on_failure=True)
+    def check_except_filters(cls, values):
+
+        # TODO [nku] could also check that the except filters are valid, i.e., a subset of all factors
+        #      ATTENTION: 1st need to find all factors (cannot use the values['ctx'].my_experiment_factor_paths_levellist as in the level list because it does not include the cross factors)
+
         return values
 
 # TODO [nku] could also extract some of them automatically from pydantic models?

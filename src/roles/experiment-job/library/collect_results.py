@@ -81,7 +81,8 @@ def run_module():
             # fetch results
             src_path = f"{my_host['public_dns_name']}:{remote_results_dir}/*"
             try:
-                _completed_process = subprocess.run(["rsync", "-az", src_path, local_results_dir], check=True)
+                # -L is needed to follow symlinks
+                _completed_process = subprocess.run(["rsync", "-azL", src_path, local_results_dir], check=True)
             except subprocess.CalledProcessError as e:
                 warnings.warn(f"Rsync command failed to fetch results with return code {e.returncode}")
                 raise e

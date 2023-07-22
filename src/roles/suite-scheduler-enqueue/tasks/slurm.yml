@@ -25,6 +25,7 @@
   shell: scancel {{ jobs_to_cancel | map(attribute='slurm_job_id') | join(' ')}}
   when: (jobs_to_cancel | list | length) > 0
 
+# TODO [nku] could replace with custom module that does the enqueue (group by host and then do the enqueue)
 - name: schedule the job on euler using slurm (sbatch)
   vars:
     experiment_name: "{{ job.job_info | safe_job_info_string }}"
