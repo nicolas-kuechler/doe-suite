@@ -34,6 +34,14 @@ def main():
         help="Use the pipelines from doe-suite-config/designs or suite_design.yml",
     )
 
+
+    parser.add_argument(
+        "--pipelines",
+        nargs="+",
+        required=False,
+        help="ETL super pipelines to run. If not specified, all pipelines will be run.",
+    )
+
     args = parser.parse_args()
 
     etl_base.run_multi_suite(
@@ -42,6 +50,7 @@ def main():
         flag_output_dir_config_name=not args.output_dir_config_name_disabled,
         flag_output_dir_pipeline=not args.output_dir_pipeline,
         etl_from_design=args.load_from_design,
+        pipeline_filter=args.pipelines,
         return_df=False,
     )
 

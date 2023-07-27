@@ -32,6 +32,10 @@ ifdef id
 	myid=--id $(id)
 endif
 
+ifdef pipelines
+	mypipelines=--pipelines $(pipelines)
+endif
+
 # on `make` and `make help` list all targets with information
 help:
 	@echo 'Running Experiments'
@@ -48,6 +52,7 @@ help:
 	@echo '  make etl-design suite=<SUITE> id=<ID>               - same as `make etl ...` but uses the pipeline from the suite design instead of results'
 	@echo '  make etl-all                                        - run etl pipelines of all results'
 	@echo '  make etl-super config=<CONFIG> out=<PATH>           - run the super etl to combine results of multiple suites  (for <CONFIG> e.g., demo_plots)'
+	@echo '  make etl-super ... pipelines="<P1> <P2>"            - run only a subset of pipelines in the super etl'
 	@echo 'Clean ETL'
 	@echo '  make etl-clean suite=<SUITE> id=<ID>                - delete etl results from specific suite (can be regenerated with make etl ...)'
 	@echo '  make etl-clean-all                                  - delete etl results from all suites (can be regenerated with make etl-all)'
@@ -170,7 +175,7 @@ etl-all: install
 # e.g., make etl-super config=demo_plots out=/home/kuenico/dev/doe-suite/tmp
 etl-super: install
 	@cd $(does_config_dir) && \
-	poetry run python $(PWD)/doespy/doespy/etl/super_etl.py --config $(config) --output_path $(out)
+	poetry run python $(PWD)/doespy/doespy/etl/super_etl.py --config $(config) --output_path $(out) $(mypipelines)
 
 # delete etl results for a specific `suite` and `id`  (can be regenerated with `make etl suite=<SUITE> id=<ID>`)
 etl-clean: install
