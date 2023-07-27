@@ -75,7 +75,6 @@ class CsvSummaryLoader(Loader):
 
     r"""The `CsvSummaryLoader` creates a CSV file of the data frame from the `Transformer` stage.
 
-    :param output_dir: path relative to the etl output directory to store the csv.
     :param skip_empty: ignore empty df.
 
     .. code-block:: yaml
@@ -84,8 +83,8 @@ class CsvSummaryLoader(Loader):
         $ETL$:
             loaders:
                 CsvSummaryLoader: {}     # with default output dir
-                CsvSummaryLoader:        # with custom output dir
-                    output_dir: dir1
+                CsvSummaryLoader:        # with skip empty df
+                    skip_empty: True
     """
 
     def load(self, df: pd.DataFrame, options: Dict, etl_info: Dict) -> None:
@@ -97,6 +96,35 @@ class CsvSummaryLoader(Loader):
         else:
             output_dir = self.get_output_dir(etl_info)
             df.to_csv(os.path.join(output_dir, f"{etl_info['pipeline']}.csv"))
+
+
+class PickleSummaryLoader(Loader):
+
+    skip_empty: bool = False
+
+    r"""The `PickleSummaryLoader` creates a Pickle file of the data frame from the `Transformer` stage.
+
+    :param skip_empty: ignore empty df.
+
+    .. code-block:: yaml
+       :caption: Example ETL Pipeline Design
+
+        $ETL$:
+            loaders:
+                PickleSummaryLoader: {}     # with default output dir
+                PickleSummaryLoader:        # with skip empty dir
+                    skip_empty: True
+    """
+
+    def load(self, df: pd.DataFrame, options: Dict, etl_info: Dict) -> None:
+
+        if self.skip_empty and df.empty:
+            return
+        elif df.empty:
+            raise ValueError("PickleSummaryLoader: DataFrame is empty so not creating an output file.")
+        else:
+            output_dir = self.get_output_dir(etl_info)
+            df.to_pickle(os.path.join(output_dir, f"{etl_info['pipeline']}.pkl"))
 
 
 class LatexTableLoader(Loader):
