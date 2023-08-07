@@ -1,5 +1,11 @@
+import json
+
 import pandas as pd
 
+from tqdm import tqdm
+import requests
+import time
+import os
 
 def expand_factors(df: pd.DataFrame, columns: list) -> list:
     """
@@ -104,3 +110,117 @@ def print_etl_pipeline(etl_pipeline, name):
     for line in out:
         print(line)
     print()
+
+def escape_tuple_str(tup) -> str:
+    as_str = "_".join(tup)
+    # remove any dots
+    as_str = as_str.replace(".", "")
+    return as_str
+
+def save_notion(filenames, etl_info, notion_dict):
+    etl_output_dir = etl_info["etl_output_dir"]
+    pipeline = etl_info["pipeline"]
+    super_etl_name = etl_info["suite"]
+
+    project = notion_dict["project"]
+    parent_block_id = notion_dict["block_id"]
+
+    s3_urls = save_files_to_s3("doe-suite-plots", project, super_etl_name, pipeline, etl_output_dir, filenames)
+
+    # Your Notion API key
+    notion_api_key = os.environ["NOTION_API_KEY"]
+
+    url = f"https://api.notion.com/v1/blocks/{parent_block_id}/children"
+
+    # Headers
+    headers = {
+        "Authorization": f"Bearer {notion_api_key}",
+        "Content-Type": "application/json",
+        "Notion-Version": "2022-06-28"  # update if newer version is available
+    }
+
+    clear_children = True
+    if clear_children:
+        notion_remove_children(url, headers)
+
+    for plot_url in tqdm(s3_urls, desc="Adding images to Notion"):
+        # URL to Notion API
+
+        # Request body
+        data = {
+            "children": [
+                {
+                    "object": "block",
+                    "type": "embed",
+                    "embed": {
+                        "url": plot_url
+                    }
+                }
+            ]
+        }
+        # Convert Python dictionary to JSON
+        data_json = json.dumps(data)
+
+        # Send POST request to Notion API
+        response = requests.patch(url, headers=headers, data=data_json)
+
+        # Check the response
+        if response.status_code != 200:
+            print(f"Failed to add image, status code: {response.status_code}, for url {url}")
+            print(f"Response: {response.text}")
+
+def notion_remove_children(url, headers):
+    # Send GET request to Notion API to retrieve child blocks
+    response = requests.get(url, headers=headers)
+
+    # Check the response
+    if response.status_code == 200:
+        # Convert the response to JSON
+        children = response.json()
+
+        # Iterate over each child block and delete it
+        for child in children['results']:
+            child_id = child['id']
+
+            # URL to Notion API for deleting a block
+            delete_url = f"https://api.notion.com/v1/blocks/{child_id}"
+
+            # Send DELETE request to Notion API to delete the child block
+            delete_response = requests.delete(delete_url, headers=headers)
+
+            # Check the delete response
+            if delete_response.status_code != 200:
+                print(f"Failed to delete block with ID {child_id}, status code: {delete_response.status_code}")
+                print(f"Response: {delete_response.text}")
+
+            # Wait for 0.1 second to prevent rate limit
+            time.sleep(0.1)
+
+        print("Successfully deleted all existing plots")
+
+
+def save_files_to_s3(bucket, project, super_etl_name, pipeline, local_output_dir, filenames, file_format="png", bucket_region="eu-central-1"):
+    import boto3
+    from datetime import datetime
+    import urllib.parse
+
+    timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+
+    urls = []
+    for filename in tqdm(filenames, desc="Uploading plots to s3"):
+        # Set the filename using the current timestamp
+        file_path_local = os.path.join(local_output_dir, f"{filename}.{file_format}")
+        file_path_s3 = f'{project}/super_etl/{super_etl_name}/{pipeline}/{timestamp}/{filename}.png'
+
+        # Create a session using your AWS credentials
+        s3 = boto3.resource('s3')
+
+        # Upload the file
+        with open(file_path_local, "rb") as data:
+            s3.Bucket(bucket).put_object(Key=file_path_s3, Body=data)
+
+        # url encode
+        url = f"https://{bucket}.s3.{bucket_region}.amazonaws.com/{urllib.parse.quote(file_path_s3)}"
+        urls.append(url)
+
+    return urls
