@@ -84,7 +84,7 @@ def run_module():
                 # -L is needed to follow symlinks
                 _completed_process = subprocess.run(["rsync", "-azL", src_path, local_results_dir], check=True)
             except subprocess.CalledProcessError as e:
-                warnings.warn(f"Rsync command failed to fetch results with return code {e.returncode}")
+                warnings.warn(f"Rsync command failed to fetch results with return code {e.returncode}   dir={local_results_dir}")
                 raise e
 
 

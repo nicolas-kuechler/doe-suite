@@ -643,4 +643,7 @@ def _list_files_only(path):
 
 
 def _flatten_d(d):
-    return json.loads(pd.json_normalize(d, sep=".").iloc[0].to_json())
+    if any(isinstance(i, dict) for i in d.values()):
+        return json.loads(pd.json_normalize(d, sep=".").iloc[0].to_json())
+    else:
+        return d
