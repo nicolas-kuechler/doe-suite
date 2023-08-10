@@ -69,20 +69,6 @@ format_cross:
   $CMD$:
     small:
     - main: echo "run app=app1 with vec=40 seed=1234"
-- seed: 1234
-  vector_size: 40
-  app:
-    name: app2
-  $CMD$:
-    small:
-    - main: echo "run app=app2 with vec=40 seed=1234"
-- seed: 1234
-  vector_size: 40
-  app:
-    name: app3
-  $CMD$:
-    small:
-    - main: echo "run app=app3 with vec=40 seed=1234"
 format_levellist:
 - seed: 1234
   app:
@@ -163,14 +149,6 @@ format_mixed:
     small:
     - main: echo "run app=app2 with hyperparam=10 vec=30 seed=1234"
 - seed: 1234
-  vector_size: 40
-  app:
-    name: app2
-    hyperparam: 10
-  $CMD$:
-    small:
-    - main: echo "run app=app2 with hyperparam=10 vec=40 seed=1234"
-- seed: 1234
   vector_size: 10
   app:
     name: app3
@@ -194,11 +172,3 @@ format_mixed:
   $CMD$:
     small:
     - main: echo "run app=app3 with hyperparam=5 vec=30 seed=1234"
-- seed: 1234
-  vector_size: 40
-  app:
-    name: app3
-    hyperparam: 5
-  $CMD$:
-    small:
-    - main: echo "run app=app3 with hyperparam=5 vec=40 seed=1234"

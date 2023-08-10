@@ -24,6 +24,13 @@ format_cross:
         - app3
   factor_levels:
   - {}
+  except_filters:
+  - vector_size: 40
+    app:
+      name: app2
+  - vector_size: 40
+    app:
+      name: app3
 format_levellist:
   n_repetitions: 1
   common_roles: []
@@ -49,6 +56,7 @@ format_levellist:
   - app:
       name: app3
       hyperparam: 5
+  except_filters: []
 format_mixed:
   n_repetitions: 1
   common_roles: []
@@ -80,6 +88,13 @@ format_mixed:
   - app:
       name: app3
       hyperparam: 5
+  except_filters:
+  - vector_size: 40
+    app:
+      name: app2
+  - vector_size: 40
+    app:
+      name: app3
 $ETL$:
   check_error:
     experiments:

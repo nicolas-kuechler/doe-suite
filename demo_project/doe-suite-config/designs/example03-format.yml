@@ -9,6 +9,8 @@
 #
 # The `cross` format uses the keyword `$FACTOR$` as a YAML key,
 # while the `factor list` uses `$FACTOR$` as a YAML value and expects a corresponding level in the `factor_levels` list.
+#
+# The `except_filters` construct can be used to ignore specific combinations of configuration (e.g., the cross product between two factors except a specific combination should be skipped)
 
 # experiment in the pure `cross` format
 format_cross:
@@ -25,8 +27,16 @@ format_cross:
       name:
         $FACTOR$: [app1, app2, app3]  # varied parameter between runs (factor)
       # hyperparam: X  -> not used in this experiment
+  except_filters:
+  # we ignore the combination of vector_size 40 with app2 and app3 and only run it with app1
+  - vector_size: 40
+    app:
+      name: app2
+  - vector_size: 40
+    app:
+      name: app3
   #
-  # The experiment `format_cross` results in 12 runs:
+  # The experiment `format_cross` results in 10 runs:
   # - {"vector_size": 10, "app.name": app1, "seed": 1234}
   # - {"vector_size": 10, "app.name": app2, "seed": 1234}
   # - {"vector_size": 10, "app.name": app3, "seed": 1234}
@@ -40,8 +50,8 @@ format_cross:
   # - {"vector_size": 30, "app.name": app3, "seed": 1234}
 
   # - {"vector_size": 40, "app.name": app1, "seed": 1234}
-  # - {"vector_size": 40, "app.name": app2, "seed": 1234}
-  # - {"vector_size": 40, "app.name": app3, "seed": 1234}
+  # - {"vector_size": 40, "app.name": app2, "seed": 1234} -> Ignored by except_filters
+  # - {"vector_size": 40, "app.name": app3, "seed": 1234} -> Ignored by except_filters
 
 
 # experiment in the pure `level list` format
@@ -102,6 +112,14 @@ format_mixed:
     - app:
         name: app3
         hyperparam: 5
+  except_filters:
+  # we ignore the combination of vector_size 40 with app2 and app3 and only run it with app1
+  - vector_size: 40
+    app:
+      name: app2
+  - vector_size: 40
+    app:
+      name: app3
 
   # The mix between `cross`and `level-list` is the most flexible because it allows to define $FACTORS$
   # for which we want to create the cross product (e.g., `vector_size`) and
@@ -125,8 +143,8 @@ format_mixed:
   # - {"vector_size": 30, "app.name": app3, "app.hyperparam": 5  , "seed": 1234}
 
   # - {"vector_size": 40, "app.name": app1, "app.hyperparam": 0.1, "seed": 1234}
-  # - {"vector_size": 40, "app.name": app2, "app.hyperparam": 10 , "seed": 1234}
-  # - {"vector_size": 40, "app.name": app3, "app.hyperparam": 5  , "seed": 1234}
+  # - {"vector_size": 40, "app.name": app2, "app.hyperparam": 10 , "seed": 1234} -> ignored by except_filters
+  # - {"vector_size": 40, "app.name": app3, "app.hyperparam": 5  , "seed": 1234} -> ignored by except_filters
 
 $ETL$:
   check_error: # ensures that stderr.log is empty everywhere and that no files are generated except stdout.log
