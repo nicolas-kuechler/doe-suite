@@ -24,9 +24,10 @@ def main():
 
     print("Measuring Latency...")
     data = {}
-    data["latency"] = a * args.size + random.uniform(
-        -1, 1
-    )  # latency depends linear on size + some noise for reps
+    noise = 0.93290707138428
+    #noise = random.uniform(-1, 1)
+    data["latency"] = a * args.size + noise # latency depends linear on size + some noise for reps
+
 
     time.sleep(10)  # wait 15 seconds
 
