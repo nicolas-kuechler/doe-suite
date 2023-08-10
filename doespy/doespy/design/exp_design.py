@@ -416,9 +416,28 @@ class Experiment(MyBaseModel):
 
     @root_validator(skip_on_failure=True)
     def check_except_filters(cls, values):
+        """Every entry in ``except_filters`` must be a subset of the actual factors.
+        """
 
-        # TODO [nku] could also check that the except filters are valid, i.e., a subset of all factors
-        #      ATTENTION: 1st need to find all factors (cannot use the values['ctx'].my_experiment_factor_paths_levellist as in the level list because it does not include the cross factors)
+        all_factors = set()
+
+        # add level factors
+        for x in values['ctx'].my_experiment_factor_paths_levellist:
+            all_factors.add(tuple(x))
+
+        for x in values['ctx'].my_experiment_factor_paths_cross:
+            assert x[-1] == "$FACTOR$"
+            all_factors.add(tuple(x[:-1]))  # remove the $FACTOR$
+
+        for filt in values.get("except_filters"):
+            filtered_factors = set()
+            for path, _value in dutil.nested_dict_iter(filt):
+                filtered_factors.add(tuple(path))
+
+
+            assert filtered_factors.issubset(all_factors), \
+                f"except_filters entry is not a subset of the actual factors: \
+                    except_filter={filtered_factors} all_factors={all_factors}"
 
         return values
 

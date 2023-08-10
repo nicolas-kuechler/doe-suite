@@ -63,7 +63,6 @@ def extend(suite_design, exp_specific_vars, use_cmd_shellcheck=False):
 
 
                 # introduce except_filters to skip certain runs
-                # TODO [nku] show functionality in the example designs
                 skip_run = any(_is_subset_dict(except_level, factor_level) for except_level in exp.get("except_filters", []))
                 if skip_run:
                     print(f"Skipping run with factor_level={factor_level}")
