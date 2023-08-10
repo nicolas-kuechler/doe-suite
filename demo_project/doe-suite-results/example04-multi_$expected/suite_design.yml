@@ -39,6 +39,7 @@ exp_client_server:
     host_vars:
       client:
         msg: good day server
+  except_filters: []
 $ETL$:
   check_error:
     experiments:

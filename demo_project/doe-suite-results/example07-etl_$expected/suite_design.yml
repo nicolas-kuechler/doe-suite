@@ -22,6 +22,7 @@ square:
       - 2
   factor_levels:
   - {}
+  except_filters: []
 plus:
   n_repetitions: 1
   common_roles: []
@@ -48,6 +49,7 @@ plus:
       - W
   factor_levels:
   - {}
+  except_filters: []
 triangle1:
   n_repetitions: 1
   common_roles: []
@@ -71,6 +73,7 @@ triangle1:
       - 4
   factor_levels:
   - {}
+  except_filters: []
 triangle2:
   n_repetitions: 1
   common_roles: []
@@ -92,6 +95,7 @@ triangle2:
     y: 3
   - x: 1
     y: 5
+  except_filters: []
 $ETL$:
   coord_square:
     experiments:
