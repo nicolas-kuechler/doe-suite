@@ -143,7 +143,7 @@ def run_module():
         # id task to remove (could take list maybe?)
         remove_task_id=dict(type='str', required=False),
 
-        remove_task_label=dict(type='str', required=False),
+        remove_task_labels=dict(type='list', required=False),
 
         # boolean that indicates whether to clear
         clear_tasks=dict(type='bool', required=False, default=False),
@@ -214,12 +214,12 @@ def run_module():
         subprocess.run(["tsp", "-r", module.params['remove_task_id']], capture_output=True, text=True)
 
         changed = True
-    elif module.params['remove_task_label']:
+    elif module.params['remove_task_labels']:
 
         tasks = get_tasks(return_pid=False)
 
         for task in tasks:
-            if task["label"] == module.params['remove_task_label']:
+            if task["label"] in module.params['remove_task_labels']:
                 subprocess.run(["tsp", "-r", task["id"]], capture_output=True, text=True)
                 changed = True
 

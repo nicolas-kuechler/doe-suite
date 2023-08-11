@@ -185,7 +185,7 @@
       - name: start jobs for experiment {{ exp_name }}
         include_role:
           name: experiment-job
-        loop: "{{ range(0, (exp_job_ids_unfinished | length), 1) | list }}"
+        loop: "{{ range(0, (exp_job_ids_unfinished | length), 1) | list }}" # TODO [nku] this is not optimal because of the multi job ids per
         loop_control:
           loop_var: unfinished_job_idx
 
@@ -203,12 +203,19 @@
           msg: unexpected error occured in experiment = {{ exp_name }}
         when: is_expected_error is not defined or not is_expected_error
 
+#      - name: Save the updated state of the experiment run (save job ids)
+#        include_role:
+#          name: experiment-state
+#        vars:
+#          expstate: save
+
       # the loop until task in `experiment-job` throws an error if the number of tries are exceeded.
       # here we catch this error and handle this gracefully. (every other error is handled by the previous task)
       - name: handle expected error if number of tries exceeded
         ansible.builtin.debug:
           msg: number of tries exceeded -> experiment = {{ exp_name }}
         # when: is_expected_error
+
 
 
 ##########################################################################

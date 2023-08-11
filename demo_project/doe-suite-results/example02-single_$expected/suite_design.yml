@@ -22,6 +22,7 @@ experiment_1:
       - false
   factor_levels:
   - {}
+  except_filters: []
 experiment_2:
   n_repetitions: 3
   common_roles: []
@@ -45,6 +46,7 @@ experiment_2:
       other: '[0, 1]'
   factor_levels:
   - {}
+  except_filters: []
 $ETL$:
   pipeline1:
     experiments:

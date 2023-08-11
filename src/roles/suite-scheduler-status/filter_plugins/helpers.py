@@ -4,28 +4,31 @@ import json, os
 # from ...filter_plugins.helpers import safe_job_info_string
 
 
-def tsp_job_finished(tsp_tasks, job_id):
+def tsp_jobs_finished(job_ids, tsp_tasks):
 
-    """
-    return: True if their is a task in tsp_tasks with the given job_id
-    """
+
+    completed_jobs = []
 
     for task in tsp_tasks:
 
-        task_job_id = json.loads(task["label"])
+        if task["state"] == "finished":
+            task_job_id = json.loads(task["label"])
 
-        if task_job_id == job_id:
-            # found matching job
-
-            if task["state"] == "running" or task["state"] ==  "queued":
-                return False
-            elif task["state"] == "finished":
-                return True
+            if task_job_id in job_ids:
+                completed_jobs.append(task_job_id)
             else:
-                raise ValueError(f"tsp task with unknown task state = {task['state']}   (task={task})")
+                raise ValueError(f"no matching job found in tsp: {job_ids}   tsp_tasks={tsp_tasks}")
+
+        elif task["state"] == "running" or task["state"] ==  "queued":
+            pass
+        else:
+            raise ValueError(f"tsp task with unknown task state = {task['state']}   (task={task})")
 
 
-    raise ValueError(f"no matching job found in tsp: {job_id}   tsp_tasks={tsp_tasks}")
+    return completed_jobs
+
+
+
 
 def get_tsp_task_id(tsp_tasks, job_id):
 
@@ -112,14 +115,19 @@ def bsub_jobs_finished(queued_jobs, bjobs):
 
     queued_or_running_labels = [bjob["label"] for bjob in bjobs]
 
+    completed_jobs = []
+
     for queued_job in queued_jobs:
         safe_id = safe_job_info_string(queued_job)
 
         if safe_id not in queued_or_running_labels:
             # job has finished
-            return queued_job
+            return completed_jobs.append(queued_job)
 
-    return ''
+    if len(completed_jobs) == 0:
+        return ''
+    else:
+        return completed_jobs
 
 
 class FilterModule(object):
@@ -127,7 +135,7 @@ class FilterModule(object):
 
     def filters(self):
         return {
-            "tsp_job_finished": tsp_job_finished,
+            "tsp_jobs_finished": tsp_jobs_finished,
             "bsub_jobs_finished": bsub_jobs_finished,
             "get_tsp_task_id": get_tsp_task_id,
             "to_job_schedule_lst": to_job_schedule_lst,

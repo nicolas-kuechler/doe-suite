@@ -361,6 +361,10 @@ class Experiment(MyBaseModel):
     """For the factors of an experiment, lists the different levels.
     For example, `n_clients` can be a factor with two levels: 1 and 100."""
 
+    except_filters: List[Dict] = []
+    """A list of filters that can be used to exclude certain runs from the experiment.
+    """
+
 
     class Config:
         extra = "forbid"
@@ -408,6 +412,33 @@ class Experiment(MyBaseModel):
             assert sorted(expected_factor_paths) == sorted(actual_factors), \
                 f"expected factors do not match actual factors: \
                     expected={expected_factor_paths} actual={actual_factors}"
+        return values
+
+    @root_validator(skip_on_failure=True)
+    def check_except_filters(cls, values):
+        """Every entry in ``except_filters`` must be a subset of the actual factors.
+        """
+
+        all_factors = set()
+
+        # add level factors
+        for x in values['ctx'].my_experiment_factor_paths_levellist:
+            all_factors.add(tuple(x))
+
+        for x in values['ctx'].my_experiment_factor_paths_cross:
+            assert x[-1] == "$FACTOR$"
+            all_factors.add(tuple(x[:-1]))  # remove the $FACTOR$
+
+        for filt in values.get("except_filters"):
+            filtered_factors = set()
+            for path, _value in dutil.nested_dict_iter(filt):
+                filtered_factors.add(tuple(path))
+
+
+            assert filtered_factors.issubset(all_factors), \
+                f"except_filters entry is not a subset of the actual factors: \
+                    except_filter={filtered_factors} all_factors={all_factors}"
+
         return values
 
 # TODO [nku] could also extract some of them automatically from pydantic models?

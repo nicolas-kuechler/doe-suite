@@ -19,6 +19,7 @@ exp_single:
     opt: true
   - info: run2 - without optimization
     opt: false
+  except_filters: []
 exp_multi_1:
   n_repetitions: 3
   common_roles:
@@ -50,6 +51,7 @@ exp_multi_1:
           - good day server
   factor_levels:
   - {}
+  except_filters: []
 exp_multi_2:
   n_repetitions: 2
   common_roles:
@@ -76,6 +78,7 @@ exp_multi_2:
     postfix: parties
   - prefix: hello
     postfix: people
+  except_filters: []
 $ETL$:
   check_error:
     experiments:

@@ -18,6 +18,7 @@ from pydantic import BaseModel
 from pydantic import root_validator
 
 
+
 def extend(suite_design, exp_specific_vars, use_cmd_shellcheck=False):
     """
 
@@ -59,6 +60,14 @@ def extend(suite_design, exp_specific_vars, use_cmd_shellcheck=False):
                 factor_level = merge_hash(
                     factor_level, cross_factor_level, recursive=True
                 )
+
+
+                # introduce except_filters to skip certain runs
+                skip_run = any(_is_subset_dict(except_level, factor_level) for except_level in exp.get("except_filters", []))
+                if skip_run:
+                    print(f"Skipping run with factor_level={factor_level}")
+                    continue # we are skipping this combination
+
                 run_config = copy.deepcopy(base_experiment)
 
                 # overwrite $FACTOR$ with the concrete level of the run
@@ -176,6 +185,21 @@ def _nested_dict_iter(nested, p=[]):
             yield from _nested_dict_iter(value, p=p + [key])
         else:
             yield key, value, p
+
+
+def _is_subset_dict(sub_dict, main_dict):
+    """Checks if sub_dict is a subset of main_dict"""
+
+    for key, value in sub_dict.items():
+        if key not in main_dict:
+            return False
+        if isinstance(value, dict):
+            if not _is_subset_dict(value, main_dict[key]):
+                return False
+        else:
+            if value != main_dict[key]:
+                return False
+    return True
 
 
 def _insert_config(config, key, parent_path, value):

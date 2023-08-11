@@ -4,6 +4,11 @@ from doespy import util
 
 
 def main():
+
+    # TODO [nku] validate the super-etl design with pydantic?
+
+    # TODO [nku] allow for super-etl to be located in a different directory? -> specifically, the results of the super-etl should be in the same directory as the super-etl config
+
     parser = argparse.ArgumentParser(description="")
     parser.add_argument("--config", type=str, required=True)
     parser.add_argument(
@@ -19,7 +24,7 @@ def main():
     )
     parser.add_argument(
         "--output_dir_pipeline",
-        action="store_false",
+        action="store_true",
         help="Whether to output in a subdir with the name of the pipeline.",
     )
 
@@ -27,6 +32,14 @@ def main():
         "--load_from_design",
         action="store_true",
         help="Use the pipelines from doe-suite-config/designs or suite_design.yml",
+    )
+
+
+    parser.add_argument(
+        "--pipelines",
+        nargs="+",
+        required=False,
+        help="ETL super pipelines to run. If not specified, all pipelines will be run.",
     )
 
     args = parser.parse_args()
@@ -37,6 +50,7 @@ def main():
         flag_output_dir_config_name=not args.output_dir_config_name_disabled,
         flag_output_dir_pipeline=not args.output_dir_pipeline,
         etl_from_design=args.load_from_design,
+        pipeline_filter=args.pipelines,
         return_df=False,
     )
 

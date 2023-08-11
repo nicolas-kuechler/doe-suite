@@ -4,7 +4,7 @@
 
 - assert:
     that:
-      - job_id_to_wait_for is defined
+      - exp_job_ids_completing is defined
       - exp_name is defined
 
 - name: Noop

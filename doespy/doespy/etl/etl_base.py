@@ -10,6 +10,8 @@ import pandas as pd
 import ruamel.yaml
 from pydantic import ValidationError
 
+from tqdm import tqdm
+
 from doespy import util
 from doespy import status
 from doespy.design import validate_extend
@@ -59,10 +61,29 @@ def run_multi_suite(
     flag_output_dir_config_name: bool = True,
     flag_output_dir_pipeline: bool = True,
     etl_from_design: bool = False,
+    pipeline_filter: List[str] = None,
     return_df: bool = False,
 ):
 
     pipeline_design = _load_super_etl_design(name=super_etl)
+
+
+
+
+    # filtering out pipelines by the pipeline_filter
+    if pipeline_filter is not None:
+
+        # check that pipeline_filter is valid
+        for pipeline_name in pipeline_filter:
+            assert pipeline_name not in ["$SUITE_ID$", "$ETL$"], "Pipeline filter cannot be $SUITE_ID$ or $ETL$"
+            assert pipeline_name in pipeline_design["$ETL$"], f"Pipeline filter not found in super etl design: {pipeline_name}  (existing={pipeline_design['$ETL$'].keys()})"
+
+        # find pipelines to remove
+        existing_pipelines = set(pipeline_design["$ETL$"].keys())
+        filtered_out_pipelines = existing_pipelines - set(pipeline_filter)
+        print(f"Filtering our pipelines: {filtered_out_pipelines}")
+        for p in filtered_out_pipelines:
+            del pipeline_design["$ETL$"][p]
 
     return run_etl(
         config_name=super_etl,
@@ -116,9 +137,12 @@ def run_etl(
                 if not has_exp_result:
                     res_dir = util.get_suite_results_dir(suite=suite, id=suite_id)
 
-                    suite_status, _etl_error = status.get_suite_status(res_dir)
-                    if suite_status[experiment]["n_jobs_finished"] > 0:
-                        has_exp_result = True
+                    # check that results from at least one run are present
+                    for x in os.listdir(os.path.join(res_dir, experiment)):
+                        if x.startswith("run_"):
+                            has_exp_result = True
+                            break
+
 
                 suite_design = _load_suite_design(suite, suite_id, etl_from_design)
 
@@ -278,6 +302,7 @@ def _extract_experiments_suite(suite, experiments, suite_id_map):
             raise ValueError(f"Suite Id cannot be None: {d} (set default or suite in suite id map)")
         return d
     else:
+        # TODO [nku] it could also be a feature to have a list of suite ids for the same suite
         raise ValueError("Suite ids must be a value or dict!")
 
 
@@ -474,7 +499,7 @@ def extract(
         runs = _list_dir_only(exp_dir)
         factor_columns = _parse_factors(base_experiments[exp])
 
-        for run in runs:
+        for run in tqdm(runs, desc=f"processing runs of experiment {exp}"):
             run_dir = os.path.join(exp_dir, run)
             reps = _list_dir_only(run_dir)
 
@@ -524,6 +549,8 @@ def extract(
                                 res_lst.append(res)
 
     df = pd.DataFrame(res_lst)
+
+    res_lst.clear()
     return df
 
 
@@ -616,4 +643,7 @@ def _list_files_only(path):
 
 
 def _flatten_d(d):
-    return json.loads(pd.json_normalize(d, sep=".").iloc[0].to_json())
+    if any(isinstance(i, dict) for i in d.values()):
+        return json.loads(pd.json_normalize(d, sep=".").iloc[0].to_json())
+    else:
+        return d

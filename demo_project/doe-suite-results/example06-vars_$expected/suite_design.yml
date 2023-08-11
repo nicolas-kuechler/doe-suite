@@ -30,4 +30,5 @@ shared_vars:
   factor_levels:
   - define_factor: f1
   - define_factor: f2
+  except_filters: []
 $ETL$: {}
