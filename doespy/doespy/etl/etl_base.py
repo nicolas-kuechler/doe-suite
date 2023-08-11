@@ -10,6 +10,8 @@ import pandas as pd
 import ruamel.yaml
 from pydantic import ValidationError
 
+from tqdm import tqdm
+
 from doespy import util
 from doespy import status
 from doespy.design import validate_extend
@@ -497,9 +499,7 @@ def extract(
         runs = _list_dir_only(exp_dir)
         factor_columns = _parse_factors(base_experiments[exp])
 
-        from tqdm import tqdm
-
-        for run in tqdm(runs):
+        for run in tqdm(runs, desc=f"processing runs of experiment {exp}"):
             run_dir = os.path.join(exp_dir, run)
             reps = _list_dir_only(run_dir)
 
