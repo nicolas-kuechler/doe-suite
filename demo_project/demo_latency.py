@@ -24,7 +24,7 @@ def main():
 
     print("Measuring Latency...")
     data = {}
-    noise = 0.93290707138428
+    noise = 0.9329
     #noise = random.uniform(-1, 1)
     data["latency"] = a * args.size + noise # latency depends linear on size + some noise for reps
 
