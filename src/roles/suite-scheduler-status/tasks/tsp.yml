@@ -5,6 +5,34 @@
       - exp_job_ids_queued is defined
       - exp_job_ids_queued | length > 0
 
+# It may happen that the job exists in tsp on one host but not the other, due to the other host restarting..
+# We should handle this by first checking that tsp_info returns the same list of tasks for all hosts
+
+- name: Store result of tsp_info for each host
+  tsp_info:
+  register: tsp_result_local
+  delegate_to: "{{ host }}"
+  loop: "{{ groups[exp_name] | intersect(groups['check_status_yes']) }}" # only check status of jobs for host_types with 'check_status' == true
+  loop_control:
+    loop_var: host
+
+# Now we have to go through all hostvars[host]['tsp_result'].tasks and check that they are the same for all hosts
+# in groups[exp_name] | intersect(groups['check_status_yes'])
+- name: Initialize comparison result
+  set_fact:
+    lists_are_equal: true
+
+- name: Check if all task lists are equal by comparing the labels
+  set_fact:
+    lists_are_equal: "{{ lists_are_equal and (tsp_result_local.results[0].tasks | map(attribute='label') | list | symmetric_difference(tsp_result_local.results[item].tasks | map(attribute='label') | list) | length == 0) }}"
+  loop: "{{ range(1, tsp_result_local.results | length) | list }}"
+  when: tsp_result_local.results | length > 1
+
+- name: Report if lists are unequal
+  debug:
+    msg: "The output of tsp is not consistent across hosts! Will declare job as finished and fetch results. Results: {{ tsp_result_local.results }}"
+  when: lists_are_equal == false
+
 - name: Get status of job
   # Note: if the number of tries are exceeded, the task raises an error which stops this role and is caught in the parent
   tsp_info:
@@ -16,8 +44,33 @@
   loop: "{{ groups[exp_name] | intersect(groups['check_status_yes']) }}" # only check status of jobs for host_types with 'check_status' == true
   loop_control:
     loop_var: host
-
+  when: lists_are_equal
 
 - name: Marking jobs ids as completing
   set_fact:
     exp_job_ids_completing: "{{ exp_job_ids_queued | tsp_jobs_finished(tsp_result.results[-1].tasks) }}"
+  when: lists_are_equal
+
+- name: Debug tsp result
+  debug:
+      msg: "tsp_result_local: {{ tsp_result_local }}"
+  when: lists_are_equal == false
+
+- name: Find task that is there through union of tsp_result.results[item].tasks
+  set_fact:
+    unique_tasks: "{{ unique_tasks | default([]) | union(tsp_result_local.results[item].tasks) }}"
+  loop: "{{ range(0, tsp_result_local.results | length) | list }}"
+  when: lists_are_equal == false
+
+- name: Marking unique tasks as complete (debug)
+  debug:
+    msg: "unique_tasks: {{ unique_tasks }}"
+  when: lists_are_equal == false
+
+# TODO: If one process hangs
+
+- name: Marking jobs ids as completing
+  set_fact:
+    exp_job_ids_completing: "{{ exp_job_ids_queued | tsp_jobs_finished(unique_tasks) }}"
+  when: lists_are_equal == false
+

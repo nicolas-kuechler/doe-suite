@@ -226,7 +226,9 @@ class CmdExt(MyExtBaseModel):
         cmd = values.get("__root__")
 
         # echo "printf 'x: 1\\ny: 5' > results/coordinates.yaml" | poetry run  shellcheck --shell=bash  /dev/stdin
-        result = subprocess.run([f'echo "{cmd}" | shellcheck --shell=bash /dev/stdin'], text=True, capture_output=True, shell=True) # check=True,
+        # We disable error SC1091 because we run the validation locally (so shellcheck does not have access to all files)
+        # For more information see: https://www.shellcheck.net/wiki/SC1091
+        result = subprocess.run([f'echo "{cmd}" | shellcheck -x -e SC1091 --shell=bash /dev/stdin'], text=True, capture_output=True, shell=True) # check=True,
 
         if result.returncode != 0:
             print("=====================")
