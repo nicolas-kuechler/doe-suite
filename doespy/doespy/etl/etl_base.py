@@ -244,7 +244,6 @@ def _load_super_etl_design(name, overwrite_suite_id_map=None):
 
     config_dir = util.get_super_etl_dir()
 
-
     pipeline_design = util.load_config_yaml(config_dir, file=f"{name}.yml")
 
     if overwrite_suite_id_map is not None:
