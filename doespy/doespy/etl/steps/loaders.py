@@ -36,6 +36,21 @@ class Loader(BaseModel, ABC):
 # TODO [nku] maybe provide some really basic plots based on options:
 #  [lineplot, barchart]
 class PlotLoader(Loader):
+
+    def save_data(self, df: pd.DataFrame, filename: str, output_dir: str, output_filetypes: List[str] = ["html"]):
+        os.makedirs(output_dir, exist_ok=True)
+
+        for ext in output_filetypes:
+            if ext == "html":
+                html_table = df.to_html()
+                path = os.path.join(output_dir, f"{filename}.html")
+
+                with open(path, 'w') as file:
+                    file.write(html_table)
+            else:
+                raise ValueError(f"PlotLoader: Unknown file type {ext}")
+
+
     def save_plot(
         self,
         fig: plt.Figure,
@@ -44,6 +59,10 @@ class PlotLoader(Loader):
         use_tight_layout: bool = True,
         output_filetypes: List[str] = ["pdf", "png"],
     ):
+
+        os.makedirs(output_dir, exist_ok=True)
+
+
         for ext in output_filetypes:
             full_filename = f"{output_dir}/{filename}.{ext}"
 
