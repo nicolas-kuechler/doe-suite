@@ -47,6 +47,7 @@ class ETLContext(MyETLBaseModel):
 
 class IncludeEtlSource(MyETLBaseModel):
     suite: str = None
+    config: str = None # super etl config
     template: str = None
     pipeline: str = None
 
@@ -54,22 +55,7 @@ class IncludeEtlSource(MyETLBaseModel):
         extra = "forbid"
         allow_reuse=True
 
-    @validator("suite", "template")
-    def check_suite_xor_template(cls, v, values):
-        """checks that either suite or template is used"""
-        if "suite" in values:
-            count = 0
-            if values.get("suite") is None:
-                count += 1
-            if v is None:  # template
-                count += 1
 
-            if count != 1:
-                raise ValueError(
-                    f"IncludeSource needs to have either suite or template (suite={values.get('suite')} xor template={v})"
-                )
-
-        return v
 
     @validator("suite")
     def check_suite_available(cls, v):
@@ -77,6 +63,18 @@ class IncludeEtlSource(MyETLBaseModel):
         if v is not None:
             avl_suites = info.get_suite_designs()
             if v not in avl_suites:
+                raise ValueError(f"source not found: suite={v}")
+
+        return v
+
+    @validator("config")
+    def check_config_available(cls, v, values):
+        """checks that referenced config exists"""
+        if v is not None:
+
+            avl_configs = util.get_all_super_etl_configs()
+            #avl_suites = info.get_suite_designs()
+            if v not in avl_configs:
                 raise ValueError(f"source not found: suite={v}")
 
         return v
@@ -92,12 +90,37 @@ class IncludeEtlSource(MyETLBaseModel):
 
         return v
 
+
+    @validator("pipeline")
+    def check_suite_xor_template(cls, v, values):
+
+        """checks that either suite or template or config is used"""
+
+        count = 0
+
+        if values.get("suite", None) is not None:
+            count += 1
+
+        if values.get("config", None) is not None:
+            count += 1
+
+        if values.get("template", None) is not None:
+            count += 1
+
+        assert count == 1, f"IncludeSource malformed: suite, config, and template are mutually exclusive but are: suite={values.get('suite')}  config={values.get('config')}  template={values.get('template')}"
+
+        return v
+
+
     @validator("pipeline")
     def check_pipeline_available(cls, v, values):
         """checks that referenced pipeline in suite or template exists"""
 
         if values.get("suite") is not None:
             avl_pipelines = info.get_etl_pipelines(values["suite"])
+        elif values.get("config") is not None:
+            dir = util.get_super_etl_dir()
+            avl_pipelines = info.get_etl_pipelines(values["config"], designs_dir=dir)
         elif values.get("template") is not None:
             dir = util.get_suite_design_etl_template_dir()
             avl_pipelines = info.get_etl_pipelines(values["template"], designs_dir=dir)
@@ -117,6 +140,10 @@ class IncludeEtlSource(MyETLBaseModel):
 
         if values.get("suite") is not None:
             design = util.get_suite_design(values["suite"])
+
+        elif values.get("config") is not None:
+            dir = util.get_super_etl_dir()
+            design = util.get_suite_design(suite=values["config"], folder=dir)
 
         elif values.get("template") is not None:
             templ_dir = util.get_suite_design_etl_template_dir()
@@ -240,10 +267,11 @@ class ETLPipelineBase(MyETLBaseModel):
 
     include_pipeline: Optional[IncludeEtlSource] = Field(alias="$INCLUDE_PIPELINE$", exclude=True)
 
-    extractors: Dict[ExtractorId, Union[Extractor, List[IncludeEtlSource]]] = {}
+    extractors: Dict[ExtractorId, Union[List[IncludeEtlSource], Extractor]] = {}
 
     transformers: List[Union[IncludeStepTransformer, NamedTransformer, DfTransformer]] = []
 
+    # TODO [nku] loaders should also be possible to be a list because may want to use same loader id multiple times
     loaders: Dict[LoaderId, Union[Loader, List[IncludeEtlSource]]] = {}
 
     class Config:
@@ -437,8 +465,6 @@ class SuperETLContext(MyETLBaseModel):
 
         experiment_names: List[str]
 
-        etl_pipeline_names: List[str]
-
 
     prj_id: str
     suites: Dict[SuiteName, SuperETLSuiteContext]
@@ -464,13 +490,9 @@ class SuperETLPipeline(ETLPipeline):
 
         for suite_name, experiments in values.get("experiments", {}).items():
 
-            experiments = experiments.__root__
-
-            # TODO [nku] this may need to be debugged first
             avl_experiments = values['ctx'].suites[suite_name].experiment_names
 
             if experiments.__root__ == "*":
-                # TODO [nku] need to test that the proper things are set
                 experiments.__root__ = avl_experiments
             else:
                 missing = list(set(experiments.__root__).difference(avl_experiments))
@@ -478,14 +500,13 @@ class SuperETLPipeline(ETLPipeline):
 
         return values
 
-# TODO [nku] the super ETL things are untested
 
 class SuperETL(MyETLBaseModel):
 
     ctx: SuperETLContext = Field(alias="_CTX", exclude=True)
     """:meta private:"""
 
-    suite_id: Dict[SuiteName, Union[List[str], str]] = Field(alias="$SUITE_ID$")
+    suite_id: Dict[SuiteName, Union[str, Dict[str, str]]] = Field(alias="$SUITE_ID$")
 
     etl: Dict[str, SuperETLPipeline] = Field(alias="$ETL$")
 
@@ -493,12 +514,72 @@ class SuperETL(MyETLBaseModel):
     @root_validator(pre=True, skip_on_failure=True)
     def context(cls, values):
 
+        # build info on avl suite ids
+        existing_suite_ids = {}
+        for d in util.get_all_suite_results_dir():
+            if d['suite'] not in existing_suite_ids:
+                existing_suite_ids[d['suite']] = set()
+
+            existing_suite_ids[d['suite']].add(d['suite_id'])
+
+        # print(f"existing_suite_ids={existing_suite_ids}")
+
+        for suite_name, suite_id_entry in values.get("$SUITE_ID$", {}).items():
+
+            # 1. Check that we have a result for this suite
+            assert suite_name in existing_suite_ids, f"no results for suite={suite_name} exist"
+
+            # 2. Convert to dict representation
+            if isinstance(suite_id_entry, str) or isinstance(suite_id_entry, int):
+                # meaning: every experiment in that suite should be based on this id
+                #   -> load all experiments for this suite
+                exps = util.get_does_result_experiments(suite=suite_name, suite_id=suite_id_entry)
+                values["$SUITE_ID$"][suite_name] = {exp: suite_id_entry for exp in exps}
+
+            # 3. Resolve default suite id
+            elif isinstance(suite_id_entry, dict):
+
+                default_suite_id =  suite_id_entry.pop("$DEFAULT$", None)
+                assert default_suite_id is None or isinstance(default_suite_id, str) or isinstance(default_suite_id, int), f"default suite id must be string or int but is {default_suite_id}"
+
+                if default_suite_id is not None:
+                    # use default suite id for all experiments that are not explicitly set
+                    for exp_name in util.get_does_result_experiments(suite=suite_name, suite_id=default_suite_id):
+                        if exp_name not in suite_id_entry:
+                            suite_id_entry[exp_name] = default_suite_id
+            else:
+                raise ValueError(f"format of $SUITE_ID$ is invalid for suite={suite_name}")
+
+
+        # -> now values["$SUITE_ID$"] is a dict of {suite_name: {exp_name: suite_id}}
+
         suites = {}
-        for suite in info.get_suite_designs():
-            suites[suite] = {
-                "experiment_names": [d["exp_name"] for d in info.get_experiments(suite)],
-                "etl_pipeline_names": info.get_etl_pipelines(suite)
+        all_exps_d = {}
+
+        for suite_name, suite_id_entry in values.get("$SUITE_ID$", {}).items():
+            assert isinstance(suite_id_entry, dict), f"format of $SUITE_ID$ is invalid for suite={suite_name}"
+
+            exps = []
+            # we have a dict of {exp_name: suite_id}
+            for exp_name, suite_id in suite_id_entry.items():
+
+                if (suite_name, suite_id) not in all_exps_d:
+                    all_exps_d[(suite_name, suite_id)] = util.get_does_result_experiments(suite=suite_name, suite_id=suite_id)
+
+                assert exp_name in all_exps_d[(suite_name, suite_id)], f"experiment={exp_name} does not exist in suite={suite_name} suite_id={suite_id_entry}"
+
+                exps.append(exp_name)
+
+
+            suites[suite_name] = {
+                "experiment_names": list(set(exps)),
+                # TODO [nku] maybe here load all avaialble etl pipelines from somewhere? -> maybe only from super_etl locally or from templates
+               #"etl_pipeline_names": values['ctx'].suites[suite_name].etl_pipeline_names
             }
+
+        #print(f"suites={suites}")
+
+        #print(f"$SUITE_ID$={values.get('$SUITE_ID$', {})}")
 
         ctx = {
             "prj_id": util.get_project_id(),
@@ -514,28 +595,3 @@ class SuperETL(MyETLBaseModel):
             etl_pipeline["_CTX"] = etl_ctx
 
         return values
-
-    @validator("suite_id")
-    def check_suite_id(cls, v):
-        """Check that all suite id's that the super etl references also actually exist as results.
-        """
-
-        # build info on avl suite ids
-        existing_suite_ids = {}
-        for d in util.get_all_suite_results_dir():
-            if d['suite'] not in existing_suite_ids:
-                existing_suite_ids[d['suite']] = set()
-
-            existing_suite_ids[d['suite']].add(d['suite_id'])
-
-
-        for suite_name, suite_id_entry in v.items():
-            assert suite_name in existing_suite_ids, f"no results for suite={suite_name} exist"
-
-            if isinstance(suite_id_entry, str):
-                suite_id_entry = [suite_id_entry]
-
-            for suite_id in suite_id_entry:
-                assert suite_id in existing_suite_ids[suite_name], f"suite_id={suite_id} for suite={suite_name} does not exist"
-
-        return v

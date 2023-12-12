@@ -65,6 +65,12 @@ def get_config_dir():
 def get_super_etl_dir():
     return os.path.join(get_config_dir(), "super_etl")
 
+def get_all_super_etl_configs():
+    super_etl_configs = [os.path.splitext(x)[0] for x in _list_files_only(get_super_etl_dir())]
+    return super_etl_configs
+
+
+
 
 def get_super_etl_output_dir():
     os.path.join(get_results_dir(), "super_etl")
@@ -160,6 +166,17 @@ def get_does_results(ignore_expected=True):
                 does_results.append({"suite": suite, "suite_id": suite_id})
 
     return does_results
+
+
+def get_does_result_experiments(suite, suite_id):
+    res_dir = get_suite_results_dir(suite=suite, id=suite_id)
+    suite_design = load_config_yaml(res_dir, file="suite_design.yml")
+    experiments_in_design = {x for x in suite_design.keys() if not x.startswith("$")}
+
+    experiments_in_results = [exp for exp in _list_dir_only(res_dir) if exp in experiments_in_design]
+
+    return experiments_in_results
+
 
 
 def find_suite_result(suite=None, id="last"):
@@ -280,3 +297,22 @@ def get_host_types():
 def get_setup_roles():
     roles = os.listdir(get_suite_roles_dir())
     return roles
+
+
+def _list_dir_only(path):
+    lst = [f for f in os.listdir(path) if os.path.isdir(os.path.join(path, f))]
+    return lst
+
+def _list_files_only(path):
+    def _is_file(path, f):
+        return not os.path.isdir(os.path.join(path, f))
+
+    lst = [f for f in os.listdir(path) if _is_file(path, f)]
+    return lst
+
+def load_config_yaml(path, file="config.json"):
+    #yaml = ruamel.yaml.YAML(typ='safe', pure=True)
+    with open(os.path.join(path, file)) as file:
+        #config = yaml.load(file)
+        config = ruamel.yaml.safe_load(file)
+    return config
