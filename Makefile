@@ -36,6 +36,10 @@ ifdef pipelines
 	mypipelines=--pipelines $(pipelines)
 endif
 
+ifdef custom-suite-id # custom-suite-id="<suite>=<id> <suite>=<id>"
+	mycustomsuiteid=--suite_id $(custom-suite-id)
+endif
+
 # on `make` and `make help` list all targets with information
 help:
 	@echo 'Running Experiments'
@@ -175,7 +179,7 @@ etl-all: install
 # e.g., make etl-super config=demo_plots out=/home/kuenico/dev/doe-suite/tmp
 etl-super: install
 	@cd $(does_config_dir) && \
-	poetry run python $(PWD)/doespy/doespy/etl/super_etl.py --config $(config) --output_path $(out) $(mypipelines)
+	poetry run python $(PWD)/doespy/doespy/etl/super_etl.py --config $(config) --output_path $(out) $(mypipelines) $(mycustomsuiteid)
 
 # delete etl results for a specific `suite` and `id`  (can be regenerated with `make etl suite=<SUITE> id=<ID>`)
 etl-clean: install
