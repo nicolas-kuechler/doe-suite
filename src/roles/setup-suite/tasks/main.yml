@@ -6,6 +6,13 @@
     msg: "-> setup suite"
   tags: [print_action]
 
+- name: Ensure git is installed
+  become: True
+  ansible.builtin.package:
+    name:
+      - git
+    state: present
+
 - name: check task spooler executable is present
   shell: "which tsp"
   register: tsp_installed_which
@@ -24,7 +31,6 @@
       become: True
       ansible.builtin.package:
         name:
-          - git
           - build-essential
           - pkgconfig
         state: present
@@ -56,11 +62,11 @@
 #
 # 2. Add the GitHub private key to ssh-agent:
 #
-#   ssh-aadd ~/.ssh/private_key_rsa
+#   ssh-add ~/.ssh/private_key_rsa
 #
 # 3. (On a MAC, need add to keychain)
 
-- name: Update Code from Git remote repository (or multiple)
+- name: Update Code from Git remote repository (or multiple)  [if this fails, did you setup ssh-agent (see docs)?]
   git:
     repo: "{{ git_repo.repo }}"
     dest: "{{ remote.dir }}/{{ git_repo.dir }}"

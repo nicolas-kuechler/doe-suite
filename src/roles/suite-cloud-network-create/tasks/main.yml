@@ -9,5 +9,5 @@
     - exp_base is defined
 
 - debug:
-    msg: "-> creating VPC... --> NoOp for Euler"
+    msg: "-> creating VPC... --> NoOp for non-aws"
   tags: [print_action]

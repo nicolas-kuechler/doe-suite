@@ -98,7 +98,7 @@
     setup_job_dirs:
       jobs: "{{ jobs_grouped | last }}"
     delegate_to: "{{ jobs_grouped | first }}" # first entry in group
-    loop: "{{ exp_jobs_to_enqueue | groupby('host_info.public_dns_name') }}"
+    loop: "{{ exp_jobs_to_enqueue | groupby('host_info.ansible_host_id') }}"
     loop_control:
       loop_var: jobs_grouped
     no_log: true

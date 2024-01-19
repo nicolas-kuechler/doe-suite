@@ -1,0 +1,5 @@
+---
+
+- debug:
+    msg: "-> delete machines... --> NoOp"
+  tags: [print_action]

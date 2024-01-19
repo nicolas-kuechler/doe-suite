@@ -1,0 +1,22 @@
+# NOTE: fallback used if cloud is neither euler nor aws => must be a custom manually provided invenotry
+
+
+- assert:
+    that:
+    - exp_base is defined
+
+# TODO [nku] could do a user friendly error message if the hostfile is not present
+
+- name: Include vars of {{ cloud }}.yml into available_inventory variable
+  ansible.builtin.include_vars:
+    file: "{{ does_config_dir }}/inventory/{{ cloud }}.yml"
+    name: manual_hostsfile # available inventory
+
+- name: custom inv
+  debug:
+    msg="available_inventory = {{ manual_hostsfile }}"
+
+- name: Check that the manual inventory contains teh required host_types
+  assert:
+      that:
+      - host_types | check_manual_inventory(manual_hostsfile)
