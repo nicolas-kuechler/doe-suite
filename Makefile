@@ -181,6 +181,11 @@ etl-super: install
 	@cd $(does_config_dir) && \
 	poetry run python $(PWD)/doespy/doespy/etl/super_etl.py --config $(config) --output_path $(out) $(mypipelines) $(mycustomsuiteid)
 
+etl-super-debug: install
+	@cd $(does_config_dir) && \
+	poetry run python -m debugpy --listen 5678 --wait-for-client $(PWD)/doespy/doespy/etl/super_etl.py --config $(config) --output_path $(out) $(mypipelines)
+
+
 # delete etl results for a specific `suite` and `id`  (can be regenerated with `make etl suite=<SUITE> id=<ID>`)
 etl-clean: install
 	@cd $(does_config_dir) && \

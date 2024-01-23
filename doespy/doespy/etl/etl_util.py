@@ -112,6 +112,9 @@ def print_etl_pipeline(etl_pipeline, name):
     print()
 
 def escape_tuple_str(tup) -> str:
+    # check if tup is instance or iterable
+    if not hasattr(tup, "__iter__"):
+        return str(tup)
     as_str = "_".join(tup)
     # remove any dots
     as_str = as_str.replace(".", "")
