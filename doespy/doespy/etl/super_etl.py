@@ -5,10 +5,6 @@ from doespy import util
 
 def main():
 
-    # TODO [nku] validate the super-etl design with pydantic?
-
-    # TODO [nku] allow for super-etl to be located in a different directory? -> specifically, the results of the super-etl should be in the same directory as the super-etl config
-
     parser = argparse.ArgumentParser(description="")
     parser.add_argument("--config", type=str, required=True)
     parser.add_argument(
@@ -42,6 +38,25 @@ def main():
         help="ETL super pipelines to run. If not specified, all pipelines will be run.",
     )
 
+
+    class KeyValue(argparse.Action):
+
+        def __call__( self , parser, namespace,
+                    values, option_string = None):
+            setattr(namespace, self.dest, dict())
+
+            for value in values:
+                # split it into key and value
+                key, value = value.split('=')
+                # assign into dictionary
+                getattr(namespace, self.dest)[key] = value
+
+    parser.add_argument('--suite_id',
+                    nargs='*',
+                    action = KeyValue,
+                    required=False,
+                    help="Replace the $SUITE_ID$ configured in the super etl design, e.g., --suite_id <suite>=<suite_id> <suite>=<suite_id>",)
+
     args = parser.parse_args()
 
     etl_base.run_multi_suite(
@@ -51,6 +66,7 @@ def main():
         flag_output_dir_pipeline=not args.output_dir_pipeline,
         etl_from_design=args.load_from_design,
         pipeline_filter=args.pipelines,
+        overwrite_suite_id_map=args.suite_id,
         return_df=False,
     )
 

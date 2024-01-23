@@ -62,12 +62,11 @@ def run_multi_suite(
     flag_output_dir_pipeline: bool = True,
     etl_from_design: bool = False,
     pipeline_filter: List[str] = None,
+    overwrite_suite_id_map: Dict[str, str] = None,
     return_df: bool = False,
 ):
 
-    pipeline_design = _load_super_etl_design(name=super_etl)
-
-
+    pipeline_design = _load_super_etl_design(name=super_etl, overwrite_suite_id_map=overwrite_suite_id_map)
 
 
     # filtering out pipelines by the pipeline_filter
@@ -235,22 +234,27 @@ def _load_suite_design(suite, suite_id, etl_from_design):
         )
     else:
         suite_dir = util.get_suite_results_dir(suite=suite, id=suite_id)
-        suite_design = _load_config_yaml(suite_dir, file="suite_design.yml")
+        suite_design = util.load_config_yaml(suite_dir, file="suite_design.yml")
     return suite_design
 
 
-def _load_super_etl_design(name):
+def _load_super_etl_design(name, overwrite_suite_id_map=None):
+
+    from doespy.design.etl_design import SuperETL
 
     config_dir = util.get_super_etl_dir()
-    pipeline_design = _load_config_yaml(config_dir, file=f"{name}.yml")
 
-    if "$ETL$" not in pipeline_design:
-        # we don't have an ETL config => don't run it
-        raise ValueError(f"super etl {name}  does not contain $ETL$")
-    if "$SUITE_ID$" not in pipeline_design:
-        raise ValueError(f"super etl {name}  does not contain $SUITE_ID$")
+    pipeline_design = util.load_config_yaml(config_dir, file=f"{name}.yml")
 
-    # TODO [nku] the include functionality does not exist yet in the SUPER ETL
+    if overwrite_suite_id_map is not None:
+        print(f"Replacing suite id map in super etl design: {overwrite_suite_id_map}")
+        # overwrite suite id map
+        pipeline_design["$SUITE_ID$"] = overwrite_suite_id_map
+
+    model = SuperETL(**pipeline_design)
+
+    pipeline_design_str = model.json(by_alias=True, exclude_none=True)
+    pipeline_design = json.loads(pipeline_design_str)
 
     return pipeline_design
 
@@ -488,7 +492,7 @@ def extract(
     res_lst = []
 
     res_dir = util.get_suite_results_dir(suite=suite, id=suite_id)
-    existing_exps = _list_dir_only(res_dir)
+    existing_exps = util._list_dir_only(res_dir)
 
     exps_filtered = [exp for exp in existing_exps if exp in experiments]
 
@@ -496,19 +500,19 @@ def extract(
 
         exp_dir = util.get_suite_results_dir(suite=suite, id=suite_id, exp=exp)
 
-        runs = _list_dir_only(exp_dir)
+        runs = util._list_dir_only(exp_dir)
         factor_columns = _parse_factors(base_experiments[exp])
 
         for run in tqdm(runs, desc=f"processing runs of experiment {exp}"):
             run_dir = os.path.join(exp_dir, run)
-            reps = _list_dir_only(run_dir)
+            reps = util._list_dir_only(run_dir)
 
             for rep in reps:
                 rep_dir = os.path.join(run_dir, rep)
-                host_types = _list_dir_only(rep_dir)
+                host_types = util._list_dir_only(rep_dir)
 
                 try:
-                    config = _load_config_yaml(path=rep_dir, file="config.json")
+                    config = util.load_config_yaml(path=rep_dir, file="config.json")
                 except FileNotFoundError:
                     continue
 
@@ -521,11 +525,11 @@ def extract(
 
                 for host_type in host_types:
                     host_type_dir = os.path.join(rep_dir, host_type)
-                    hosts = _list_dir_only(host_type_dir)
+                    hosts = util._list_dir_only(host_type_dir)
 
                     for host_idx, host in enumerate(hosts):
                         host_dir = os.path.join(host_type_dir, host)
-                        files = _list_files_only(host_dir)
+                        files = util._list_files_only(host_dir)
 
                         job_info = {
                             "suite_name": suite,
@@ -539,7 +543,7 @@ def extract(
                         }
 
                         for file in files:
-                            d_lst = _parse_file(host_dir, file, extractors)
+                            d_lst = _parse_file(host_dir, file, extractors, config_flat)
                             for d in d_lst:
                                 if d is None:
                                     warnings.warn(f"SKIP EMPTY FILE={file} in {host_dir}")
@@ -554,7 +558,7 @@ def extract(
     return df
 
 
-def _parse_file(path: str, file: str, extractors: List[Dict]) -> List[Dict]:
+def _parse_file(path: str, file: str, extractors: List[Dict], config_flat: Dict) -> List[Dict]:
     has_match = False
 
     for extractor_d in extractors:
@@ -574,8 +578,11 @@ def _parse_file(path: str, file: str, extractors: List[Dict]) -> List[Dict]:
                     )
 
                 file_path = os.path.join(path, file)
+
+                options = extractor_d["options"]
+                options["$config_flat$"] = config_flat
                 d_lst = extractor_d["extractor"].extract(
-                    path=file_path, options=extractor_d["options"]
+                    path=file_path, options=options
                 )
 
                 has_match = True
@@ -623,23 +630,6 @@ def _parse_factors(experiment: Dict) -> list:
     return factor_columns
 
 
-def _load_config_yaml(path, file="config.json"):
-    with open(os.path.join(path, file)) as file:
-        config = ruamel.yaml.safe_load(file)
-    return config
-
-
-def _list_dir_only(path):
-    lst = [f for f in os.listdir(path) if os.path.isdir(os.path.join(path, f))]
-    return lst
-
-
-def _list_files_only(path):
-    def _is_file(path, f):
-        return not os.path.isdir(os.path.join(path, f))
-
-    lst = [f for f in os.listdir(path) if _is_file(path, f)]
-    return lst
 
 
 def _flatten_d(d):
