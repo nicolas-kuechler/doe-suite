@@ -6,12 +6,18 @@
     msg: "-> setup suite"
   tags: [print_action]
 
+- name: Check for git
+  shell: "which git"
+  register: git_installed_which
+  failed_when: false
+
 - name: Ensure git is installed
   become: True
   ansible.builtin.package:
     name:
       - git
     state: present
+  when: git_installed_which.rc != 0
 
 - name: check task spooler executable is present
   shell: "which tsp"
