@@ -112,7 +112,7 @@
   - name: Enqueue jobs on scheduler
     include_role:
       name: suite-scheduler-enqueue
-      tasks_from: "{{ job_scheduler }}"
+      tasks_from: "{{ _job_scheduler }}"
       # In the future, we can define this as an additional config parameter.
 
   - name: Update experiment state
@@ -153,7 +153,7 @@
   - name: Get status of job
     include_role:
       name: suite-scheduler-status
-      tasks_from: "{{ job_scheduler }}"
+      tasks_from: "{{ _job_scheduler }}"
       # In the future, we can define this as an additional config parameter.
 
 
@@ -173,7 +173,6 @@
 
 
 
-
 - name: Collect Results
   delegate_to: localhost
   when: exp_job_ids_queued | length > 0
@@ -181,7 +180,7 @@
     job_ids_ready_to_collect_results: "{{ exp_job_ids_completing }}"
     exp_host_lst: "{{ exp_host_lst }}"
     local_result_dir: "{{ local.results_dir}}"
-    remote_result_dir: "{{ remote.results_dir }}"
+    remote_result_dir: "{{ hostvars[my_host.ansible_host_id].remote.results_dir }}"
   loop: "{{ exp_host_lst }}"
   loop_control:
     loop_var: my_host
@@ -223,7 +222,7 @@
   - name: Remove finished job with downloaded results from queue
     include_role:
       name: suite-scheduler-remove
-      tasks_from: "{{ job_scheduler }}"
+      tasks_from: "{{ _job_scheduler }}"
       # In the future, we can define this as an additional config parameter.
 
   ###################################################################

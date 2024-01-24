@@ -43,7 +43,7 @@ Schedulers
 We now have the concept of schedulers that handles the scheduling of jobs.
 The default scheduler is ``tsp`` which will be set-up on the OS by the DoE-Suite.
 In some cases, the cloud has its own scheduler, for example ``bsub`` or ``slurm`` in Euler.
-The variable ``job_scheduler`` in ``doe-suite/src/group_vars/all`` is used to control which scheduler is used.
+The variable ``_job_scheduler`` in ``doe-suite/src/group_vars/all`` is used to control which scheduler is used.
 
 We support the same type of multiplexing as for clouds.
 The Doe-Suite looks for the specific scheduler implementation in the following roles:

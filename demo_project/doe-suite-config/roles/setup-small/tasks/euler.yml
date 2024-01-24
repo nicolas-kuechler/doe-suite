@@ -8,7 +8,7 @@
 
     - name: Install poetry
       ansible.builtin.shell:
-        cmd: module load {{ euler_env }} && curl -sSL https://install.python-poetry.org | POETRY_HOME={{ remote.dir }}/.local/share/pypoetry python3 -
+        cmd: module load {{ euler_env }} && curl -sSL https://install.python-poetry.org | POETRY_VERSION=1.2.0 POETRY_HOME={{ remote.dir }}/.local/share/pypoetry python3 -
 
     - name: make path to poetry available in variable
       set_fact:
