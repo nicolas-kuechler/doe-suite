@@ -29,9 +29,10 @@ job_check_wait_time: 5
 # if the previous job finished less than 30 seconds before
 etl_minimum_delay_sec: 30
 
+# can set variables `remote_dir` and `remote_results_dir` in e.g., manual inventory, to set host specific variables
 remote:
-  dir: "{{ '/cluster/home/' + euler_user + '/doe-suite/' + prj_id + '/' + suite if cloud == 'euler' else '/home/' + ansible_user + '/doe-suite/' + prj_id + '/' + suite }}"
-  results_dir: "{{ '/cluster/home/' + euler_user + '/doe-suite-results' if cloud == 'euler' else '/home/' + ansible_user + '/doe-suite-results' }}"
+  dir: "{{ remote_dir | default('/home/' + ansible_user | default('ubuntu') + '/doe-suite/' + prj_id + '/' + suite) }}"
+  results_dir: "{{remote_results_dir | default('/home/' + ansible_user | default('ubuntu') + '/doe-suite-results') }}"
 
 exp_code_dir: "{{ remote.dir }}/code"
 

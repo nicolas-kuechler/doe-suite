@@ -1,0 +1,17 @@
+# Check is Valid for Euler: {{ ('True' if is_single_host_per_host_type | bool and is_single_host_type_per_exp | bool ) | mandatory('Cloud=euler only supports single instance experiments => each experiment can have only a single host_type with n=1') }}
+
+
+all:
+  children:
+{% for ht, exps in host_types.items() %}
+    {{ ht }}:
+      hosts:
+{% for i in range(exps | length )  %}
+        {{ ht }}_{{ i }}:
+          ansible_host: login.euler.ethz.ch
+          ansible_user: {{ euler_user }}
+          job_scheduler: slurm
+          remote_dir: /cluster/home/{{ euler_user }}/doe-suite/{{ prj_id }}/{{ suite }}
+          remote_results_dir: /cluster/home/{{ euler_user }}/doe-suite-results
+{% endfor %}
+{% endfor %}
