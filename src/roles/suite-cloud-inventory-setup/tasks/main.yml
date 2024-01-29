@@ -1,10 +1,5 @@
 # NOTE: fallback used if cloud is neither euler nor aws => must be a custom manually provided invenotry
 
-
-- assert:
-    that:
-    - exp_base is defined
-
 # TODO [nku] could do a user friendly error message if the hostfile is not present
 
 - name: Include vars of {{ cloud }}.yml into available_inventory variable

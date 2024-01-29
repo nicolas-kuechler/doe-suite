@@ -1,9 +1,5 @@
 ---
 
-- assert:
-    that:
-      - exp_base is defined
-
 - name: Abuse to_tag_assignment
   set_fact:
     tag_assignment_lst: "{{ manual_hostsfile | to_manual_tag_assignment(host_types) }}"

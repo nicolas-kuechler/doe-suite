@@ -25,6 +25,8 @@
     - is_controller # this role is running on a controller host (one per experiment is controller)
     - exp_name is defined
     - suite_id is defined
+    - remote.dir is defined
+    - remote.results_dir is defined
     - job_check_wait_time is defined
     - exp_runs_ext is defined
     - exp_host_lst is defined # list of hosts involved in experiment

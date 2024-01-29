@@ -4,10 +4,6 @@
 # with a single subnet and security group. All ec2 instances are placed into this security group
 # and all ports are open for instances within the security group.
 
-- assert:
-    that:
-    - exp_base is defined
-
 - debug:
     msg: "-> creating VPC... --> NoOp for non-aws"
   tags: [print_action]
