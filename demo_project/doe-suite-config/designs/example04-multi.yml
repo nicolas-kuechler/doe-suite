@@ -20,9 +20,9 @@ exp_client_server:
       $CMD$:
         # send messages to the server with nc
         # (3) use exp_host_lst variable to extract ip address from server, the delay `sleep 5` ensures that the server is running when the client sends the message
-        - sleep 5 && echo '[% my_run.host_vars.client.msg %] from client 1 ([% my_run.info %])' | netcat -q 1 [% exp_host_lst | json_query('[?host_type==`server`].private_dns_name') | default(['<UNDEFINED-DNS>'], true) | first %] [% my_run.port %]
+        - sleep 5 && echo '[% my_run.host_vars.client.msg %] from client 1 ([% my_run.info %])' | netcat -q 1 [% exp_host_lst | get_ip_for_hosttype(exp_host_lst is defined, 'server') %] [% my_run.port %]
         # have two commands to distinguish messages from client 1 and 2
-        - sleep 5 && echo '[% my_run.host_vars.client.msg %] from client 2 ([% my_run.info %])' | netcat -q 1 [% exp_host_lst | json_query('[?host_type==`server`].private_dns_name') | default(['<UNDEFINED-DNS>'], true) | first %] [% my_run.port %]
+        - sleep 5 && echo '[% my_run.host_vars.client.msg %] from client 2 ([% my_run.info %])' | netcat -q 1 [% exp_host_lst | get_ip_for_hosttype(exp_host_lst is defined, 'client') %] [% my_run.port %]
 
     server: # (1)
       n: 1

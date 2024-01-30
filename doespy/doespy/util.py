@@ -285,7 +285,8 @@ def jinja2_env(loader, undefined, variable_start_string="{{", variable_end_strin
     for file in source_files:
         try: 
             path = filter_folder + '/' + file
-            DesignFilterSpec = importlib.util.spec_from_file_location('design_filter_plugins', path)
+            module_name = 'design_filters_' + file.removesuffix(".py")
+            DesignFilterSpec = importlib.util.spec_from_file_location(module_name, path)
             DesignFilterModule = importlib.util.module_from_spec(DesignFilterSpec)
             DesignFilterSpec.loader.exec_module(DesignFilterModule)
             design_filters = DesignFilterModule.FilterModule().filters()
