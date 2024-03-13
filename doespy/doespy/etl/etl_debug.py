@@ -10,7 +10,6 @@ from functools import lru_cache
 
 from doespy.etl.etl_base import run_multi_suite
 from doespy.design import etl_design
-print(f"{etl_design.avl_loaders=}")
 
 @lru_cache(maxsize=1)
 def debug_compute_input_df(super_etl: str , pipeline: str, StepCls: Type[Union[Transformer, Loader]]):
