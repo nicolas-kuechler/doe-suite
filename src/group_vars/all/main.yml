@@ -7,6 +7,8 @@ external_roles_dir: "{{ does_config_dir }}/roles"
 ssh_key_name: "{{ lookup('env', 'DOES_SSH_KEY_NAME') }}"
 
 euler_user: "{{ lookup('env', 'DOES_EULER_USER') }}"
+
+euler_base_env: "python/3.9.9" # needed for multi command jobs
 cloud: "aws"
 
 _job_scheduler: "{{ job_scheduler | default('tsp') }}"

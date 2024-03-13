@@ -2,7 +2,7 @@
 import json, os
 
 
-def to_job_schedule_lst(job_ids, exp_host_lst, exp_runs_ext, working_base_dir):
+def to_job_schedule_lst(job_ids, exp_host_lst, exp_runs_ext, working_base_dir, remote_dir):
 
     job_schedule_lst = []
 
@@ -14,12 +14,21 @@ def to_job_schedule_lst(job_ids, exp_host_lst, exp_runs_ext, working_base_dir):
             host_type = host_info["host_type"]
             host_type_idx = host_info["exp_host_type_idx"]
 
+            if len(exp_runs_ext[run_idx]["$CMD$"][host_type][host_type_idx]) > 1:
+                # has background commands -> use python runner
+                # the runner uses the config.json in the working dir and ensures proper termination of background tasks
+
+                runner_script = os.path.join(remote_dir, "runner.py")
+                cmd = f"python3 {runner_script} {host_type} {host_type_idx}"
+            else:
+                # only has main command -> skip python runner
+                cmd = exp_runs_ext[run_idx]["$CMD$"][host_type][host_type_idx]["main"]
+
             d = {
                 "host_info": host_info,
                 "job_info": job_id,
                 "exp_run_config": exp_runs_ext[run_idx],
-                # TODO [nku] for multi command support, need to change this here and also use other than main
-                "exp_run_cmd": exp_runs_ext[run_idx]["$CMD$"][host_type][host_type_idx]["main"],
+                "exp_run_cmd": cmd,
                 "exp_working_dir":  jobid2workingdir(job_id, working_base_dir)
             }
 

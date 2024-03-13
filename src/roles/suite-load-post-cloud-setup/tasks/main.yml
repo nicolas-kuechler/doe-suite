@@ -47,6 +47,7 @@
     query_exp_host_lst: "[*].{host_type: host_type, host_type_idx: exp_host_type_idx, host_type_n: exp_host_type_n, public_dns_name: public_dns_name, private_dns_name: private_dns_name}"
 
 
+
 - name: expand experiment suite design + replace variables
   suite_design_extend:
     suite_design_path: "{{ hostvars['localhost'].suite_design_dir }}/"
@@ -56,11 +57,6 @@
   # my_suite_design_ext.design: {<exp_name1>: [{<run_config1>}, {<run_config2>}, ...], }
   delegate_to: localhost
   # run_once: True -> would like to do this but for strategy free not supported and it's not a relevant overhead
-
-
-- debug:
-    msg="my_suite_design_ext= {{ my_suite_design_ext }}"
-#  tags: [print_action]
 
 
 

@@ -21,7 +21,7 @@
 - name: Apply jinja templating to inventory (and move to tmp directory)
   template:
     src: "{{ does_config_dir }}/inventory/{{ cloud }}.yml"
-    dest: "{{ does_config_dir }}/inventory/tmp/{{ cloud }}.yml"
+    dest: "{{ does_config_dir }}/inventory/{{ prj_id }}_{{ suite }}_{{ cloud }}.yml"
     mode: 0755
   vars:
     is_single_host_per_host_type: "{{ host_types | json_query('*.*.n') | list | flatten | unique == [1] }}" # on east host type n=1
@@ -29,8 +29,14 @@
 
 - name: Include vars of {{ cloud }}.yml into available_inventory variable
   ansible.builtin.include_vars:
-    file: "{{ does_config_dir }}/inventory/tmp/{{ cloud }}.yml"
+    file: "{{ does_config_dir }}/inventory/{{ prj_id }}_{{ suite }}_{{ cloud }}.yml"
     name: manual_hostsfile # available inventory
+
+- name: Delete the custom inventory file
+  file:
+    path: "{{ does_config_dir }}/inventory/{{ prj_id }}_{{ suite }}_{{ cloud }}.yml"
+    state: absent
+
 
 - name: custom inv
   debug:
@@ -40,8 +46,3 @@
   assert:
       that:
       - host_types | check_manual_inventory(manual_hostsfile)
-
-- name: Delete the tmp directory with its contents (because inventory is loaded into variable)
-  file:
-    path: "{{ does_config_dir }}/inventory/tmp"
-    state: absent

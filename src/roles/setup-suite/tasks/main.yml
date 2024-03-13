@@ -19,6 +19,21 @@
     state: present
   when: git_installed_which.rc != 0
 
+
+- name: Check for python3
+  shell: "which python3"
+  register: python_installed_which
+  failed_when: false
+
+- name: Ensure python is installed
+  become: True
+  ansible.builtin.package:
+    name:
+      - python3
+    state: present
+  when: python_installed_which.rc != 0
+
+
 - name: check task spooler executable is present
   shell: "which tsp"
   register: tsp_installed_which
@@ -82,3 +97,9 @@
   loop: "{{ git_remote_repository | git_repo_list }}"
   loop_control:
     loop_var: git_repo
+
+
+- name: Move python multi-command runner to remote
+  ansible.builtin.copy:
+    src: resources/runner.py
+    dest: "{{ remote.dir }}/runner.py"

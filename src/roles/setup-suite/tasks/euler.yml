@@ -32,4 +32,10 @@
       loop: "{{ git_remote_repository | git_repo_list }}"
       loop_control:
         loop_var: git_repo
+
+    - name: Move python multi-command runner to remote
+      ansible.builtin.copy:
+        src: resources/runner.py
+        dest: "{{ remote.dir }}/runner.py"
+
   when: play_hosts.index(inventory_hostname) | int == 0 # only execute for first host overall
