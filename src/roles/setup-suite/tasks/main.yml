@@ -100,6 +100,13 @@
 
 
 - name: Move python multi-command runner to remote
-  ansible.builtin.copy:
-    src: resources/runner.py
-    dest: "{{ remote.dir }}/runner.py"
+  block:
+  - name: Create dirs in path
+    ansible.builtin.file:
+      path: "{{ remote.dir }}"
+      state: directory
+      recurse: yes
+  - name: Move python runner
+    ansible.builtin.copy:
+      src: resources/runner.py
+      dest: "{{ remote.dir }}/runner.py"
