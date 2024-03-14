@@ -1,8 +1,20 @@
 import json
 from sys import argv,stderr,stdout
-from subprocess import Popen,PIPE
+from subprocess import Popen,PIPE,call
+import os
+import signal
+
+background_tasks = []
+
+def handle_shutdown():
+    for task in background_tasks: 
+        os.killpg(os.getpgid(task.pid), signal.SIGTERM)
 
 def main():
+
+    # install signal handler to tear down child processes
+    signal.signal(signal.SIGINT, handle_shutdown)
+    signal.signal(signal.SIGTERM, handle_shutdown)
 
     if len(argv) != 3:
         raise ValueError("Unexpected number of arguments" + len(argv))
@@ -17,21 +29,22 @@ def main():
     # get main command
     command_list = config["$CMD$"][host_type][host_type_index]
     main_cmd = command_list['main']
-    del command_list['main']
+    if main_cmd is None:
+        raise ValueError("Expected main command")
 
-    background_tasks = []
+    del command_list['main']
 
     # start all background tasks
     for key, cmd in command_list.items():
-        background_tasks.append(Popen(cmd, shell=True, stderr=stderr, stdout=stdout))
+        task = Popen(cmd, shell=True, stderr=stderr, stdout=stdout, preexec_fn=os.setsid)
+        background_tasks.append(task)
 
     # start main task
-    main_task = Popen(main_cmd, shell=True, stderr=stderr, stdout=stdout)
+    call(main_cmd, shell=True, stderr=stderr, stdout=stdout)
 
     # when main task finishes -> terminate all background tasks
-    main_task.wait()
     for task in background_tasks:
-        task.terminate()
+        os.killpg(os.getpgid(task.pid), signal.SIGTERM)
 
 
 if __name__ == "__main__":
