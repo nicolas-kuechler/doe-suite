@@ -465,6 +465,11 @@ def _load_processes(module_name, extractors, transformers, loaders):
                     # TODO: Should we warn or fail if ETL Step Validation failed?
                     warnings.warn(f"ETL Validation failed for Extractor: {member_name}")
                     pass
+                except TypeError as e:
+                    if member_name != "Extractor":
+                        # added because if the extractor class does not overwrite the proper regex function, a type error is thrown
+                        print(f"ETL Extractor TypeError: {member_name}  {e}")
+                    raise e
                 extractors[member_name] = etl_candidate
             elif issubclass(etl_candidate, Transformer):
                 try:
