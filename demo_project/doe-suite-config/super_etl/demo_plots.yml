@@ -6,10 +6,109 @@
 
 $SUITE_ID$:
   example02-single: $expected #00000001 # SUITE ID
+  example07-etl: $expected
 
   # ... if more suites exist, other ids
 
 $ETL$:
+  pipeline_new:
+    experiments:
+      example07-etl: "*"
+    extractors:
+      YamlExtractor: {} # with default file_regex
+      ErrorExtractor: {} # if a non-empty file exists matching the default regex -> then we throw an error using the ErrorExtractor
+      IgnoreExtractor: {} # since we want that each file is processed by an extractor, we provide the IgnoreExtractor which can be used to ignore certain files. (e.g., stdout)
+    transformers:
+#      - df.filter: {items: ["exp_name", "x", "y"]}
+      - {name: ConditionalTransformer, col: "exp_name", dest: "color", value: {plus: black, square: green, triangle1: blue, triangle2: blue}}
+    loaders:
+      #ForEachPlotLoader:
+      ColumnCrossPlotLoader:
+        data_filter:
+          allowed:
+            exp_name: [square, plus, triangle1]
+            host_type: [small, small_v2]
+        fig_foreach:
+          cols: [host_type] # $metrics$
+          # jp_except...
+
+        subplot_grid:
+          rows: [orient]
+          cols: [$metrics$]   #$metrics$
+          jp_except: "(orient == 'W') || (orient == 'E')"
+
+
+        metrics:
+          wan_time:
+            value_cols: [run] # also possible: col1
+
+            #value_divider: 1.0
+            #value_multiplier: 1.0
+
+            # unit_label: sec
+
+
+          #x_time:
+          #  value_cols: x # also possible: col1
+
+        cum_plot_config:
+        - legend_fig_kwargs: {loc: "upper center", ncol: 4, bbox_to_anchor: [0.51, 0.075], columnspacing: 3.5,  fancybox: True}
+
+        cum_subplot_config:
+
+        - jp_query: "(host_type == 'small')"
+
+          ax_title:
+            template: "Special Title"
+
+        - chart:
+            group_padding: 2
+            group_foreach:
+              cols: [exp_name]
+              label:
+                template: "{exp_name}"
+
+            bar_foreach:
+              cols: [x, y]
+              #jp_except:  "(to_number(y) == `5`)"
+              label:
+                template: "({x}, {y})"
+            #part_foreach:
+            #  cols: [run]
+
+
+          cum_artist_config:
+          - color: green
+            jp_query: (exp_name == 'triangle1' || exp_name == 'triangle2')
+          - color: blue
+            jp_query: (exp_name == 'square')
+          - color: red
+            jp_query: (exp_name == 'plus')
+          - edgecolor: black
+            jp_query: (to_number(x) < `5`)
+
+          label_map:
+            triangle1: triangle
+            triangle2: triangle
+
+          # TODO [nku] try out these features
+          yaxis:
+            label: {template: "Test"}
+
+            major_formatter: round_short
+          #
+          #xaxis:
+          #  label: ~
+
+          ax_title:
+            template: "{host_type}!!!"
+          legend:
+            template: "{exp_name}: x={x} y={y}"
+            kwargs: {loc: "upper center", ncol: 4, bbox_to_anchor: [0.51, 0.075], columnspacing: 3.5,  fancybox: True} # TODO [nku] remove again
+
+      CsvSummaryLoader: {} # write the transformed detl_info["suite_dir"]ataframe across the whole experiment as a csv file
+      #CoordinateLoader: {}
+
   pipeline1:
     experiments:
       example02-single: [ experiment_1 ]

@@ -6,6 +6,7 @@ from tqdm import tqdm
 import requests
 import time
 import os
+from typing import Dict
 
 def expand_factors(df: pd.DataFrame, columns: list) -> list:
     """
@@ -116,6 +117,14 @@ def escape_tuple_str(tup) -> str:
     if not hasattr(tup, "__iter__"):
         return str(tup)
     as_str = "_".join(tup)
+    # remove any dots
+    as_str = as_str.replace(".", "")
+    return as_str
+
+def escape_dict_str(d: Dict) -> str:
+
+    as_str = "_".join(f"{k}={v} " for k, v in d.items())
+
     # remove any dots
     as_str = as_str.replace(".", "")
     return as_str

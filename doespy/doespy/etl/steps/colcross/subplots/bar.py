@@ -1,5 +1,5 @@
 
-from doespy.etl.steps.colcross.components import ColsForEach, BaseSubplotConfig, Metric, Observer, ObserverContext
+from doespy.etl.steps.colcross.components import BasePlotConfig, ColsForEach, BaseSubplotConfig, Metric, Observer, ObserverContext
 from matplotlib import pyplot as plt
 import pandas as pd
 from typing import Dict, List, Optional, Tuple
@@ -41,7 +41,7 @@ class GroupedStackedBarChart(MyETLBaseModel):
         return self.group_foreach.get_cols() + self.bar_foreach.get_cols() + self.part_foreach.get_cols()
 
 
-    def plot(self, ax: plt.Axes, df1: pd.DataFrame, data_id: Dict[str, str], metric: Metric, subplot_config: BaseSubplotConfig, ctx: ObserverContext):
+    def plot(self, ax: plt.Axes, df1: pd.DataFrame, data_id: Dict[str, str], metric: Metric, subplot_config: BaseSubplotConfig, plot_config: BasePlotConfig, ctx: ObserverContext):
         group_ticks = set()
         bar_ticks = set()
 

@@ -1,17 +1,21 @@
 
 
 import abc
-from doespy.etl.steps.colcross.components import ArtistConfig, BaseSubplotConfig, ColsForEach, DataFilter, LabelFormatter, Metric, Observer, ObserverContext
+import os
+import typing
+from doespy.etl.etl_util import escape_dict_str
+from doespy.etl.steps.colcross.components import BasePlotConfig, axis_formatter, AxisConfig, ArtistConfig, BaseSubplotConfig, ColsForEach, DataFilter, LabelFormatter, Metric, Observer, ObserverContext
 from doespy.etl.steps.colcross.subplots.bar import GroupedStackedBarChart
 from matplotlib import pyplot as plt
+from matplotlib.ticker import FuncFormatter
 import pandas as pd
-from typing import Dict, List, Literal,Tuple,  Union
+import numpy as np
+from typing import Dict, List, Literal, NamedTuple,Tuple,  Union
 
 from doespy.design.etl_design import MyETLBaseModel
 from doespy.etl.steps.loaders import PlotLoader
 
 from pydantic import Field
-
 
 
 class SubplotGrid(MyETLBaseModel):
@@ -26,7 +30,13 @@ class SubplotGrid(MyETLBaseModel):
     share_x: Literal['none', 'all', 'row', 'col'] = 'none'
     share_y: Literal['none', 'all', 'row', 'col'] = 'row'
 
-    def init(self, df: pd.DataFrame, parent_id: Dict[str, str], subplot_size: Tuple[float, float]): # Tuple[width, height] ?
+    class WidthHeight(NamedTuple):
+        w: float
+        h: float
+
+    subplot_size: WidthHeight = WidthHeight(2.5, 2.5)
+
+    def init(self, df: pd.DataFrame, parent_id: Dict[str, str], subplot_size: WidthHeight = None): # Tuple[width, height] ?
 
         # NOTE: also assumes correctly sorted df
 
@@ -55,9 +65,12 @@ class SubplotGrid(MyETLBaseModel):
         print(f"Init Subplot Grid: {n_rows=} {n_cols=}")
 
         print(f"\n{grid=}\n")
+        if subplot_size is None:
+            subplot_size = self.subplot_size
 
         # due to squeeze=False -> axs is always 2D array
-        fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(n_cols * subplot_size[0], n_rows * subplot_size[1]), sharex=self.share_x, sharey=self.share_y, squeeze=False)
+
+        fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(n_cols * subplot_size.w, n_rows * subplot_size.h), sharex=self.share_x, sharey=self.share_y, squeeze=False)
 
         return fig, axs
 
@@ -82,6 +95,17 @@ class SubplotGrid(MyETLBaseModel):
 
 
 
+class DefaultPlotConfig(BasePlotConfig):
+
+    legend_fig_kwargs: Dict[str, typing.Any] = None
+    """kwargs for figure level legend (no figure level legend if None).
+        e.g. {loc: "upper center", ncol: 4, bbox_to_anchor: [0.51, 0.075], columnspacing: 3.5,  fancybox: True}
+    """
+
+    # TODO: could add other logic other than a figure legend
+
+
+
 class DefaultSubplotConfig(BaseSubplotConfig):
 
     # select chart type
@@ -91,29 +115,36 @@ class DefaultSubplotConfig(BaseSubplotConfig):
 
     ax_title: LabelFormatter = None
 
-    legend_label: LabelFormatter = None
+    legend: LabelFormatter = None
+
+    xaxis: AxisConfig = None
+
+    yaxis: AxisConfig = None
 
     cum_artist_config: List[ArtistConfig] = None
 
 
     def get_cols(self) -> List[str]:
-        if self.charts is not None:
+        if self.chart is not None:
             return self.chart.get_cols()
         else:
             return []
 
 
-    def create_chart(self, ax, df1, data_id, metric, ctx):
-        self.chart.plot(ax=ax, df1=df1, data_id=data_id, metric=metric, subplot_config=self, ctx=ctx)
+    def create_chart(self, ax, df1, data_id, metric, plot_config, ctx):
+        self.chart.plot(ax=ax, df1=df1, data_id=data_id, metric=metric, subplot_config=self, plot_config=plot_config, ctx=ctx)
 
 
     def artist_config(self, artist_id) -> Dict:
-        return self.cum_artist_config.apply(artist_id, info="cum_artist_config")
+        return ArtistConfig.merge_cumulative(configs=self.cum_artist_config, data_id=artist_id)
+
 
     def label(self, lbl, data_id) -> str:
         if self.label_map is None:
             return lbl
         return self.label_map.get(lbl, lbl)
+
+
 
 
 
@@ -127,6 +158,9 @@ class DefaultColumnCrossPlotLoader(PlotLoader):
 
     # NOTE: each subplot and thus each artist has one metric
     metrics: Dict[str, Metric]
+
+    # TODO [nku] decide if we want to keep or not
+    cum_plot_config: List[DefaultPlotConfig]
 
     cum_subplot_config: List[DefaultSubplotConfig]
 
@@ -148,6 +182,20 @@ class DefaultColumnCrossPlotLoader(PlotLoader):
 
 
     def load(self, df: pd.DataFrame, options: Dict, etl_info: Dict) -> None:
+        if not df.empty:
+
+            output_dir = self.get_output_dir(etl_info)
+            os.makedirs(output_dir, exist_ok=True)
+
+            for plot_id, df1, fig in self.plot(df):
+                filename = escape_dict_str(plot_id)
+                self.save_data(df1, filename=filename, output_dir=output_dir)
+                self.save_plot(fig, filename=filename, output_dir=output_dir, use_tight_layout=True, output_filetypes=["pdf"])
+
+
+
+
+    def plot(self, df: pd.DataFrame) -> List:
         if df.empty:
             return
 
@@ -166,39 +214,53 @@ class DefaultColumnCrossPlotLoader(PlotLoader):
 
         # TODO [nku] we currently don't have any aggregation option here (e.g., mean, std, etc.) -> could be added as an observer
 
+        figs = []
+
         for _i_plot, df_plot, plot_id in self.fig_foreach.for_each(df, parent_id={}):
 
             print(f"{plot_id=}")
 
             self.ctx.stage(FigPreInit).notify(df_plot, plot_id)
 
-            # TODO [nku] make subplot_size configurable
-            fig, axs = self.subplot_grid.init(df=df_plot, parent_id=plot_id, subplot_size=(6, 4))
+            if self.cum_plot_config is not None and len(self.cum_plot_config) > 0:
+                plot_config = self.cum_plot_config[0].__class__.merge_cumulative(configs=self.cum_plot_config, plot_id=plot_id)
+            else:
+                plot_config = None
 
-            self.ctx.stage(FigPreGroup).notify(fig, axs, df_plot, plot_id)
+            fig, axs = self.subplot_grid.init(df=df_plot, parent_id=plot_id)
+
+
+            self.ctx.stage(FigPreGroup).notify(fig, axs, df_plot, plot_id, plot_config)
 
 
             for subplot_idx, df_subplot, subplot_id in self.subplot_grid.for_each(axs, df=df_plot, parent_id=plot_id):
 
+                metric = self.metrics[subplot_id["$metrics$"]]
+                subplot_id["$metric_unit$"] = metric.unit_label
+
                 data_id = {**plot_id, **subplot_id, "subplot_row_idx": subplot_idx[0], "subplot_col_idx": subplot_idx[1]}
 
-                self.ctx.stage(SubplotPreConfigMerge).notify(df_subplot, subplot_id, self.cum_subplot_config)
+                self.ctx.stage(SubplotPreConfigMerge).notify(df_subplot, data_id, self.cum_subplot_config, plot_config)
 
                 assert self.cum_subplot_config is not None and len(self.cum_subplot_config) > 0, "cum_subplot_config is missing or empty"
 
-                config = self.cum_subplot_config[0].__class__.merge_cumulative(configs=self.cum_subplot_config, data_id=data_id)
+                subplot_config = self.cum_subplot_config[0].__class__.merge_cumulative(configs=self.cum_subplot_config, data_id=data_id)
 
                 ax = axs[subplot_idx]
 
-                self.ctx.stage(SubplotPreChart).notify(ax, df, data_id, config)
+                self.ctx.stage(SubplotPreChart).notify(ax, df, data_id, subplot_config, plot_config)
 
-                metric = self.metrics[subplot_id["$metrics$"]]
 
-                config.create_chart(ax=ax, df1=df_subplot, data_id=data_id, metric=metric, ctx=self.ctx)
+                subplot_config.create_chart(ax=ax, df1=df_subplot, data_id=data_id, metric=metric, plot_config=plot_config, ctx=self.ctx)
 
-                self.ctx.stage(SubplotPostChart, defaults=[ax_title, ax_legend]).notify(ax, df, data_id, config)
+                self.ctx.stage(SubplotPostChart, defaults=[ax_title, ax_legend, axis]).notify(ax, df, data_id, subplot_config, plot_config)
 
-            self.ctx.stage(FigPost).notify(fig, axs, df_plot, plot_id)
+            self.ctx.stage(FigPost, defaults=[fig_legend]).notify(fig, axs, df_plot, plot_id, plot_config)
+
+            figs.append((plot_id, df_plot, fig))
+
+        return figs
+
 
 
 class ColumnCrossPlotLoader(DefaultColumnCrossPlotLoader):
@@ -231,41 +293,131 @@ class FigPreInit(Observer):
             func(df_plot, plot_id)
 
 class FigPreGroup(Observer):
-    def notify(self, fig, axs, df_plot, plot_id):
+    def notify(self, fig, axs, df_plot, plot_id, plot_config):
         for func in self.observers():
-            func(fig, axs, df_plot, plot_id)
+            func(fig, axs, df_plot, plot_id, plot_config)
 
 class SubplotPreConfigMerge(Observer):
-    def notify(self, df_subplot, subplot_id, cum_subplot_config):
+    def notify(self, df_subplot, subplot_id, cum_subplot_config, plot_config):
         for func in self.observers():
-            func(df_subplot, subplot_id, cum_subplot_config)
+            func(df_subplot, subplot_id, cum_subplot_config, plot_config)
 
 class SubplotPreChart(Observer):
-    def notify(self, ax, df_subplot, subplot_id, config):
+    def notify(self, ax, df_subplot, subplot_id, subplot_config, plot_config):
         for func in self.observers():
-            func(ax, df_subplot, subplot_id, config)
+            func(ax, df_subplot, subplot_id, subplot_config, plot_config)
 
 class SubplotPostChart(Observer):
-    def notify(self, ax, df_subplot, subplot_id, config):
+    def notify(self, ax, df_subplot, subplot_id,  subplot_config, plot_config):
         for func in self.observers():
-            func(ax, df_subplot, subplot_id, config)
+            func(ax, df_subplot, subplot_id, subplot_config, plot_config)
 
 
-def ax_title(ax, df_subplot, subplot_id, config):
-    if config.ax_title is not None:
-        title = config.ax_title.apply(subplot_id, subplot_config=config, info="ax_title")
+def ax_title(ax, df_subplot, subplot_id, subplot_config, plot_config):
+    if subplot_config.ax_title is not None:
+        title = subplot_config.ax_title.apply(subplot_id, subplot_config=subplot_config, info="ax_title")
         ax.set_title(title)
 
-def ax_legend(ax, df_subplot, subplot_id, config):
-    if config.legend_label is not None:
+def ax_legend(ax, df_subplot, subplot_id, subplot_config, plot_config):
+    if subplot_config.legend is not None:
         handles, labels = ax.get_legend_handles_labels()
         # remove duplicates
         unique = [(h, l) for i, (h, l) in enumerate(zip(handles, labels)) if l not in labels[:i]]
 
-        ax.legend(*zip(*unique), **config.legend_label.kwargs)
+        ax.legend(*zip(*unique), **subplot_config.legend.kwargs)
+
+
+def axis(ax, df_subplot, subplot_id, subplot_config, plot_config):
+
+    xcfg = AxisConfig() if subplot_config.xaxis is None else subplot_config.xaxis
+    ycfg = AxisConfig() if subplot_config.yaxis is None else subplot_config.yaxis
+
+    # scale
+    if xcfg.scale is not None:
+        ax.set_xscale(xcfg.scale)
+
+    if ycfg.scale is not None:
+        ax.set_yscale(ycfg.scale)
+
+    # label
+    if xcfg.label is not None:
+        label = xcfg.label.apply(subplot_id, subplot_config=subplot_config, info="xaxis.label")
+        ax.set_xlabel(label)
+
+    if ycfg.label is not None:
+        label = ycfg.label.apply(subplot_id, subplot_config=subplot_config, info="yaxis.label")
+        ax.set_ylabel(label)
+
+    # limits
+    if xcfg.lim is not None:
+        xmin, xmax = xcfg.lim.limits(ax.xaxis.get_data_interval())
+        ax.set_xlim(xmin, xmax)
+
+    if ycfg.lim is not None:
+        ymin, ymax = ycfg.lim.limits(ax.yaxis.get_data_interval())
+        ax.set_xlim(ymin, ymax)
+
+    # ticks
+    if xcfg.ticks is not None:
+        if isinstance(xcfg.ticks, int):
+            xmin, xmax = ax.get_xlim()
+            ax.set_xticks(np.linspace(xmin, xmax, xcfg.ticks))
+        else:
+            ax.set_xticks(**xcfg.ticks)
+
+    if ycfg.ticks is not None:
+        if isinstance(ycfg.ticks, int):
+            ymin, ymax = ax.get_ylim()
+            ax.set_yticks(np.linspace(ymin, ymax, ycfg.ticks))
+        else:
+            ax.set_yticks(**ycfg.ticks)
+
+    # tick params
+    if xcfg.ticks is not None:
+        ax.tick_params(**xcfg.tick_params)
+
+    if ycfg.ticks is not None:
+        ax.tick_params(**ycfg.tick_params)
+
+
+    # formatter
+    if xcfg.major_formatter is not None:
+        func = axis_formatter[xcfg.major_formatter]
+        ax.xaxis.set_major_formatter(FuncFormatter(func))
+
+    if xcfg.minor_formatter is not None:
+        func = axis_formatter[xcfg.minor_formatter]
+        ax.xaxis.set_minor_formatter(FuncFormatter(func))
+
+    if ycfg.major_formatter is not None:
+        func = axis_formatter[ycfg.major_formatter]
+        ax.yaxis.set_major_formatter(FuncFormatter(func))
+
+    if ycfg.minor_formatter is not None:
+        func = axis_formatter[ycfg.minor_formatter]
+        ax.yaxis.set_minor_formatter(FuncFormatter(func))
+
+
 
 
 class FigPost(Observer):
-    def notify(self, fig, axs, df_plot, plot_id):
+    def notify(self, fig, axs, df_plot, plot_id, plot_config):
         for func in self.observers():
-            func(fig, axs, df_plot, plot_id)
+            func(fig, axs, df_plot, plot_id, plot_config)
+
+
+def fig_legend(fig, axs, df_plot, plot_id, plot_config):
+
+    if plot_config is not None and plot_config.legend_fig_kwargs is not None:
+
+        # collect lables and handles from subplots
+        fig_handles, fig_labels = [], []
+        for ax in axs.flat:
+            handles, labels = ax.get_legend_handles_labels()
+            fig_handles += handles
+            fig_labels += labels
+
+        # remove duplicates
+        unique = [(h, l) for i, (h, l) in enumerate(zip(fig_handles, fig_labels)) if l not in fig_labels[:i]]
+
+        fig.legend(*zip(*unique), **plot_config.legend_fig_kwargs)

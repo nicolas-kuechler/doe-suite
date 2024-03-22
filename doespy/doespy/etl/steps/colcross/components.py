@@ -1,21 +1,32 @@
 
 
+from enum import Enum
 from doespy.design.etl_design import MyETLBaseModel
 
 import abc
 import typing
 import jmespath
 import pandas as pd
-from typing import Dict,  List, Union
+from typing import Dict,  List, Literal, Union
 
 from doespy.design.etl_design import MyETLBaseModel
 
-from pydantic import Field, validator
+from pydantic import Field, PyObject, validator
 
 class Metric(MyETLBaseModel):
 
     value_cols: Union[str, List[str]]
     error_cols: Union[str, List[str]] = None
+
+    #metric_cfg.y_unit_multiplicator / metric_cfg.y_unit_divider
+    value_multiplicator: float = 1.0
+    error_multiplicator: float = 1.0
+
+    value_divider: float = 1.0
+    error_divider: float = 1.0
+
+    unit_label: str = None
+    """available as $metric_unit$ in labels"""
 
     @validator('value_cols', 'error_cols', pre=True)
     def ensure_list(cls, v):
@@ -53,9 +64,13 @@ class Metric(MyETLBaseModel):
             df_copy = df.copy()
             df_copy["$metrics$"] = metric_name
 
+            # scale metric
+            df_copy[metric.value_cols] = df_copy[metric.value_cols] * metric.value_multiplicator / metric.value_divider
+
             assert set(metric.value_cols).issubset(df.columns), f"Metric Value Columns: Some columns not found in DataFrame. Missing: {set(metric.value_cols) - set(df.columns)}"
             if metric.error_cols is not None:
                 assert set(metric.error_cols).issubset(df.columns), f"Metric Error Columns: Some columns not found in DataFrame. Missing: {set(metric.error_cols) - set(df.columns)}"
+                df_copy[metric.error_cols] = df_copy[metric.error_cols] * metric.error_multiplicator / metric.error_divider
 
             df1 = pd.concat([df1, df_copy], axis=0) if df1 is not None else df_copy
 
@@ -115,7 +130,7 @@ class LabelFormatter(MyETLBaseModel):
     The placehold correspond to column names (which are presend in the data_id)
     """
 
-    kwargs: Dict[str, str] = Field(default_factory=dict)
+    kwargs: Dict[str, typing.Any] = Field(default_factory=dict)
     """Additional keyword arguments that will be passed to the matplotlib function that is used to set the labels.
     """
 
@@ -165,6 +180,99 @@ class ColsForEach(MyETLBaseModel):
 
 
 
+def round_short_axis_formatter(value, _pos):
+    """
+    Custom formatting function for y-axis labels.
+    """
+
+    def format(value):
+
+        if abs(value) < 0.001:
+            formatted_number = f'{value:.4f}'
+        elif abs(value) < 0.01:
+            formatted_number = f'{value:.3f}'
+        elif abs(value) < 0.1:
+            formatted_number = f'{value:.2f}'
+        else:
+            formatted_number = f'{value:.1f}'
+
+        # remove trailing zero
+        if "." in formatted_number:
+            formatted_number = formatted_number.rstrip('0').rstrip('.')
+
+        return formatted_number
+
+
+    if abs(value) >= 1e9:
+
+        formatted_number = format(value / 1e9)
+        formatted_number += "B"
+        val = formatted_number
+    elif abs(value) >= 1e6:
+        formatted_number = format(value / 1e6)
+        formatted_number += "M"
+        val = formatted_number
+
+    elif abs(value) >= 1e3:
+        formatted_number = format(value / 1e3)
+        formatted_number += "k"
+        val = formatted_number
+    else:
+        formatted_number = format(value)
+        val = formatted_number
+
+    if val == "100M":
+        val = "0.1B"
+    return val
+
+
+axis_formatter = {
+    "round_short": round_short_axis_formatter
+    # NOTE: could add other formatting functions
+}
+
+
+AxisFormatter = Enum('AxisFormatter', [(f, f) for f in axis_formatter.keys()])
+
+class AxisConfig(MyETLBaseModel):
+
+    class Config:
+        use_enum_values = True
+
+    scale: Literal['linear', 'log', 'symlog', 'logit'] = None
+    label: LabelFormatter = None
+
+    class AxisLim(MyETLBaseModel):
+        min: Union[float, Dict[Literal['data_max_scaler', 'data_min_scaler'], float]] = 0.0
+        max: Union[float, Dict[Literal['data_max_scaler', 'data_min_scaler'], float]] = None
+
+        def limits(self, data_interval):
+
+            def compute_lim(x):
+                if isinstance(x, dict):
+                    assert len(x) == 1, "can only have one key in min"
+                    if 'data_min_scaler' in x:
+                        return  x['data_min_scaler'] * data_interval[0]
+                    elif 'data_max_scaler' in x:
+                        return x['data_max_scaler'] * data_interval[1]
+                return x
+
+            return compute_lim(self.min), compute_lim(self.max)
+
+    lim: AxisLim = None
+
+    # https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.set_yticks.html
+    ticks: Union[Dict, int] = None # corresponds to the matplotlib function set_xticks / set_yticks or it's the number of ticks
+
+    # https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.tick_params.html
+    tick_params: Dict = None
+
+
+    major_formatter: AxisFormatter = None
+    minor_formatter: AxisFormatter = None
+
+
+
 def is_match(jp_query, data_id, info) -> bool:
 
     if jp_query is None:
@@ -206,7 +314,22 @@ class ArtistConfig(MyETLBaseModel):
         return config
 
 
+class BasePlotConfig(MyETLBaseModel, abc.ABC):
 
+    jp_query: str = None
+
+    @classmethod
+    def merge_cumulative(cls, configs: List['BasePlotConfig'], plot_id: Dict, info="plot_config"):
+
+        # for each ax (i.e., subplot) determine the config by merging the configs where the filter matches
+        config = None
+        for cfg in configs:
+            if is_match(cfg.jp_query, plot_id, info):
+                if config is None:
+                    config = cfg
+                else:
+                    config.fill_missing(cfg)
+        return config
 
 
 class BaseSubplotConfig(MyETLBaseModel, abc.ABC):
@@ -240,7 +363,7 @@ class BaseSubplotConfig(MyETLBaseModel, abc.ABC):
         pass
 
     @abc.abstractmethod
-    def create_chart(self, ax, df1, data_id, metric, ctx):
+    def create_chart(self, ax, df1, data_id, metric, plot_config, ctx):
         pass
 
     def label(self, lbl, data_id) -> str:
