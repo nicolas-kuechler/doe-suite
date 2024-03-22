@@ -123,10 +123,11 @@ def escape_tuple_str(tup) -> str:
 
 def escape_dict_str(d: Dict) -> str:
 
-    as_str = "_".join(f"{k}={v} " for k, v in d.items())
+    as_str = "_".join(f"{k.strip()}={v.strip()} " for k, v in d.items())
 
     # remove any dots
     as_str = as_str.replace(".", "")
+    as_str = as_str.replace(" ", "")
     return as_str
 
 def save_notion(filenames, etl_info, notion_dict):
