@@ -6,6 +6,34 @@
     msg: "-> setup suite"
   tags: [print_action]
 
+- name: Check for git
+  shell: "which git"
+  register: git_installed_which
+  failed_when: false
+
+- name: Ensure git is installed
+  become: True
+  ansible.builtin.package:
+    name:
+      - git
+    state: present
+  when: git_installed_which.rc != 0
+
+
+- name: Check for python3
+  shell: "which python3"
+  register: python_installed_which
+  failed_when: false
+
+- name: Ensure python is installed
+  become: True
+  ansible.builtin.package:
+    name:
+      - python3
+    state: present
+  when: python_installed_which.rc != 0
+
+
 - name: check task spooler executable is present
   shell: "which tsp"
   register: tsp_installed_which
@@ -24,7 +52,6 @@
       become: True
       ansible.builtin.package:
         name:
-          - git
           - build-essential
           - pkgconfig
         state: present
@@ -56,11 +83,11 @@
 #
 # 2. Add the GitHub private key to ssh-agent:
 #
-#   ssh-aadd ~/.ssh/private_key_rsa
+#   ssh-add ~/.ssh/private_key_rsa
 #
 # 3. (On a MAC, need add to keychain)
 
-- name: Update Code from Git remote repository (or multiple)
+- name: Update Code from Git remote repository (or multiple)  [if this fails, did you setup ssh-agent (see docs)?]
   git:
     repo: "{{ git_repo.repo }}"
     dest: "{{ remote.dir }}/{{ git_repo.dir }}"
@@ -70,3 +97,16 @@
   loop: "{{ git_remote_repository | git_repo_list }}"
   loop_control:
     loop_var: git_repo
+
+
+- name: Move python multi-command runner to remote
+  block:
+  - name: Create dirs in path
+    ansible.builtin.file:
+      path: "{{ remote.dir }}"
+      state: directory
+      recurse: yes
+  - name: Move python runner
+    ansible.builtin.copy:
+      src: resources/runner.py
+      dest: "{{ remote.dir }}/runner.py"

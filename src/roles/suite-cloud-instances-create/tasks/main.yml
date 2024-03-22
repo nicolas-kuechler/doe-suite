@@ -1,0 +1,53 @@
+---
+
+- name: Abuse to_tag_assignment
+  set_fact:
+    tag_assignment_lst: "{{ manual_hostsfile | to_manual_tag_assignment(host_types) }}"
+
+#- debug:
+#    msg: "tag_assignment_lst = {{ tag_assignment_lst }}"
+
+
+- name: Refine the manually provided inventory (remove surplus hosts from the inventory + add is_controller_yes group)
+  set_fact:
+    manual_hostsfile: "{{ manual_hostsfile | build_manual_inventory(tag_assignment_lst) }}"
+
+
+#- debug:
+#    msg: "hostsfile = {{ manual_hostsfile }}"
+
+
+- name: Template inventory config file
+  template:
+    src: resources/inventory/manual.yml.j2
+    dest: "{{ does_inventory_source }}/manual.yml"
+    mode: 0755
+
+
+- name: Refresh dynamic ec2 inventory
+  meta: refresh_inventory
+
+- pause:
+    seconds: 5
+
+
+#- debug:
+#    msg: "ansible host groups = {{ groups }}"
+
+
+- set_fact:
+    suite_hosts_lst: []
+
+- name: enrich host list with public_dns_name, private_dns_name and ansible_host_id
+  set_fact:
+    suite_hosts_lst: "{{ suite_hosts_lst + [tag_assignment | combine({'public_dns_name': hostvars[tag_assignment.instance_id].ansible_host, 'private_dns_name': hostvars[tag_assignment.instance_id].private_dns_name | default(none), 'ansible_host_id': tag_assignment.instance_id })] }}"
+    # list of all instances with their id and other relevant infos (+ public and private dns names)
+    # [{"instance_id": X, "exp_name": X, "is_controller": X, "host_type": X, "exp_host_type_idx": X, "exp_host_type_n": X, "init_roles": X, "check_status": X, "public_dns_name": X, "private_dns_name": X}, ...]
+
+  loop: "{{ tag_assignment_lst }}"
+  loop_control:
+    loop_var: tag_assignment
+
+
+- debug:
+    msg: "suite_hosts_lst = {{ suite_hosts_lst }}"

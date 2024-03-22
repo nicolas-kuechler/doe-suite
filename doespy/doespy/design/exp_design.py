@@ -46,7 +46,7 @@ class HostType(MyBaseModel):
     n: int = 1
     check_status: bool = True
     init_roles: Union[SetupRoleId, List[SetupRoleId]] = []
-    cmd: Union[Cmd, List[Cmd], List[Dict[Literal["main"], Cmd]]] = Field(alias="$CMD$")
+    cmd: Union[Cmd, Dict[str, Cmd], List[Cmd], List[Dict[str, Cmd]]] = Field(alias="$CMD$")
 
     class Config:
         extra = "forbid"
@@ -90,7 +90,7 @@ class HostType(MyBaseModel):
         # GOAL: $CMD$: [{"main": cmd1}, {"main": cmd2}] for n==2
         cmd = values["cmd"]
 
-        if isinstance(cmd, Cmd):
+        if not isinstance(cmd, list):
             # not a list => # repeat the same cmd for all `n` hosts of this type
             values["cmd"] = [cmd] * values["n"]
 

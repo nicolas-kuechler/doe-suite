@@ -20,7 +20,7 @@
     cmd_working_dir: "{{ job.exp_working_dir }}"
     cmd_stdout_file: results/stdout.log # relative path compared to working dir
     cmd_stderr_file: results/stderr.log
-  delegate_to: "{{ job.host_info.public_dns_name }}"
+  delegate_to: "{{ job.host_info.ansible_host_id }}"
   loop: "{{ exp_jobs_to_enqueue }}"
   loop_control:
     loop_var: job

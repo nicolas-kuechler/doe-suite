@@ -25,6 +25,8 @@
     - is_controller # this role is running on a controller host (one per experiment is controller)
     - exp_name is defined
     - suite_id is defined
+    - remote.dir is defined
+    - remote.results_dir is defined
     - job_check_wait_time is defined
     - exp_runs_ext is defined
     - exp_host_lst is defined # list of hosts involved in experiment
@@ -85,7 +87,7 @@
 
   - name: build job schedule list (for each host of experiment, information about job and what is required to run)
     set_fact:
-      exp_jobs_to_enqueue: "{{ exp_job_ids_to_enqueue | to_job_schedule_lst(exp_host_lst, exp_runs_ext, remote.results_dir) }}"
+      exp_jobs_to_enqueue: "{{ exp_job_ids_to_enqueue | to_job_schedule_lst(exp_host_lst, exp_runs_ext, remote.results_dir, remote.dir) }}"
     no_log: true
 
 
@@ -98,7 +100,7 @@
     setup_job_dirs:
       jobs: "{{ jobs_grouped | last }}"
     delegate_to: "{{ jobs_grouped | first }}" # first entry in group
-    loop: "{{ exp_jobs_to_enqueue | groupby('host_info.public_dns_name') }}"
+    loop: "{{ exp_jobs_to_enqueue | groupby('host_info.ansible_host_id') }}"
     loop_control:
       loop_var: jobs_grouped
     no_log: true
@@ -112,7 +114,7 @@
   - name: Enqueue jobs on scheduler
     include_role:
       name: suite-scheduler-enqueue
-      tasks_from: "{{ job_scheduler }}"
+      tasks_from: "{{ _job_scheduler }}"
       # In the future, we can define this as an additional config parameter.
 
   - name: Update experiment state
@@ -153,7 +155,7 @@
   - name: Get status of job
     include_role:
       name: suite-scheduler-status
-      tasks_from: "{{ job_scheduler }}"
+      tasks_from: "{{ _job_scheduler }}"
       # In the future, we can define this as an additional config parameter.
 
 
@@ -173,7 +175,6 @@
 
 
 
-
 - name: Collect Results
   delegate_to: localhost
   when: exp_job_ids_queued | length > 0
@@ -181,7 +182,7 @@
     job_ids_ready_to_collect_results: "{{ exp_job_ids_completing }}"
     exp_host_lst: "{{ exp_host_lst }}"
     local_result_dir: "{{ local.results_dir}}"
-    remote_result_dir: "{{ remote.results_dir }}"
+    remote_result_dir: "{{ hostvars[my_host.ansible_host_id].remote.results_dir }}"
   loop: "{{ exp_host_lst }}"
   loop_control:
     loop_var: my_host
@@ -223,7 +224,7 @@
   - name: Remove finished job with downloaded results from queue
     include_role:
       name: suite-scheduler-remove
-      tasks_from: "{{ job_scheduler }}"
+      tasks_from: "{{ _job_scheduler }}"
       # In the future, we can define this as an additional config parameter.
 
   ###################################################################

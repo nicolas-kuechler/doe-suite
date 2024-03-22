@@ -83,7 +83,16 @@ def output_commands(suite_design_ext):
                             f"\n  run={run_idx:03d} host={host}-{host_idx}: {cmd['main']}"
                         )
                     else:
-                        raise ValueError("not implemented yet")
+                        print(f"  run={run_idx:03d} host={host}-{host_idx}")
+                        align = max(len(x) for x in cmd.keys()) + 4
+
+                        offset = (align - 4) * " "
+                        print(f"\n{offset}main: {cmd['main']}")
+
+                        for name, c in cmd.items():
+                            if name != "main":
+                                offset = (align -len(name)) * " "
+                                print(f"\n{offset}{name}: {c}")
 
 
 def output_etl_pipelines(suite_design):

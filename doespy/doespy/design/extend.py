@@ -241,7 +241,7 @@ class CmdExt(MyExtBaseModel):
 
 class RunConfig(MyExtBaseModel):
 
-    cmd: Dict[str, Union[CmdExt, List[CmdExt], List[Dict[Literal['main'], CmdExt]]]] = Field(alias="$CMD$")
+    cmd: Dict[str, Union[CmdExt, Dict[str, CmdExt], List[CmdExt], List[Dict[str, CmdExt]]]] = Field(alias="$CMD$")
 
     class Config:
         extra = "allow"

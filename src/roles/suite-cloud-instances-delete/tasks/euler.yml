@@ -1,5 +1,0 @@
----
-
-- debug:
-    msg: "-> delete machines... --> NoOp for Euler"
-  tags: [print_action]

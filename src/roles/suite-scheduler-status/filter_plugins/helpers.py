@@ -46,30 +46,6 @@ def get_tsp_task_id(tsp_tasks, job_id):
     raise ValueError(f"no matching job found in tsp: {job_id}   tsp_tasks={tsp_tasks}")
 
 
-def to_job_schedule_lst(job_ids, exp_host_lst, exp_runs_ext, working_base_dir):
-
-    job_schedule_lst = []
-
-
-    for job_id in job_ids:
-        for host_info in exp_host_lst:
-
-            run_idx = int(job_id["exp_run"])
-            host_type = host_info["host_type"]
-            host_type_idx = host_info["exp_host_type_idx"]
-
-            d = {
-                "host_info": host_info,
-                "job_info": job_id,
-                "exp_run_config": exp_runs_ext[run_idx],
-                # TODO [nku] for multi command support, need to change this here and also use other than main
-                "exp_run_cmd": exp_runs_ext[run_idx]["$CMD$"][host_type][host_type_idx]["main"],
-                "exp_working_dir":  jobid2workingdir(job_id, working_base_dir)
-            }
-
-            job_schedule_lst.append(d)
-
-    return job_schedule_lst
 
 
 def jobid2workingdir(job_id, base):
@@ -138,6 +114,5 @@ class FilterModule(object):
             "tsp_jobs_finished": tsp_jobs_finished,
             "bsub_jobs_finished": bsub_jobs_finished,
             "get_tsp_task_id": get_tsp_task_id,
-            "to_job_schedule_lst": to_job_schedule_lst,
             "jobid2workingdir": jobid2workingdir,
         }
