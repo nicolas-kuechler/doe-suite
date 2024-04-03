@@ -193,7 +193,7 @@
 
 - name: enrich host list with public_dns_name, private_dns_name and ansible_host_id
   set_fact:
-    suite_hosts_lst: "{{ suite_hosts_lst + [tag_assignment | combine({'public_dns_name': public_dns_lookup[tag_assignment.instance_id], 'private_dns_name': private_dns_lookup[tag_assignment.instance_id], 'ansible_host_id': public_dns_lookup[tag_assignment.instance_id]})] }}"
+    suite_hosts_lst: "{{ suite_hosts_lst + [tag_assignment | combine({'public_dns_name': public_dns_lookup[tag_assignment.instance_id], 'private_dns_name': private_dns_lookup[tag_assignment.instance_id], 'ansible_host_id': public_dns_lookup[tag_assignment.instance_id], 'hostvars': hostvars[tag_assignment.instance_id]})] }}"
     # list of all instances with their id and other relevant infos (+ public and private dns names)
     # [{"instance_id": X, "exp_name": X, "is_controller": X, "host_type": X, "exp_host_type_idx": X, "exp_host_type_n": X, "init_roles": X, "check_status": X, "public_dns_name": X, "private_dns_name": X}, ...]
 
