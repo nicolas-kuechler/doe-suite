@@ -286,7 +286,7 @@ test-%:
 
 
 # make single-test -j5 -O -> to run them in parallel
-single-test: test-example01-minimal test-example02-single test-example03-format test-example06-vars test-example07-etl
+single-test: test-example01-minimal test-example02-single test-example03-format test-example06-vars test-example07-etl test-example08-superetl
 
 # make multi-test -j2 -O -> to run them in parallel
 multi-test: test-example04-multi test-example05-complex
@@ -297,7 +297,7 @@ aws-test:
 
 # runs all examples compatible with euler (no multi instance experiments)
 euler-test:
-	@$(MAKE) single-test -j5 -O cloud=euler
+	@$(MAKE) single-test -j6 -O cloud=euler
 
 test: aws-test euler-test
 

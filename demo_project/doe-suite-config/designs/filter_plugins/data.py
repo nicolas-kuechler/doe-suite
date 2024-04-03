@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def generate_fake_data(seed, system, system_config, workload):
+def generate_fake_data(n_measurements, system, system_config, workload):
 
     fake_data_s = {
         "system1": {"workload1": [20,5,10], "workload2": [25,7,12]},
@@ -27,19 +27,28 @@ def generate_fake_data(seed, system, system_config, workload):
       "system3": {"workload1": 15, "workload2": 20}
     }
 
-    np.random.seed(seed)
+    np.random.seed(12345)
 
     xs = fake_data_s[system][workload]
     xmb = fake_data_mb[system][workload]
 
     res = {"base_s": xs[0], "overhead1_s": xs[1], "overhead2_s": xs[2], "base_mb": xmb[0], "overhead_mb": xmb[1]}
 
-    for k, v in res.items():
-        v = v * system_config_factor[system_config]
-        scale = v * scales[system][workload] / 100
-        res[k] = round(np.random.normal(loc=v, scale=scale), 1)
+    results = []
 
-    res_str = r"\\n".join(f"{k}: {v}" for k, v in res.items())
+    for i in range(n_measurements):
+
+        for k, v in res.items():
+            v = v * system_config_factor[system_config]
+            scale = v * scales[system][workload] / 100
+            res[k] = round(np.random.normal(loc=v, scale=scale), 1)
+
+        res_str = ", ".join(f"{k}: {v}" for k, v in res.items())
+
+        res_str = "{" + res_str + "}"
+        results.append(res_str)
+
+    res_str = "[" + ", ".join(results) + "]"
 
     return res_str
 
