@@ -730,6 +730,24 @@ unicode = ["unicodedata2 (>=15.1.0)"]
 woff = ["brotli (>=1.0.1)", "brotlicffi (>=0.8.0)", "zopfli (>=0.1.4)"]
 
 [[package]]
+name = "gossip"
+version = "2.4.0"
+description = "Signaling and hooking library"
+optional = false
+python-versions = "*"
+files = [
+    {file = "gossip-2.4.0.tar.gz", hash = "sha256:b46bc809b3b9a1e1649932f8c4ccea672c89f194c8969cd0f25b7f4b5b5d7f3a"},
+]
+
+[package.dependencies]
+logbook = ">=0.12.0"
+sentinels = "*"
+vintage = "*"
+
+[package.extras]
+testing = ["munch", "pylint", "pytest"]
+
+[[package]]
 name = "html5lib"
 version = "1.1"
 description = "HTML parser based on the WHATWG HTML specification"
@@ -946,6 +964,64 @@ files = [
     {file = "kiwisolver-1.4.5-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:11d011a7574eb3b82bcc9c1a1d35c1d7075677fdd15de527d91b46bd35e935ee"},
     {file = "kiwisolver-1.4.5.tar.gz", hash = "sha256:e57e563a57fb22a142da34f38acc2fc1a5c864bc29ca1517a88abc963e60d6ec"},
 ]
+
+[[package]]
+name = "logbook"
+version = "1.7.0.post0"
+description = "A logging replacement for Python"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "Logbook-1.7.0.post0-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:7113b95fcdf6c225ab985a238b9adf4f6c06888322e2d55c4520be089174fe8a"},
+    {file = "Logbook-1.7.0.post0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:f3eff8de904bc737c70f5858de6a66bb0af7c0e8299a6bbd077535d6a48d072a"},
+    {file = "Logbook-1.7.0.post0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:73b5c25a237c7a0f31b4d20b7b8a19b8b5228d65bd07db5e19d73961237f168c"},
+    {file = "Logbook-1.7.0.post0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:e19e87818430565b84e4fb6c431d7f760fdebc42ad338c8f2f76940c4c2e39c2"},
+    {file = "Logbook-1.7.0.post0-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:4813bb9c0c20fee6adee12cff4fe8a2537136f961f7d14989d1b1445227a9c9a"},
+    {file = "Logbook-1.7.0.post0-cp310-cp310-win32.whl", hash = "sha256:de329234f70ddca0ed9fa2c273556e4ea665b9baa0df0c8c6ea8306f3892abd1"},
+    {file = "Logbook-1.7.0.post0-cp310-cp310-win_amd64.whl", hash = "sha256:45c4dec1466fadfc9b43d32d1f51b13cb0ac70acf7623d0096d5d6817b41331c"},
+    {file = "Logbook-1.7.0.post0-cp311-cp311-macosx_10_9_universal2.whl", hash = "sha256:607ee6fe2fea6a7c7fedbb5e76b22f23bf50db0d5bf3911645ef1dca182bb03f"},
+    {file = "Logbook-1.7.0.post0-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:ba35cdb82003a46d7d18abd1156e667f508c0ad3a1f2c85ad3536a45a25ad262"},
+    {file = "Logbook-1.7.0.post0-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:6cf194a9b5adb0101261eff1958991e475f1a5a62a173ba762054668b0b8f15c"},
+    {file = "Logbook-1.7.0.post0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d64616266dc283d6da78ac09396f8986ff7324230775a686784e8173646a755b"},
+    {file = "Logbook-1.7.0.post0-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:7992c9c17a2b0df02f2583c1048da3df539d44084d8b7ba7781b41b6b814cedf"},
+    {file = "Logbook-1.7.0.post0-cp311-cp311-win32.whl", hash = "sha256:13c77ccdd35e951da43dcd0a2ece91d452841c70d3d9f87caa256456cf84d501"},
+    {file = "Logbook-1.7.0.post0-cp311-cp311-win_amd64.whl", hash = "sha256:344f5af32d0d1beda6f7256175d3debcb131749784fdf8e64e223a584ab49c5d"},
+    {file = "Logbook-1.7.0.post0-cp312-cp312-macosx_10_9_universal2.whl", hash = "sha256:b1e0b8c3d25a7cf539340c299a8a1fd37d19809a158c8849f6e73a6304f583c7"},
+    {file = "Logbook-1.7.0.post0-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:3f2928505d528fb2efa5c4c7e63bd0a3d5ded4d96db8e056ab61a69313739072"},
+    {file = "Logbook-1.7.0.post0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:5f891dc3f60a18f85d09698d1ea429b2effb06bfd42a1835493efde5eb6ea08b"},
+    {file = "Logbook-1.7.0.post0-cp312-cp312-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c7d7a39dbfa9c2793569691c719c6f0269a21b01583f33dfcc6052b3312fc5f2"},
+    {file = "Logbook-1.7.0.post0-cp312-cp312-musllinux_1_1_x86_64.whl", hash = "sha256:40a8e1b4fc0d2fdf8e662fabd8a933ba1ce91a355c755ab7a1d13469ec0e590e"},
+    {file = "Logbook-1.7.0.post0-cp312-cp312-win32.whl", hash = "sha256:faf156af8a8954a227f141ffedf7ac1d9ba573b0066f19033ab2240329f94793"},
+    {file = "Logbook-1.7.0.post0-cp312-cp312-win_amd64.whl", hash = "sha256:6316fa5eb09b375980a9ee3fd8c72cf9020b532d4c73fd7cbfd7a1a74694739e"},
+    {file = "Logbook-1.7.0.post0-cp38-cp38-macosx_10_9_universal2.whl", hash = "sha256:f289ab3c6d68e6f9fd06900a53861ae7cc076a08e4eec1748768d5b1ad2a3fb9"},
+    {file = "Logbook-1.7.0.post0-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:6c4dad41e41e20c72c2765ce8d99326582d36f62c7bde78c86527a3d341c79cf"},
+    {file = "Logbook-1.7.0.post0-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:dae3667fbeef15f71f602d941c05add5a6463c1e43eb6588cc9c416e5c218265"},
+    {file = "Logbook-1.7.0.post0-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:485b96eec6fe4628668383dd38ca9b5e26d876eab3f1fd407cfa96d5f9957e74"},
+    {file = "Logbook-1.7.0.post0-cp38-cp38-musllinux_1_1_x86_64.whl", hash = "sha256:929f8bd97e3760b09bad08baac8fe01e8bf3519abba99dab8f08de1031a0b2a1"},
+    {file = "Logbook-1.7.0.post0-cp38-cp38-win32.whl", hash = "sha256:a2cbcefdc7a9d3bb2021cb9617b3d5aa60a1bca1b2f1fcea9fcf2c289abc4bdd"},
+    {file = "Logbook-1.7.0.post0-cp38-cp38-win_amd64.whl", hash = "sha256:9e6bc3a87a2a95d68f50dff6f7996db1112217f84e028f2fd1c6ef6b5f62a848"},
+    {file = "Logbook-1.7.0.post0-cp39-cp39-macosx_10_9_universal2.whl", hash = "sha256:64d31734907d10a2d8486ae88bf9c4a4bdf99bf4fa72d23c3d766f135c887abe"},
+    {file = "Logbook-1.7.0.post0-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:a249c4933cf68564b6c1be528f09c8162e074af328b3601a2908b9f646f3cc5c"},
+    {file = "Logbook-1.7.0.post0-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:4e2e1dc4349d7c6807f6272af1107f4f0772db66f16cefcdc4bcdfa3507de1db"},
+    {file = "Logbook-1.7.0.post0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:85a478677c47243edefcea515bab3a3c1b1097833fb292731da45320a3f2b0a9"},
+    {file = "Logbook-1.7.0.post0-cp39-cp39-musllinux_1_1_x86_64.whl", hash = "sha256:435342c48433b79723eea202ecc5647367aceefcce0c55e544ee2f88596c0c48"},
+    {file = "Logbook-1.7.0.post0-cp39-cp39-win32.whl", hash = "sha256:cab6faa8a163697d671e0fc7350615cc45fbc7c50f6e2b1bb8f81b976523dbd3"},
+    {file = "Logbook-1.7.0.post0-cp39-cp39-win_amd64.whl", hash = "sha256:8ceeb0acc24e11231b54c55edc3f064540ad1536b92f81baa6937911f48a1ce5"},
+    {file = "Logbook-1.7.0.post0.tar.gz", hash = "sha256:a5e8016701ca3beea6a390b0ba1541037f663543ca508ccd36cfdc841639cdd7"},
+]
+
+[package.extras]
+all = ["Logbook[compression,execnet,jinja,nteventlog,redis,sqlalchemy,zmq]"]
+compression = ["brotli"]
+dev = ["Logbook[test]", "tox (>=4)"]
+docs = ["Sphinx (>=5)"]
+execnet = ["execnet (>=1.0.9)"]
+jinja = ["Jinja2"]
+nteventlog = ["pywin32"]
+redis = ["redis"]
+sqlalchemy = ["sqlalchemy (>=1.4)"]
+test = ["pytest (>=6)", "pytest-rerunfailures"]
+zmq = ["pyzmq"]
 
 [[package]]
 name = "markupsafe"
@@ -1729,6 +1805,16 @@ botocore = ">=1.33.2,<2.0a.0"
 crt = ["botocore[crt] (>=1.33.2,<2.0a.0)"]
 
 [[package]]
+name = "sentinels"
+version = "1.0.0"
+description = "Various objects to denote special meanings in python"
+optional = false
+python-versions = "*"
+files = [
+    {file = "sentinels-1.0.0.tar.gz", hash = "sha256:7be0704d7fe1925e397e92d18669ace2f619c92b5d4eb21a89f31e026f9ff4b1"},
+]
+
+[[package]]
 name = "shellcheck-py"
 version = "0.9.0.6"
 description = "Python wrapper around invoking shellcheck (https://www.shellcheck.net/)"
@@ -2124,6 +2210,19 @@ socks = ["pysocks (>=1.5.6,!=1.5.7,<2.0)"]
 zstd = ["zstandard (>=0.18.0)"]
 
 [[package]]
+name = "vintage"
+version = "0.4.1"
+description = "Python library for deprecating code"
+optional = false
+python-versions = "*"
+files = [
+    {file = "vintage-0.4.1.tar.gz", hash = "sha256:0f69c717ddd61760c436e3ecf69f2823adb0d7ceeaca81b437a898bb90f594a1"},
+]
+
+[package.dependencies]
+six = "*"
+
+[[package]]
 name = "wcwidth"
 version = "0.2.13"
 description = "Measures the displayed width of unicode strings in a terminal"
@@ -2163,4 +2262,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.11"
-content-hash = "1d649141943b75795d164e4dc173e35ad9cc2f11a807f7a38e57abced5aa465c"
+content-hash = "b81cea4cdecfc127f6418c415bee886f655446771c8a50d2032ffbe1513601cf"

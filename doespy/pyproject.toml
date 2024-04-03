@@ -27,6 +27,7 @@ sphinxcontrib-programoutput = "^0.17"
 sphinx-tabs = "^3.4.1"
 sphinx-copybutton = "^0.5.1"
 jmespath = "^1.0.1"
+gossip = "^2.4.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"

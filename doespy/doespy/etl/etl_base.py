@@ -446,14 +446,6 @@ def _load_processes(module_name, extractors, transformers, loaders):
     # go over all members of the module
     for member_name, _ in getmembers(module):
 
-        # check for duplicates
-        if (
-            member_name in extractors
-            or member_name in transformers
-            or member_name in loaders
-        ):
-            raise ValueError(f"duplicate class={member_name}")
-
         # find members that are actually an ETL process step
         # by checking if they inherit from the abstract base class
         try:
@@ -470,6 +462,7 @@ def _load_processes(module_name, extractors, transformers, loaders):
                         # added because if the extractor class does not overwrite the proper regex function, a type error is thrown
                         print(f"ETL Extractor TypeError: {member_name}  {e}")
                     raise e
+                assert member_name not in extractors, f"Duplicate Extractor: {member_name} already exists"
                 extractors[member_name] = etl_candidate
             elif issubclass(etl_candidate, Transformer):
                 try:
@@ -478,6 +471,7 @@ def _load_processes(module_name, extractors, transformers, loaders):
                     # TODO: Should we warn or fail if ETL Step Validation failed?
                     warnings.warn(f"ETL Validation failed for Extractor: {member_name}")
                     pass
+                assert member_name not in transformers, f"Duplicate Transformer: {member_name} already exists"
                 transformers[member_name] = etl_candidate
             elif issubclass(etl_candidate, Loader):
                 try:
@@ -486,6 +480,7 @@ def _load_processes(module_name, extractors, transformers, loaders):
                     # TODO: Should we warn or fail if ETL Step Validation failed?
                     warnings.warn(f"ETL Validation failed for Extractor: {member_name}")
                     pass
+                assert member_name not in loaders, f"Duplicate Loader: {member_name} already exists"
                 loaders[member_name] = etl_candidate
 
         except TypeError:
