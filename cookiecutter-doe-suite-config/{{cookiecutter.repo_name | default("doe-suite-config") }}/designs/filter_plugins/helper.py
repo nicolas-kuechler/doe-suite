@@ -1,21 +1,47 @@
 import socket
 
+from jinja2.runtime import Undefined
 
-def get_ip_for_hosttype(hostlist, hostlist_defined, host_type):
-    # if hostlist is defined 
-    # return the ipv4 for the host name
-    if hostlist_defined:
-        host = [host for host in hostlist if host['host_type'] == host_type]
-        if len(host) == 1:
-            return socket.gethostbyname(host[0]['public_dns_name'])
-    # if hostlistnot defined or hostname not unique return default value
-    print("get_ip_for_hostname: hostlist not defined or host_type not unique")
-    return "0.0.0.0"
+
+def to_ipv4(hostlist, host_type, host_type_idx=0, default=None):
+    if isinstance(hostlist, Undefined):
+        if default is not None:
+            return default
+        return hostlist # return undefined
+    else:
+        hosts = [host for host in hostlist if host['host_type'] == host_type]
+        assert len(hosts) > host_type_idx, f"to_ipv4: host_type_idx out of range: {host_type_idx=}, {len(hosts)=}"
+        return socket.gethostbyname(hosts[host_type_idx]['public_dns_name'])
+
+def to_public_dns_name(hostlist, host_type, host_type_idx=0, default=None):
+    if isinstance(hostlist, Undefined):
+        if default is not None:
+            return default
+        return hostlist
+    else:
+        hosts = [host for host in hostlist if host['host_type'] == host_type]
+        assert len(hosts) > host_type_idx, f"to_public_dns_name: host_type_idx out of range: {host_type_idx=}, {len(hosts)=}"
+        return hosts[host_type_idx]['public_dns_name']
+
+
+def to_private_dns_name(hostlist, host_type, host_type_idx=0, default=None):
+    if isinstance(hostlist, Undefined):
+        if default is not None:
+            return default
+        return hostlist
+    else:
+        hosts = [host for host in hostlist if host['host_type'] == host_type]
+        assert len(hosts) > host_type_idx, f"to_private_dns_name: host_type_idx out of range: {host_type_idx=}, {len(hosts)=}"
+        return hosts[host_type_idx]['private_dns_name']
+
 
 class FilterModule(object):
     ''' jinja2 filters '''
 
     def filters(self):
         return {
-            'get_ip_for_hosttype': get_ip_for_hosttype
-        } 
+            'to_public_dns_name': to_public_dns_name,
+            'to_private_dns_name': to_private_dns_name,
+            'to_ipv4': to_ipv4,
+
+        }

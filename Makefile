@@ -278,9 +278,10 @@ rescomp: install
 
 # for aws cloud setup there can be race conditions for network setup, delay each example by 10s
 # use sed to extract the example id and multiply it by 10 -> feed this to sleep
+# (sed first extract the number and then removes leading zeros: example05-xyz -> 05 -> 5)
 test-%:
-	@TMP=$$(echo $*|sed -r 's/example([0-9]*).*/echo "$$((\1*$(test_delay)))"/e') ;\
-	sleep $$TMP
+	@TMP=$$(echo $*|sed -r 's/example([0-9]*).*/\1/' | sed 's/^0//') ;\
+	sleep $$((TMP*$(test_delay)))
 	@$(MAKE) run suite=$* id=new
 	@$(MAKE) rescomp suite=$* id=last
 
