@@ -14,7 +14,10 @@ dummydata:
         init_roles: setup-small
         # (1) The filter_plugin `generate_fake_data` allows formatting part of the command using python code
         #      see `demo_project/doe-suite-config/designs/filter_plugins/data.py`
-        $CMD$: "printf '[%  my_run.n_measurements | generate_fake_data(my_run.system, my_run.system_config, my_run.workload) %]' > results/performance.yaml"
+        $CMD$:
+          main: sleep 3 && printf '[%  my_run.n_measurements | generate_fake_data(my_run.system, my_run.system_config, my_run.workload) %]' > results/performance.yaml
+          bg1: echo 'bg1 start' && sleep 1 && echo 'bg1 end'  # Background cmds run
+          bg2: echo 'bg2 start' && sleep 50 && cat nonexistent.txt #  -> they are bound to the lifetime of the main cmd (i.e., `nonexistent.txt` is not accessed)
   base_experiment:
     n_measurements: 5
     system:
