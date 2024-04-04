@@ -21,7 +21,7 @@ def test_suite_result(suite, suite_id, suite_idref="$expected"):
     suite_idref = r"{}".format(suite_idref.replace("$", r"\$")) # r"\$expected"
     path_pattern = r"\/.*\/demo_project" # we need to ignore the path to the demo project because it is different between euler and aws (+ on euler person dependent)
     job_finished_order= r"^exp_job_ids_finished: \[.*\]$" # on euler jobs can finish in different order
-    aws_ec2_host_ids = r" ip-[0-9a-z.-]*internal " # ip can change
+    aws_ec2_host_ids = r"ip-[0-9a-z.-]*internal" # ip can change
 
 
     print(f"Comparing folders:\n   {d1}\nwith:\n   {d2}")
