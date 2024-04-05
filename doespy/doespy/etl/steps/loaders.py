@@ -19,7 +19,7 @@ class Loader(BaseModel, ABC):
 
         etl_output_dir = etl_info["etl_output_dir"]
 
-        if not os.path.exists(etl_output_dir):
+        if etl_output_dir is not None and not os.path.exists(etl_output_dir):
             os.makedirs(etl_output_dir)
 
         return etl_output_dir

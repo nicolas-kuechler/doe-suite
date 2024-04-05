@@ -266,7 +266,6 @@ class BaseColumnCrossPlotLoader(PlotLoader):
         if not df.empty:
 
             output_dir = self.get_output_dir(etl_info)
-            os.makedirs(output_dir, exist_ok=True)
 
             for plot_id, df1, fig in self.plot(df):
                 if plot_id is not None and len(plot_id) > 0:
@@ -274,14 +273,15 @@ class BaseColumnCrossPlotLoader(PlotLoader):
                 else:
                     filename = "out"
 
-                self.save_data(df1, filename=filename, output_dir=output_dir)
-                self.save_plot(
-                    fig,
-                    filename=filename,
-                    output_dir=output_dir,
-                    use_tight_layout=True,
-                    output_filetypes=["pdf"],
-                )
+                if output_dir is not None:
+                    self.save_data(df1, filename=filename, output_dir=output_dir)
+                    self.save_plot(
+                        fig,
+                        filename=filename,
+                        output_dir=output_dir,
+                        use_tight_layout=True,
+                        output_filetypes=["pdf"],
+                    )
 
     def plot(self, df: pd.DataFrame) -> List:
         """:meta private:"""
