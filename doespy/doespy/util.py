@@ -280,11 +280,11 @@ def jinja2_env(loader, undefined, variable_start_string="{{", variable_end_strin
     env.filters["floor"] = floor
 
     # load design specific fiters
-    filter_folder = get_suite_design_dir() + "/filter_plugins"
+    filter_folder = os.path.join(get_suite_design_dir(), "filter_plugins")
     source_files = [file for file in os.listdir(filter_folder) if file.endswith(".py")]
     for file in source_files:
-        try: 
-            path = filter_folder + '/' + file
+        try:
+            path = os.path.join(filter_folder, file)
             module_name = 'design_filters_' + file.removesuffix(".py")
             DesignFilterSpec = importlib.util.spec_from_file_location(module_name, path)
             DesignFilterModule = importlib.util.module_from_spec(DesignFilterSpec)
