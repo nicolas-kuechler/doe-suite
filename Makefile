@@ -1,6 +1,10 @@
 does_config_dir=$(DOES_PROJECT_DIR)/doe-suite-config
 does_results_dir=$(DOES_PROJECT_DIR)/doe-suite-results
 
+# default output path for super etl
+DOES_SUPERETL_OUT?=$(DOES_PROJECT_DIR)/doe-suite-results-super
+out?=$(DOES_SUPERETL_OUT)
+
 DOES_CLOUD?=aws
 cloud?=$(DOES_CLOUD) # env variable with default (aws)
 
