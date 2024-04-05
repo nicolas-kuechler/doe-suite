@@ -1,6 +1,6 @@
 # DoE-Suite - Design of Experiments
 
-The DoE-Suite is a tool for remote experiment management that allows you to easily orchestrate benchmarking experiments on AWS EC2 machines or the ETHZ Euler cluster.
+The DoE-Suite is a tool for remote experiment management that allows you to easily orchestrate benchmarking experiments on AWS EC2 machines, the ETHZ Euler cluster, or a set of existing remote machines.
 Whether you want to train an ML model on a single instance or run a client-server experiment across multiple instances, DoE-Suite has you covered.
 
 With the DoE-Suite, you can automatically orchestrate and execute a set of experiments based on a simple declarative YAML design file.
