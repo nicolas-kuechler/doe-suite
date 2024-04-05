@@ -30,9 +30,9 @@ $ETL$:
     experiments:
       example08-superetl: "*"
     extractors:
-      $INCLUDE_STEPS$:  [{config: demo_plots, pipeline: data}]
+      $INCLUDE_STEPS$:  [{config: demo02-colcross, pipeline: data}]
     transformers:
-    - $INCLUDE_STEPS$:  {config: demo_plots, pipeline: data}
+    - $INCLUDE_STEPS$:  {config: demo02-colcross, pipeline: data}
     loaders:
 
       ColumnCrossPlotLoader:
@@ -59,13 +59,47 @@ $ETL$:
           # every label appearing on the plot, will be fed through the label_map to be able to rename it into a display friendly format
           label_map: {system1: s1, system2: s2, system3: s3, workload1: w1, workload2: w2, workload3: w3}
 
+  custom:
+    experiments:
+      example08-superetl: "*"
+    extractors:
+      $INCLUDE_STEPS$:  [{config: demo02-colcross, pipeline: data}]
+    transformers:
+    - $INCLUDE_STEPS$:  {config: demo02-colcross, pipeline: data}
+    loaders:
 
+      # NOTE: The MyCustomColumnCrossPlotLoader is a project-specific extension defined in: `demo_project/doe-suite-config/does_etl_custom/etl/plots/colcross.py`
+      #        -> it adds a new configuration option: "watermark" and has custom code that will display the watermark over the ax object
+      MyCustomColumnCrossPlotLoader:
+        # define a single metric (time is in `base_s_mean` column of the df)
+        metrics:
+          time: {value_cols: [base_s_mean], unit_label: sec}
+
+        # build the config for each subplot (i.e., ax) in a cumulative fashion
+        #   here we only use a single (unconditional) config and so this directly corresponds to the cumulative config
+        #   however, it's possible to have multiple entries in the list and based on a `jp_query` (JMESPath) to construct different subplot
+        cum_subplot_config:
+        - chart:
+            # a barchart, with a bar for each combination of system, system_config, and workload appearing in the df
+            bar_foreach:
+              cols: [system, system_config, workload]
+              label: {template: "{system}\n{system_config}\n{workload}"} # label below each bar
+          yaxis:
+            label: {template: "{$metrics$} [{$metric_unit$}]"} # y axis label -> resolves to `time [sec]` because the metric is called `time` and it defines a `unit_label`: `sec`
+          xaxis:
+            tick_params: {axis: x, labelsize: 7}
+
+          # NOTE: newly added field in extended loader
+          watermark: IN PROGRESS
+
+          # every label appearing on the plot, will be fed through the label_map to be able to rename it into a display friendly format
+          label_map: {system1: s1, system2: s2, system3: s3, workload1: w1, workload2: w2, workload3: w3}
 
   minimal_box:
     experiments:
       example08-superetl: "*"
     extractors:
-      $INCLUDE_STEPS$:  [{config: demo_plots, pipeline: data}]
+      $INCLUDE_STEPS$:  [{config: demo02-colcross, pipeline: data}]
     transformers: [] # no group by here
     loaders:
 
@@ -104,9 +138,9 @@ $ETL$:
     experiments:
       example08-superetl: "*"
     extractors:
-      $INCLUDE_STEPS$:  [{config: demo_plots, pipeline: data}]
+      $INCLUDE_STEPS$:  [{config: demo02-colcross, pipeline: data}]
     transformers:
-    - $INCLUDE_STEPS$:  {config: demo_plots, pipeline: data}
+    - $INCLUDE_STEPS$:  {config: demo02-colcross, pipeline: data}
     loaders:
       ColumnCrossPlotLoader:
         data_filter:

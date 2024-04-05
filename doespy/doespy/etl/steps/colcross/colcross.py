@@ -438,29 +438,3 @@ class ColumnCrossPlotLoader(BaseColumnCrossPlotLoader):
     def setup_handlers(self):
         """:meta private:"""
         pass
-        # for x in gossip.get_hook(CcpHooks.SubplotPostChart).get_registrations():
-        #    print(f"xxxxxxxxxxxxxxxxxxxx  {x=}  {x.func.__name__} ")
-        #    if x.func.__name__ == "ax_title_3":
-        #        print(f"UNREGISTERING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-        #        x.unregister()
-
-        # gossip.get_hook(SubplotHooks.SubplotPostChart).unregister_all()
-
-        # TODO [nku] per Loader can have a blueprint -> enables custom hooks
-
-        # ColumnCrossPlotLoader.blueprint().install()
-
-        # gossip.register(ax_title_3, SubplotHooks.SubplotPostChart)
-
-
-# @ColumnCrossPlotLoader.blueprint().register(CcpHooks.SubplotPostChart)
-# def ax_title_3(ax, df_subplot, subplot_id, subplot_config, plot_config):
-#    print(f"REACHED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-
-# class ColumnCrossPlotLoader2(BaseColumnCrossPlotLoader):
-#
-#    def setup_handlers(self):
-#
-#        default_hooks.install()
-#        # no additional handlers
-#        pass

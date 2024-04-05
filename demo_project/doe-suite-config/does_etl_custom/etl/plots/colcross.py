@@ -1,57 +1,53 @@
-from doespy.etl.steps.colcross.loader import DefaultColumnCrossPlotLoader, DataPreMetrics, DefaultSubplotConfig
-from doespy.etl.steps.colcross.subplots.bar import GroupedStackedBarChart
+import typing
+from doespy.etl.steps.colcross.colcross import BaseColumnCrossPlotLoader, SubplotConfig
+from doespy.etl.steps.colcross.hooks import CcpHooks
 
 from typing import Dict, List, Union
 
-####################################
-# How to extend the default config #
-####################################
-
-class MySubplotConfig(DefaultSubplotConfig):
-
-    # only support one chart type
-    chart: GroupedStackedBarChart = None
-
-    special: str = None
-
-    def create_chart(self, ax, df1, data_id, metric, ctx):
-        self.chart.plot(ax=ax, df1=df1, data_id=data_id, metric=metric, subplot_config=self, ctx=ctx)
-
-    def artist_config(self, artist_id) -> Dict:
-        if self.cum_artist_config is None or len(self.cum_artist_config) == 0:
-            return {}
-        return self.cum_artist_config[0].__class__.merge_cumulative(configs=self.cum_artist_config, data_id=artist_id)
+import gossip
+from matplotlib import pyplot as plt
+import pandas as pd
 
 
-    def get_cols(self) -> List[str]:
-        if self.chart is not None:
-            return self.chart.get_cols()
-        return []
+class MyCustomSubplotConfig(SubplotConfig):
+
+    # INFO: We extend the default config and add a new attribute
+    watermark: str = None
 
 
-    def label(self, lbl, data_id) -> str:
-        if self.label_map is None:
-            return lbl
+class MyCustomColumnCrossPlotLoader(BaseColumnCrossPlotLoader):
 
-        return self.label_map.get(lbl, lbl)
-
-
-    #special: str = None
-
-
-def my_novel_handler(df):
-    print(f"MY NOVEL SUPER FANCY HANDLER")
-
-class MyColumnCrossPlotLoader(DefaultColumnCrossPlotLoader):
-
-    # NOTE: we can override the type of cum_subplot_config to provide an extended config
-    cum_subplot_config: List[MySubplotConfig]
-
+    # INFO: We provide a custom subplot config that extends the default config
+    #       and override it here
+    cum_subplot_config: List[MyCustomSubplotConfig]
 
     def setup_handlers(self):
+        """:meta private:"""
 
-        self.ctx.add_observer(DataPreMetrics, my_novel_handler)
+        # NOTE: We can unregister function by name for a hook if needed
+        # for x in gossip.get_hook(CcpHooks.SubplotPostChart).get_registrations():
+        #    if x.func.__name__ == "ax_title":
+        #        x.unregister()
 
-        # TODO [nku] as an example should do something with the `special` field which was newly added to the config
+        # NOTE: We can unregister all registered functions for a hook if needed
+        # gossip.get_hook(SubplotHooks.SubplotPostChart).unregister_all()
 
-        # self.ctx.remove_observer(DataPreMetrics, demo)
+        # install the class specific hooks
+        MyCustomColumnCrossPlotLoader.blueprint().install()
+
+
+
+@MyCustomColumnCrossPlotLoader.blueprint().register(CcpHooks.SubplotPostChart)
+def apply_watermark(
+    ax: plt.Axes,
+    df_subplot: pd.DataFrame,
+    subplot_id: Dict[str, typing.Any],
+    plot_config,
+    subplot_config,
+    loader,
+):
+
+   if subplot_config.watermark is not None:
+       ax.text(0.5, 0.5, subplot_config.watermark, transform=ax.transAxes,
+        fontsize=20, color='gray', alpha=0.5,
+        ha='center', va='center', rotation=45)
