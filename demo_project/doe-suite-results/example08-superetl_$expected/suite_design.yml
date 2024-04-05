@@ -2,7 +2,7 @@ dummydata:
   n_repetitions: 1
   common_roles: []
   host_types:
-    small_v2:
+    small:
       n: 1
       check_status: true
       init_roles:

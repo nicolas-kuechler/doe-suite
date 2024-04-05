@@ -1,6 +1,6 @@
 {
     "$CMD$": {
-        "small_v2": [
+        "small": [
             {
                 "bg1": "echo 'bg1 start' && sleep 1 && echo 'bg1 end'",
                 "bg2": "echo 'bg2 start' && sleep 50 && cat nonexistent.txt",

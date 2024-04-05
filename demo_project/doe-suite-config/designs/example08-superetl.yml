@@ -9,7 +9,7 @@
 dummydata:
   n_repetitions: 1
   host_types:
-    small_v2:
+    small:
         n: 1
         init_roles: setup-small
         # (1) The filter_plugin `generate_fake_data` allows formatting part of the command using python code
