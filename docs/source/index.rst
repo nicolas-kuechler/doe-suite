@@ -1,21 +1,19 @@
 Welcome to the DoE-Suite documentation!
 =======================================
 
-.. warning::
-
-   The project is still in development and the documentation is not complete.
 
 User's Guide
 ------------
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    installation
    quickstart
    tutorial
    commands
    design/index
+   etl/index
    execution/index
 
 

@@ -1,7 +1,6 @@
+from doespy.etl.steps.colcross.base import BasePlotConfig, BaseSubplotConfig
 from doespy.etl.steps.colcross.components import (
-    BasePlotConfig,
     ColsForEach,
-    BaseSubplotConfig,
     Metric,
 )
 from doespy.etl.steps.colcross.subplots.bar import calc_positions
@@ -21,23 +20,67 @@ import gossip
 class GroupedBoxplotChart(MyETLBaseModel):
 
     group_foreach: ColsForEach = Field(default_factory=ColsForEach.empty)
+    """Generate an indiviudal group (of boxes) for each unique combination of values found within the given columns.
+
+    If missing, then only a single group is formed (i.e., no groups).
+
+    .. code-block:: yaml
+       :caption: Example
+
+        group_foreach:
+          cols: [col1, col2] # create a group for each unique combination of values in col1 and col2
+          jp_except: "(col1 == 'A') && (col2 == 'B')"  # optional: exclude specific combinations
+    """
+
 
     box_foreach: ColsForEach
+    """Within a group (of boxes), generate a box for each unique combination of values found within the given columns.
+
+    .. code-block:: yaml
+       :caption: Example
+
+        box_foreach:
+          cols: [col3, col4] # create a box for each unique combination of values in col3 and col4
+          # optional: exclude specific combinations (can also use cols from group_foreach, fig_foreach, etc.)
+          jp_except: "(col1 == 'A') && (col3 == 'B')"
+    """
 
     part_foreach: ColsForEach = Field(default_factory=ColsForEach.empty)
+    """Create multiple boxes in the same x-axis position for each unique combination of values found within the given columns.
+    In addition, the columns of the ``Metric`` (i.e., $metrics$) will also result in multiple parts.
+
+    If missing, only the ``Metric`` columns will be used.
+    If the ``Metric`` only has a single column and ``part_foreach`` is missing, then a single box (per-x-axis position) is created.
+
+    .. code-block:: yaml
+       :caption: Example
+
+       # the columns under metrics also result in parts
+
+        part_foreach:
+          cols: [col5, col6] # create a box part for each unique combination of values in col5 and col6
+          # optional: exclude specific combinations (can also use cols from group_foreach, box_foreach, etc.)
+          jp_except: "(col1 == 'A') && (col5 == 'B')"
+    """
 
     box_width: float = 0.6
+    """The width of each box."""
+
     box_padding: float = 0.0
+    """The space between boxes within a group."""
 
     group_padding: float = 0.1
+    """The space between groups."""
 
     @dataclass
     class Position:
+        """:meta private:"""
         group_center_pos: float
         box_left_pos: float
         box_center_pos: float
 
     def get_cols(self):
+        """:meta private:"""
         return (
             self.group_foreach.get_cols()
             + self.box_foreach.get_cols()
@@ -53,6 +96,7 @@ class GroupedBoxplotChart(MyETLBaseModel):
         subplot_config: BaseSubplotConfig,
         plot_config: BasePlotConfig,
     ):
+        """:meta private:"""
         group_ticks = set()
         box_ticks = set()
 
@@ -142,6 +186,7 @@ class GroupedBoxplotChart(MyETLBaseModel):
         )
 
     def for_each(self, df1: pd.DataFrame, metric: Metric, subplot_id: Dict[str, str]):
+        """:meta private:"""
 
         assert (
             metric.error_cols is None

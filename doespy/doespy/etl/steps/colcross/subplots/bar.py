@@ -1,7 +1,6 @@
+from doespy.etl.steps.colcross.base import BasePlotConfig, BaseSubplotConfig
 from doespy.etl.steps.colcross.components import (
-    BasePlotConfig,
     ColsForEach,
-    BaseSubplotConfig,
     Metric,
 )
 from doespy.etl.steps.colcross.subplots.bar_hooks import BarHooks
@@ -20,22 +19,62 @@ import gossip
 class GroupedStackedBarChart(MyETLBaseModel):
 
     group_foreach: ColsForEach = Field(default_factory=ColsForEach.empty)
+    """Generate an indiviudal group (of bars) for each unique combination of values found within the given columns.
+
+    If missing, then only a single group is formed (i.e., no groups).
+
+    .. code-block:: yaml
+       :caption: Example
+
+        group_foreach:
+          cols: [col1, col2] # create a group for each unique combination of values in col1 and col2
+          jp_except: "(col1 == 'A') && (col2 == 'B')"  # optional: exclude specific combinations
+    """
 
     bar_foreach: ColsForEach
+    """Within a group (of bars), generate a bar for each unique combination of values found within the given columns.
+
+    .. code-block:: yaml
+       :caption: Example
+
+        bar_foreach:
+          cols: [col3, col4] # create a bar for each unique combination of values in col3 and col4
+          # optional: exclude specific combinations (can also use cols from group_foreach, fig_foreach, etc.)
+          jp_except: "(col1 == 'A') && (col3 == 'B')"
+    """
 
     part_foreach: ColsForEach = Field(default_factory=ColsForEach.empty)
-    """
-    "
-    if part_foreach is None, i.e., default, then only the $metrics$ columns will be used as bar parts
+    """To create a stacked bar, each bar consists of multiple parts.
+
+    Within a bar generate a bar part for each unique combination of values found within the given columns.
+    In addition, the columns of the ``Metric`` (i.e., $metrics$) will also result in multiple parts.
+
+    If missing, only the ``Metric`` columns will be used.
+    If the ``Metric`` only has a single column and ``part_foreach`` is missing, then a regular (i.e. non-stacked) bar chart is created.
+
+    .. code-block:: yaml
+       :caption: Example
+
+       # the columns under metrics also result in parts
+
+        part_foreach:
+          cols: [col5, col6] # create a bar part for each unique combination of values in col5 and col6
+          # optional: exclude specific combinations (can also use cols from group_foreach, bar_foreach, etc.)
+          jp_except: "(col1 == 'A') && (col5 == 'B')"
     """
 
     bar_width: float = 0.6
+    """The width of each bar."""
+
     bar_padding: float = 0.0
+    """The space between bars within a group."""
 
     group_padding: float = 0.1
+    """The space between groups."""
 
     @dataclass
     class BarPartPosition:
+        """:meta private:"""
 
         group_center_pos: float
 
@@ -45,6 +84,7 @@ class GroupedStackedBarChart(MyETLBaseModel):
         bar_part_bottom: float
 
     def get_cols(self):
+        """:meta private:"""
         return (
             self.group_foreach.get_cols()
             + self.bar_foreach.get_cols()
@@ -60,6 +100,7 @@ class GroupedStackedBarChart(MyETLBaseModel):
         subplot_config: BaseSubplotConfig,
         plot_config: BasePlotConfig,
     ):
+        """:meta private:"""
         group_ticks = set()
         bar_ticks = set()
 
@@ -162,6 +203,7 @@ class GroupedStackedBarChart(MyETLBaseModel):
         )
 
     def for_each(self, df1: pd.DataFrame, metric: Metric, subplot_id: Dict[str, str]):
+        """:meta private:"""
 
         bar_left_pos, bar_center_pos, group_center_pos = calc_positions(
             group_foreach=self.group_foreach,

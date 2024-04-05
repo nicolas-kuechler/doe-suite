@@ -412,6 +412,10 @@ class ETLPipeline(ETLPipelineBase):
                 args = extractor.dict()
                 if "extra" in args:
                     del args["extra"]
+
+                if "file_regex" in args and args["file_regex"] is None:
+                    del args["file_regex"]
+
                 args = {**extractor.extra, **args}
 
                 ext = avl_extractors[name_enum](**args)

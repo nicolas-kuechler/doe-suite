@@ -15,6 +15,7 @@ class Loader(BaseModel, ABC):
         extra = "forbid"
 
     def get_output_dir(self, etl_info):
+        """:meta private:"""
 
         etl_output_dir = etl_info["etl_output_dir"]
 
@@ -25,6 +26,7 @@ class Loader(BaseModel, ABC):
 
     @abstractmethod
     def load(self, df: pd.DataFrame, options: Dict, etl_info: Dict) -> None:
+        """:meta private:"""
         # NOTE: Extending classes should not use the `options: Dict` and instead use instance variables for parameters
 
         pass
@@ -38,6 +40,7 @@ class Loader(BaseModel, ABC):
 class PlotLoader(Loader):
 
     def save_data(self, df: pd.DataFrame, filename: str, output_dir: str, output_filetypes: List[str] = ["html"]):
+        """:meta private:"""
         os.makedirs(output_dir, exist_ok=True)
 
         for ext in output_filetypes:
@@ -59,7 +62,7 @@ class PlotLoader(Loader):
         use_tight_layout: bool = True,
         output_filetypes: List[str] = ["pdf", "png"],
     ):
-
+        """:meta private:"""
         os.makedirs(output_dir, exist_ok=True)
 
 
@@ -78,6 +81,7 @@ class PlotLoader(Loader):
             )
 
     def default_fig(self):
+        """:meta private:"""
         scale_factor = 2.4
         figsize = [
             scale_factor * 1.618,
@@ -89,12 +93,8 @@ class PlotLoader(Loader):
 
 
 class CsvSummaryLoader(Loader):
-
-    skip_empty: bool = False
-
-    r"""The `CsvSummaryLoader` creates a CSV file of the data frame from the `Transformer` stage.
-
-    :param skip_empty: ignore empty df.
+    """
+    The `CsvSummaryLoader` creates a CSV file of the data frame from the `Transformer` stage.
 
     .. code-block:: yaml
        :caption: Example ETL Pipeline Design
@@ -105,6 +105,10 @@ class CsvSummaryLoader(Loader):
                 CsvSummaryLoader:        # with skip empty df
                     skip_empty: True
     """
+
+    skip_empty: bool = False
+    """Ignore empty df, if set to ``False``, raises an error if the data frame is empty."""
+
 
     def load(self, df: pd.DataFrame, options: Dict, etl_info: Dict) -> None:
 
@@ -118,12 +122,7 @@ class CsvSummaryLoader(Loader):
 
 
 class PickleSummaryLoader(Loader):
-
-    skip_empty: bool = False
-
-    r"""The `PickleSummaryLoader` creates a Pickle file of the data frame from the `Transformer` stage.
-
-    :param skip_empty: ignore empty df.
+    """The `PickleSummaryLoader` creates a Pickle file of the data frame from the `Transformer` stage.
 
     .. code-block:: yaml
        :caption: Example ETL Pipeline Design
@@ -134,6 +133,10 @@ class PickleSummaryLoader(Loader):
                 PickleSummaryLoader:        # with skip empty dir
                     skip_empty: True
     """
+
+    skip_empty: bool = False
+    """Ignore empty df, if set to ``False``, raises an error if the data frame is empty."""
+
 
     def load(self, df: pd.DataFrame, options: Dict, etl_info: Dict) -> None:
 
@@ -147,10 +150,7 @@ class PickleSummaryLoader(Loader):
 
 
 class LatexTableLoader(Loader):
-
-    r"""The `LatexTableLoader` creates a tex file of the data frame from the `Transformer` stage formatted as a Latex table.
-
-    :param output_dir: path relative to the etl output directory to store the csv.
+    """The `LatexTableLoader` creates a tex file of the data frame from the `Transformer` stage formatted as a Latex table.
 
     .. code-block:: yaml
        :caption: Example ETL Pipeline Design
@@ -158,15 +158,19 @@ class LatexTableLoader(Loader):
         $ETL$:
             loaders:
                 LatexTableLoader: {}     # with default output dir
-                LatexTableLoader:        # with custom output dir
-                    output_dir: dir1
+                LatexTableLoader:        # with skip empty df
+                    skip_empty: True
     """
 
+    skip_empty: bool = False
+    """Ignore empty df, if set to ``False``, raises an error if the data frame is empty."""
+
     def load(self, df: pd.DataFrame, options: Dict, etl_info: Dict) -> None:
-        if df.empty:
-            print(
-                "LatexTableLoader: DataFrame is empty so not creating an output file."
-            )
+
+        if self.skip_empty and df.empty:
+            return
+        elif df.empty:
+            raise ValueError("LatexTableLoader: DataFrame is empty so not creating an output file.")
 
         output_dir = self.get_output_dir(etl_info)
         with open(

@@ -9,7 +9,6 @@ Suite Design
 
     byexample
     design
-    etl
 
 
 .. todo::

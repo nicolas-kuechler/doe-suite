@@ -1,11 +1,10 @@
+from doespy.etl.steps.colcross.base import BaseSubplotConfig, is_match
 from matplotlib import pyplot as plt
 
 from enum import Enum
 from doespy.design.etl_design import MyETLBaseModel
 
-import abc
 import typing
-import jmespath
 import pandas as pd
 from typing import Dict, List, Literal, NamedTuple, Union
 
@@ -15,27 +14,47 @@ from pydantic import Field, PyObject, validator
 
 
 class SubplotGrid(MyETLBaseModel):
+    """
+    Create a grid of subplots within a single figure, where each subplot corresponds to a unique combination of values from specified row and column columns.
+    """
 
     rows: List[str]
+    """The columns that are used to define the rows in the subplot grid.
+
+    Create a row for each unique combination of values from the specified row columns.
+    (see ``jp_except`` for defining exceptions, i.e., not all combinations)
+    """
+
     cols: List[str]
+    """The columns that are used to define the columns in the subplot grid.
+
+    Create a column in each row for each unique combination of values from the specified column columns.
+    (see ``jp_except`` for defining exceptions, i.e., not all combinations)
+    """
 
     jp_except: str = None
-    """Skip certain combinations based on the data id (and parent data_id)
+    """Skip certain combinations of (row, col) based on the data id.
     """
 
     share_x: Literal["none", "all", "row", "col"] = "none"
+    """Options available in plt.subplots(..) to share the x-axis across subplots"""
+
     share_y: Literal["none", "all", "row", "col"] = "row"
+    """Options available in plt.subplots(..) to share the y-axis across subplots"""
 
     class WidthHeight(NamedTuple):
         w: float
         h: float
 
     subplot_size: WidthHeight = WidthHeight(2.5, 2.5)
+    """Size of each subplot (width, height) -> the size of the figure is determined by the number of rows and columns in the grid."""
 
     kwargs: Dict[str, typing.Any] = Field(default_factory=dict)
+    """kwargs for the plt.subplots(..) function (https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.subplots.html)"""
 
     @classmethod
     def empty(cls):
+        """:meta private:"""
         return SubplotGrid(rows=[], cols=[])
 
     def init(
@@ -43,8 +62,8 @@ class SubplotGrid(MyETLBaseModel):
         df: pd.DataFrame,
         parent_id: Dict[str, str],
         subplot_size: WidthHeight = None,
-    ):  # Tuple[width, height] ?
-
+    ):
+        """:meta private:"""
         # NOTE: also assumes correctly sorted df
 
         def dict_to_tuple(d):
@@ -91,9 +110,11 @@ class SubplotGrid(MyETLBaseModel):
         return fig, axs
 
     def get_cols(self):
+        """:meta private:"""
         return self.rows + self.cols
 
     def for_each(self, axs, df: pd.DataFrame, parent_id: Dict[str, str]):
+        """:meta private:"""
 
         n_rows = len(axs)
         n_cols = len(axs[0])
@@ -112,22 +133,66 @@ class SubplotGrid(MyETLBaseModel):
 
 
 class Metric(MyETLBaseModel):
+    """
+    The metric specifies the columns in the dataframe where the data is stored, along with details such as units.
+    Additionally, it enables conversion to other units as needed.
+
+    Each subplot will be built based on exactly one metric.
+    """
 
     value_cols: Union[str, List[str]]
-    error_cols: Union[str, List[str]] = None
+    """Identify the column(s) in the dataframe containing the data values.
 
-    # metric_cfg.y_unit_multiplicator / metric_cfg.y_unit_divider
+    The semantic of multiple columns varies based on the chart type being used.
+    For instance, in a stacked bar chart, multiple columns may represent distinct
+    "stacked" segments within a bar.
+
+    To understand the semantic of these columns, consult the documentation of the specific chart type.
+    """
+
+    error_cols: Union[str, List[str]] = None
+    """Identify the column(s) in the dataframe containing the error values.
+
+    The semantic of the error values depends on the chart type being used (see ``value_cols`` above).
+    For example, in a bar chart, the error values may represent the error bars for the corresponding data values.
+    """
+
     value_multiplicator: float = 1.0
+    """A multiplicator to scale the data values to e.g., convert to a desired unit.
+        For instance, if the data is in milliseconds and you want to convert it to seconds, set this value to 0.001.
+
+        new_value = old_value * value_multiplicator / value_divider
+    """
+
     error_multiplicator: float = 1.0
+    """A multiplicator to scale the error values to e.g., convert to a desired unit.
+
+        new_error = old_error * error_multiplicator / error_divider
+    """
 
     value_divider: float = 1.0
+    """A divider to scale the data values to e.g., convert to a desired unit.
+        For instance, if the data is in milliseconds and you want to convert it to seconds, set this value to 1000.
+
+        new_value = old_value * value_multiplicator / value_divider
+    """
+
     error_divider: float = 1.0
+    """A divider to scale the error values to e.g., convert to a desired unit.
+
+        new_error = old_error * error_multiplicator / error_divider
+    """
 
     unit_label: str = None
-    """available as $metric_unit$ in labels"""
+    """An option to specify the unit for data values (after the optional scaling).
+
+    This unit can be utilized when formatting labels by using the special identifier: ``$metric_unit$`` as a placeholder.
+    """
+
 
     @validator("value_cols", "error_cols", pre=True)
     def ensure_list(cls, v):
+        """:meta private:"""
         if isinstance(v, str):
             return [v]
         return v
@@ -135,6 +200,7 @@ class Metric(MyETLBaseModel):
     @classmethod
     def convert_metrics(cls, metrics: Dict[str, "Metric"], df: pd.DataFrame):
         """
+        :meta private:
         Introduce a duplicate of the df for each metric and mark it with a new column $metrics$.
         -> this allows to use $metrics$ as a column to generate different plots / subplots / groups / etc.
         """
@@ -183,14 +249,35 @@ class Metric(MyETLBaseModel):
 
 
 class DataFilter(MyETLBaseModel):
+    """
+    Filter the DataFrame to include only the specified values from a predefined list and establish a sorting order.
+
+    .. code-block:: yaml
+       :caption: Example
+
+        data_filter:
+          allowed:
+            col1: [val1, val2]          # filter out rows where col1 is not val1 or val2 + sort col1 (in that order)
+            col2: [val3, val4, val5]    # filter out rows where col2 is not val3, val4, or val5 + sort col2
+            # col3 is not present, so all values are allowed
+
+    """
 
     allowed: Dict[str, List[str]]
+    """A dictionary that maps column names to a list of allowed values.
+
+    If a column is not present in the dictionary, then all values are allowed.
+
+    The order of the values in the list determines the order of the values and thus also the order in the plots.
+    """
 
     @classmethod
     def empty(cls):
+        """:meta private:"""
         return DataFilter(allowed=[])
 
     def apply(self, cols: List[str], df: pd.DataFrame) -> pd.DataFrame:
+        """:meta private:"""
 
         n_rows_intial = len(df)
         df_filtered = df.copy()
@@ -237,15 +324,28 @@ class DataFilter(MyETLBaseModel):
 
 
 class LabelFormatter(MyETLBaseModel):
+    """
+    A label formatter that allows to customize the label based on a data_id.
+
+    .. code-block:: yaml
+       :caption: Example
+
+        label:
+          template: "{system}: {workload}"
+        # for data_id = {"system": "A", "workload": "B"} -> label = "A: B"
+
+    """
+
 
     template: str
     """A template string that can contain placeholders in the form "{placeholder}".
-    The placehold correspond to column names (which are presend in the data_id)
+    The placeholder corresponds to column names (which are presend in the data_id)
     """
 
     def apply(
-        self, data_id: Dict[str, str], subplot_config: "BaseSubplotConfig", info: str
+        self, data_id: Dict[str, str], subplot_config: BaseSubplotConfig, info: str
     ) -> str:
+        """:meta private:"""
 
         # template string: "Hello {name}"
         labels = {k: subplot_config.label(lbl, data_id) for k, lbl in data_id.items()}
@@ -269,7 +369,8 @@ class KwargsLabelFormatter(LabelFormatter):
 class LegendConfig(MyETLBaseModel):
 
     label: Union[str, LabelFormatter] = None
-    """label:
+    """The basic label format assigned to each artist.
+        Using a label in the `ArtistConfig` / `SubplotConfig` will overwrite this label.
     """
 
     kwargs: Dict[str, typing.Any] = Field(default_factory=dict)
@@ -278,33 +379,38 @@ class LegendConfig(MyETLBaseModel):
     """
 
     def get_label(self, data_id, subplot_config):
+        """:meta private:"""
         if self.label is None:
             return None
         if isinstance(self.label, str):
             return self.label
         return self.label.apply(
-            data_id, subplot_config=subplot_config, info="ax_legend"
+            data_id, subplot_config=subplot_config, info="legend"
         )
 
 
 class ColsForEach(MyETLBaseModel):
 
     cols: List[str]
+    """Performs a group by with the cols as keys and yields the resulting dataframes."""
 
     jp_except: str = None
-    """Skip certain combinations based on the data id (and parent data_id)
-    """
+    """Skip certain combinations based on the data id (and parent data_id)"""
 
     label: KwargsLabelFormatter = None
+    """Allows to define a label for each group based on the data_id"""
 
     @classmethod
     def empty(cls):
+        """:meta private:"""
         return ColsForEach(cols=[])
 
     def get_cols(self):
+        """:meta private:"""
         return self.cols.copy()
 
     def for_each(self, df: pd.DataFrame, parent_id: Dict[str, str]):
+        """:meta private:"""
 
         if not self.cols:  # is empty
             yield 0, df, {}
@@ -385,7 +491,10 @@ class AxisConfig(MyETLBaseModel):
         use_enum_values = True
 
     scale: Literal["linear", "log", "symlog", "logit"] = None
+    """The scale of the axis"""
+
     label: LabelFormatter = None
+    """Axis Label"""
 
     class AxisLim(MyETLBaseModel):
         min: Union[
@@ -409,42 +518,60 @@ class AxisConfig(MyETLBaseModel):
             return compute_lim(self.min), compute_lim(self.max)
 
     lim: AxisLim = None
+    """Define the limits of the axis. Can either define a fixed value or scale the limits based on the data interval."""
 
-    # https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.set_yticks.html
     ticks: Union[Dict, int] = (
-        None  # corresponds to the matplotlib function set_xticks / set_yticks or it's the number of ticks
+        None
     )
+    """Set axis ticks (corresponds to matplotlib function set_xticks / set_yticks or it's the number of ticks)
 
-    # https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.tick_params.html
+    https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.set_yticks.html
+    """
+
+
     tick_params: Union[Dict, List[Dict]] = None
+    """Additional options for the tick_params function.
+
+    https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.tick_params.html
+    """
 
     major_formatter: AxisFormatter = None
+    """Label formatting function for major ticks on the axis.
+
+    The aviailable options are:
+    - "round_short" -> which rounds the number to a short format (e.g., 1.2M)
+    """
+
     minor_formatter: AxisFormatter = None
+    """Label formatting function for major ticks on the axis.
 
-
-def is_match(jp_query, data_id, info) -> bool:
-
-    if jp_query is None:
-        # print(f"JmesPathFilter: {info}: query is None")
-        return True
-
-    # print(f"JmesPathFilter: {info}: query={self.jp_query}  data_id={data_id}")
-    # print(f"JmesPathFilter: {info}: query={jp_query}  data_id={data_id}")
-    result = jmespath.search(jp_query, data_id)
-
-    # print(f"    -> is match: {result}")
-    # print(f"JmesPathFilter: {info}: query is {result}    {jp_query=}")
-    assert isinstance(
-        result, bool
-    ), f"JmesPathFilter: {info}: query={jp_query} returned non-boolean result: {result}"
-    return result
+    The aviailable options are:
+    - "round_short" -> which rounds the number to a short format (e.g., 1.2M)
+    """
 
 
 class ArtistConfig(MyETLBaseModel):
+    """
+    Configure settings for a specific artist (e.g., line, bar, scatter, etc.).
+
+    This configuration allows customization beyond the predefined fields listed below.
+    Additional options can be passed as keyword arguments (kwargs) to the matplotlib
+    function corresponding to the artist.
+
+    For instance, setting {color: blue} for a bar plot would define the bars' color as blue.
+
+    Refer to the specific artist or chart type documentation for a comprehensive list of
+    available customization options.
+    """
+
 
     jp_query: str = None
+    """The JMESPath query is applied to the artist_id (i.e., dict of col:data pairs) to determine whether this configuration entry applies or not.
+    If the jp_query matches, then this configuration applies.
+    If None, then this config applies to all artist_ids."""
 
-    label: Union[LabelFormatter, str] = None  # TODO [nku] not sure that works
+    label: Union[LabelFormatter, str] = None
+    """Special label formatter that allows to customize the label used for the artist."""
 
     class Config:
         extra = "allow"
@@ -457,6 +584,7 @@ class ArtistConfig(MyETLBaseModel):
         subplot_config: "BaseSubplotConfig",
         info="artist_config",
     ) -> Dict:
+        """:meta private:"""
         config = {}
 
         # loop in reverse order to give the first filter the highest priority
@@ -471,64 +599,3 @@ class ArtistConfig(MyETLBaseModel):
             del config["jp_query"]
 
         return config
-
-
-class BasePlotConfig(MyETLBaseModel, abc.ABC):
-
-    jp_query: str = None
-
-    @classmethod
-    def merge_cumulative(
-        cls, configs: List["BasePlotConfig"], plot_id: Dict, info="plot_config"
-    ):
-
-        # for each ax (i.e., subplot) determine the config by merging the configs where the filter matches
-        config = None
-        for cfg in configs:
-            if is_match(cfg.jp_query, plot_id, info):
-                if config is None:
-                    config = cfg.copy()
-                else:
-                    config.fill_missing(cfg)
-        return config
-
-
-class BaseSubplotConfig(MyETLBaseModel, abc.ABC):
-
-    jp_query: str = None
-
-    @classmethod
-    def merge_cumulative(
-        cls, configs: List["BaseSubplotConfig"], data_id: Dict, info="subplot_config"
-    ):
-        # for each ax (i.e., subplot) determine the config by merging the configs where the filter matches
-        config = None
-        for cfg in configs:
-
-            if is_match(cfg.jp_query, data_id, info):
-                if config is None:
-                    config = cfg.copy()
-                else:
-                    config.fill_missing(cfg)
-
-        return config
-
-    def fill_missing(self, other):
-        for k, v in self.dict().items():
-            if v is None:
-                setattr(self, k, getattr(other, k))
-
-    @abc.abstractmethod
-    def get_cols(self) -> List[str]:
-        pass
-
-    @abc.abstractmethod
-    def artist_config(self, artist_id, plot_config) -> Dict:
-        pass
-
-    @abc.abstractmethod
-    def create_chart(self, ax, df1, data_id, metric, plot_config):
-        pass
-
-    def label(self, lbl, data_id) -> str:
-        return lbl
