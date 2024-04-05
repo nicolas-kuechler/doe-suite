@@ -280,6 +280,12 @@ rescomp: install
 	@cd $(does_config_dir) && \
 	poetry run pytest $(PWD)/doespy -q -k 'test_does_results' -s --suite $(suite) --id $(id)
 
+# compares all the results of the suite with the expected results
+rescompall: install
+	@cd $(does_config_dir) && \
+	poetry run pytest $(PWD)/doespy -q -k 'test_does_results_all'
+
+
 # for aws cloud setup there can be race conditions for network setup, delay each example by 10s
 # use sed to extract the example id and multiply it by 10 -> feed this to sleep
 # (sed first extract the number and then removes leading zeros: example05-xyz -> 05 -> 5)
