@@ -1,0 +1,27 @@
+
+# SUPER ETL demo file.
+# More details can be found in `docs/etl.md`
+#
+# Super ETL also supports multiple outputs from different suites can be combined here, but this file does not demo that functionality.
+
+$SUITE_ID$:
+  example08-superetl: $expected #00000001 # SUITE ID
+
+  # ... if more suites exist, other ids
+
+$ETL$:
+  data:
+    experiments:
+      example08-superetl: "*"
+
+    extractors:
+      YamlExtractor: {} # with default file_regex
+      ErrorExtractor: {} # if a non-empty file exists matching the default regex -> then we throw an error using the ErrorExtractor
+      IgnoreExtractor: {} # since we want that each file is processed by an extractor, we provide the IgnoreExtractor which can be used to ignore certain files. (e.g., stdout)
+    transformers:
+    - name: GroupByAggTransformer
+      data_columns: [base_s, overhead1_s, overhead2_s, base_mb, overhead_mb]
+      groupby_columns: [system, system_config, workload]
+      agg_functions: ["mean", "std"]
+    loaders:
+      CsvSummaryLoader: {}
