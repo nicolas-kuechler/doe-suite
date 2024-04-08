@@ -32,7 +32,7 @@
 ##########################################
 
 - set_fact:
-    exp_specific_vars: "{{ hostvars['localhost'].suite_hosts_lst | to_exp_specific_vars(hostvars['localhost'].my_suite_design.keys(), hostvars) }}"
+    exp_specific_vars: "{{ hostvars['localhost'].suite_hosts_lst | to_exp_specific_vars(hostvars['localhost'].my_suite_design.keys(), hostvars | to_json | from_json ) }}"
 
 - name: expand experiment suite design + replace variables
   suite_design_extend:

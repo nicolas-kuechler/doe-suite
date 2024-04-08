@@ -283,7 +283,7 @@ rescomp: install
 # compares all the results of the suite with the expected results
 rescompall: install
 	@cd $(does_config_dir) && \
-	poetry run pytest $(PWD)/doespy -q -k 'test_does_results_all'
+	poetry run pytest $(PWD)/doespy -q -k 'test_all_does_results'
 
 
 # for aws cloud setup there can be race conditions for network setup, delay each example by 10s

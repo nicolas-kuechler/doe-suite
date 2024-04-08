@@ -1,6 +1,6 @@
 
 def to_exp_specific_vars(suite_hosts_lst, experiment_names, hostvars):
-    #print(f"to_exp_specific_vars:     {experiment_names=}    {hostvars.keys()=}")
+    print(f"to_exp_specific_vars:     {experiment_names=}    {type(hostvars)=}")
 
     exp_specific_vars = {e: {"exp_host_lst": []} for e in experiment_names if e != "$ETL$"}
 
@@ -11,7 +11,7 @@ def to_exp_specific_vars(suite_hosts_lst, experiment_names, hostvars):
              "host_type_n": x["exp_host_type_n"],
              "public_dns_name": x["public_dns_name"],
              "private_dns_name": x["private_dns_name"],
-             "hostvars": hostvars[x["instance_id"]]
+             "hostvars": hostvars[x["ansible_host_id"]]
             }
 
         exp_specific_vars[x["exp_name"]]["exp_host_lst"].append(d)
