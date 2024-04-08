@@ -66,7 +66,7 @@ $ETL$:
       - name: RepAggTransformer # aggregate over all repetitions of a run and calc `mean`, `std`, etc.
         data_columns: [latency] # the names of the columns in the dataframe that contain the measurements
     loaders:
-      CsvSummaryLoader: {} # write the transformed detl_info["suite_dir"]ataframe across the whole experiment as a csv file
+      CsvSummaryLoader: {skip_empty: True} # write the transformed detl_info["suite_dir"]ataframe across the whole experiment as a csv file
       DemoLatencyPlotLoader: {} # create a plot based on project-specific plot loader
 
 
@@ -81,4 +81,4 @@ $ETL$:
         file_regex: '^stdout.log$'
     transformers: [] # no transformation
     loaders:
-      CsvSummaryLoader: {}
+      CsvSummaryLoader: {skip_empty: True}

@@ -8,5 +8,6 @@
     },
     "opt": false,
     "out": "json",
-    "payload_size_mb": 20
+    "payload_size_mb": 20,
+    "python_run": "/home/ubuntu/code/demo_project/.venv/bin/python /home/ubuntu/code"
 }

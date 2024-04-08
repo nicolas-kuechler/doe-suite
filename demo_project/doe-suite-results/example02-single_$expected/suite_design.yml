@@ -76,7 +76,7 @@ $ETL$:
       - count
     loaders:
       CsvSummaryLoader:
-        skip_empty: false
+        skip_empty: true
       DemoLatencyPlotLoader: {}
   pipeline2:
     experiments:
@@ -96,4 +96,4 @@ $ETL$:
     transformers: []
     loaders:
       CsvSummaryLoader:
-        skip_empty: false
+        skip_empty: true

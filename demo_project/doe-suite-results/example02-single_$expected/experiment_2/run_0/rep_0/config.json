@@ -11,5 +11,6 @@
         "opt": false,
         "other": "[0, 1]",
         "size": 10
-    }
+    },
+    "python_run": "/home/ubuntu/code/demo_project/.venv/bin/python /home/ubuntu/code"
 }
