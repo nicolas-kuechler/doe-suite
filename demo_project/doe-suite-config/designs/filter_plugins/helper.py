@@ -53,10 +53,6 @@ def at_runtime(var, exp_host_lst, host_type=None, host_type_idx=0):
         return vars[0]
 
 
-
-
-
-
 class FilterModule(object):
     ''' jinja2 filters '''
 
