@@ -6,6 +6,8 @@ def to_exp_specific_vars(suite_hosts_lst, experiment_names, hostvars):
 
     for x in suite_hosts_lst:
 
+        # TODO [nku] could be switched to Pydantic model which can then be documented in the docs
+
         d = {"host_type": x["host_type"],
              "host_type_idx": x["exp_host_type_idx"],
              "host_type_n": x["exp_host_type_n"],
