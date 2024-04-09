@@ -32,11 +32,6 @@ class Loader(BaseModel, ABC):
         pass
 
 
-# TODO [nku] provide more default implementations for plot styling:
-#  [gray scheme vs color scheme, linestyles, figure size: square vs rectangle]
-#  -> how can we encapsulate this in a nice modular way?
-# TODO [nku] maybe provide some really basic plots based on options:
-#  [lineplot, barchart]
 class PlotLoader(Loader):
 
     def save_data(self, df: pd.DataFrame, filename: str, output_dir: str, output_filetypes: List[str] = ["html"]):

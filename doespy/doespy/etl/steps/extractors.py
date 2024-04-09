@@ -52,8 +52,6 @@ class Extractor(BaseModel, ABC):
 
         pass
 
-# TODO [nku] add docstrings to classes to automatically generate documentation
-
 
 class YamlExtractor(Extractor):
 
