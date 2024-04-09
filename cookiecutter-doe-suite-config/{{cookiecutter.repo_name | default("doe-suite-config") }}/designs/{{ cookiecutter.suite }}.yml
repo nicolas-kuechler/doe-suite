@@ -30,6 +30,6 @@ $ETL$:
     #  - name: RepAggTransformer
     #    data_columns: [latency]
     loaders:
-      CsvSummaryLoader: {}
+      CsvSummaryLoader: {skip_empty: True}
 
   # -> can add other pipelines here

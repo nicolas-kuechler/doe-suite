@@ -217,9 +217,7 @@ For example, the host type ``small`` of the ``demo_project``:
    :language: yaml
    :caption: doe-suite-config/group_vars/small/main.yml
 
-------------
-
-
+----------------
 (Add) Setup Role
 ----------------
 
@@ -246,8 +244,8 @@ The name of the file under ``tasks/`` determines whether they are the same on al
                     ├── aws.yml
                     └── euler.yml
 
-------------
 
+--------------
 (Add) ETL Step
 --------------
 

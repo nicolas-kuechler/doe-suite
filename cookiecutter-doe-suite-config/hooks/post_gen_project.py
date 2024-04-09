@@ -111,3 +111,6 @@ post_hook_replace(filepath="group_vars/{{ cookiecutter.host_name }}/main.yml", p
 # set the connection between the doe-suite and the does_config in poetry
 doespy_relative_to_does_config = os.path.relpath(os.path.join(os.environ.get("PWD"), "doespy"), os.getcwd())
 post_hook_replace(filepath="pyproject.toml", pattern="<AUTO-PATH>", replacement=doespy_relative_to_does_config)
+
+# in custom cloud via inventory: by default read user from env variables
+post_hook_replace(filepath="inventory/{{ cookiecutter.custom_cloud }}.yml", pattern="<ENV:DOES_CUSTOM_CLOUD_USER>", replacement="{% raw %}{{ lookup('env', 'DOES_CUSTOM_CLOUD_USER', default=undef()) }}{% endraw %}")

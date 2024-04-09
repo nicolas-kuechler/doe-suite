@@ -29,6 +29,7 @@ sphinx-copybutton = "^0.5.1"
 jmespath = "^1.0.1"
 gossip = "^2.4.0"
 tqdm = "^4.66.2"
+cookiecutter = "^2.6.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"

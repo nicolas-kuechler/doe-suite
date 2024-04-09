@@ -90,7 +90,8 @@ help:
 # initialize a doe-suite-config from cookiecutter template (use defaults + ask user for inputs)
 new:
 	@if [ ! -f $(does_config_dir)/pyproject.toml ]; then \
-		cookiecutter cookiecutter-doe-suite-config -o $(DOES_PROJECT_DIR); \
+		poetry -C doespy install && \
+		poetry -C doespy run cookiecutter cookiecutter-doe-suite-config -o $(DOES_PROJECT_DIR); \
 	fi
 
 # depending on`cloud` variable, check if connection can be established

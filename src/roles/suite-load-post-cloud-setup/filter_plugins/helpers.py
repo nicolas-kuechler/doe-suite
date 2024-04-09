@@ -1,6 +1,6 @@
 
 def to_exp_specific_vars(suite_hosts_lst, experiment_names, hostvars):
-    print(f"to_exp_specific_vars:     {experiment_names=}    {type(hostvars)=}")
+    # print(f"to_exp_specific_vars:     {experiment_names=}    {type(hostvars)=}")
 
     exp_specific_vars = {e: {"exp_host_lst": []} for e in experiment_names if e != "$ETL$"}
 
