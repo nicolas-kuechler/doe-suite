@@ -10,32 +10,23 @@
     pkg:
     - python3.9
     - python3.9-venv
+    - python3-venv
+    - python3-pip
     update_cache: yes
 
+- name: Install pipx
+  ansible.builtin.pip:
+    name: pipx
+    executable: pip3
 
-- name: Download get-pip.py
-  ansible.builtin.get_url:
-    url: https://bootstrap.pypa.io/get-pip.py
-    dest: /tmp/get-pip.py
-
-- name: Install pip for python (via script)
-  ansible.builtin.shell:
-    cmd: python3.9 /tmp/get-pip.py
-
-# TODO [nku] migrate to poetry 1.2
-# curl -sSL https://install.python-poetry.org python3 -
-- name: Download install-poetry.py
-  ansible.builtin.get_url:
-    url: https://install.python-poetry.org/install-poetry.py
-    dest: /tmp/install-poetry.py
-
-- name: Install poetry with script install-poetry.py
-  ansible.builtin.shell:
-    cmd: python3.9 /tmp/install-poetry.py
+- name: Install poetry
+  community.general.pipx:
+    name: poetry
+    state: install
 
 - name: make path to poetry available in variable
   set_fact:
-    poetry: /home/ubuntu/.local/bin/poetry
+    poetry: "{{ ansible_env.HOME }}/.local/bin/poetry"
 
 - name: Set config to create .venv folder in project directory
   ansible.builtin.shell:

@@ -9,5 +9,6 @@ all:
       hosts:
         small_01: # host_id
           ansible_host: <IP ADDRESS or DNS> # (connect to this host via ssh)
+          ansible_user: <USERNAME> #(login ssh username)
 
 ## could add more host_types and/or more hosts

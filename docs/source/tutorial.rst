@@ -31,6 +31,8 @@ As a summary, these environment variables should now be set:
     # for AWS
     export DOES_SSH_KEY_NAME=<YOUR-PRIVATE-SSH-KEY-FOR-AWS>
 
+    export DOES_AWS_USER=<SSH-USERNAME>
+
     # for Euler
     export DOES_EULER_USER=<YOUR-NETHZ>
 

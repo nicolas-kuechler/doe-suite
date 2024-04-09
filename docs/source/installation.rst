@@ -164,6 +164,9 @@ In addition to the environment variables defined in :ref:`installation:General E
     # name of ssh key used for setting up access to aws machines
     export DOES_SSH_KEY_NAME=<YOUR-PRIVATE-SSH-KEY-FOR-AWS>
 
+    # Replace <SSH-USERNAME> with your ssh username on the AWS instances (defaults to 'ubuntu')
+    export DOES_AWS_USER=<SSH-USERNAME>
+
     # Note: don't forget DOES_PROJECT_DIR and DOES_PROJECT_ID_SUFFIX from above
 
 The environment variable ``DOES_SSH_KEY_NAME`` defines the key used when creating new EC2 instances and needs to match the IdentityFile specified in the SSH config.
