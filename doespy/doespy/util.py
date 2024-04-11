@@ -281,7 +281,8 @@ def jinja2_env(loader, undefined, variable_start_string="{{", variable_end_strin
 
     # load design specific fiters
     filter_folder = os.path.join(get_suite_design_dir(), "filter_plugins")
-    source_files = [file for file in os.listdir(filter_folder) if file.endswith(".py")]
+    source_files = [file for file in os.listdir(filter_folder) if file.endswith(".py")] \
+        if os.path.exists(filter_folder) else [] # skip if folder does not exist for backwards compatibility
     for file in source_files:
         try:
             path = os.path.join(filter_folder, file)
