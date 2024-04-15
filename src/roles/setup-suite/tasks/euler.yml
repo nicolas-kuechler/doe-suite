@@ -18,7 +18,7 @@
     #
     # 2. Add the GitHub private key to ssh-agent:
     #
-    #   ssh-aadd ~/.ssh/private_key_rsa
+    #   ssh-add ~/.ssh/private_key_rsa
     #
     # 3. (On a MAC, need add to keychain)
 

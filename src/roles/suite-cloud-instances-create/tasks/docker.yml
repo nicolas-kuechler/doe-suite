@@ -1,0 +1,294 @@
+---
+
+# This role uses the `host_types` variable to create the ec2 instances
+# described in the suite design.
+# We use instance tags to assign instances to experiments.
+#
+# The assignment is stored in the variable `suite_hosts_lst` which is a list
+# of all hosts and contains the information on the assignment to experiments.
+#
+# In the end, we set the assignment information also as variables on the respective host.
+# (e.g., `exp_name` on the host shows the experiment)
+#
+# After this role, all instances are ready to use for the suite to run experiments.
+
+- name: Load the host specific vars from their groups_vars files
+  # builds a dictionary `host_type: vars`, where `vars` are the variables defined for that host type in `group_vars/host_type/main.yml`
+  block:
+  - name: Loop over different host types and load group vars from file.
+    include_vars:
+      dir: "{{ external_group_vars_dir }}/{{ host_type }}"
+      ignore_unknown_extensions: True
+      name: host_type_specific_vars
+    loop: "{{ host_types.keys() }}"
+    loop_control:
+      loop_var:
+        host_type
+    register: my_results
+
+    # note: At this point, host_type_specific_vars contains only the variables from the last host (of the previous loop).
+    #       However, the registered variable `my_results` contains a list with the variables from all hosts.
+    #       The following two tasks build a dictionary <HOST_TYPE>:<host type specific vars>
+
+  - name: clear host_type_specific_vars
+    set_fact:
+      host_type_specific_vars: {}
+
+  - name: use `my_results` to build host_type_specific_vars dictionary
+    set_fact:
+      host_type_specific_vars: "{{ host_type_specific_vars | combine({ res.host_type: res.ansible_facts.host_type_specific_vars }) }}"
+    loop: "{{ my_results.results }}"
+    loop_control:
+      loop_var:
+        res
+
+
+# Network Interfaces
+
+#- name: find existing eni
+#  amazon.aws.ec2_eni_info:
+#    filters:
+#      vpc-id: "{{ exp_base.vpc_id }}"
+#  register: ec2_eni_info
+
+- name: Collect infos on docker containers (filter by prj_id and suite tags)
+  community.docker.docker_host_info:
+      containers: yes
+      containers_filters:
+        label:
+#        instance-state-name: [ "pending", "running" ]
+         - "tag:prj_id={{ prj_id }}"
+         - "tag:suite={{ suite }}"
+  register: instance_info_docker
+
+- debug:
+    var: instance_info_docker
+
+- name: Parse docker instance
+  set_fact:
+    instances: [] # for now do nothing, later we need to parse tags
+
+#- set_fact:
+#    eni_assignment: "{{ ec2_eni_info | to_eni_assignment(ec2_instance_info, host_types, host_type_specific_vars) }}"
+
+#- debug:
+#    var: eni_assignment
+
+# Do tag assignment first
+
+- name: Collect infos on ec2 instances (filter by prj_id and suite tags)
+  set_fact:
+    ec2_instance_info: "{{ ec2_instance_info | default([]) + [{ 'instance_id': my_host['host_type'] + '--' + (my_host['idx']|string), 'tags': { 'host_type': my_host['host_type'], 'idx': my_host['idx'] } }] }}"
+  vars:
+    max_n_sum: "{{ host_types | json_query('*.*.n') | map('sum') | max  }}"
+    n_sum: "{{ host_types[my_host['host_type']] | json_query('*.n') | sum }}"
+    ec2config: "{{ host_type_specific_vars[my_host['host_type']] | combine( exp_base ) }}"
+  loop: "{{ host_types.keys() | product(range(max_n_sum|int)) | map('tuple2dict', keys=['host_type', 'idx']) }}"
+  loop_control:
+    loop_var: my_host
+
+#  community.aws.ec2_instance_info:
+#    region: "{{ exp_base.aws_region }}"
+#    filters:
+#      instance-state-name: [ "pending", "running" ]
+#      "tag:prj_id": "{{ prj_id }}"
+#      "tag:suite": "{{ suite }}"
+
+- debug:
+    var: ec2_instance_info
+
+- name: Convert collected infos on ec2 instances into list with relevant infos of hosts
+  set_fact:
+    tag_assignment_lst: "{{ instance_infos | to_tag_assignment(host_types)}}"
+    # list of all instances with their id and other relevant infos
+    # [{"instance_id": X, "exp_name": X, "is_controller": X, "host_type": X, "exp_host_type_idx": X, "exp_host_type_n": X, "init_roles": X, "check_status": X}, ...]
+  vars:
+    instance_infos: "{{ ec2_instance_info | json_query('[*].{instance_id: instance_id, tags: tags}') }}"
+
+- debug:
+    var: tag_assignment_lst
+
+#######################################################################
+# Create EC2 Instances for all host_types
+######################################################################
+
+- name: Create Docker Containers Instances (only assign subset of tags yet)
+  community.docker.docker_container:
+    image: doe-ubuntu:latest
+    state: started
+    network_mode: bridge
+    publish_all_ports: yes
+    name: "{{ name_tag }}"
+#    command: "sleep infinity"
+
+#    key_name: '{{ ssh_key_name }}'
+#    image_id: '{{ ec2config.ec2_image_id }}'
+#    region: '{{ ec2config.aws_region }}'
+#    security_groups: "{{ ec2config.attach_eni | default(False) | ternary([], [ec2config.sg_name]) }} " #ec2config.sg_name "{{ omit }}" #
+#    vpc_subnet_id: '{{ ec2config.vpc_subnet_id }}'
+#    instance_role: '{{ ec2config.instance_role | default(None) }}'
+#    wait: no
+#    purge_tags: yes
+#    network: "{{ my_host | to_network(eni_assignment) }}"
+#    volumes:
+#      - device_name: '{{ volume_root_device_name | default("/dev/sda1") }}'
+#        ebs:
+#          volume_type: gp2
+#          snapshot_id: '{{ ec2config.ec2_volume_snapshot }}'
+#          volume_size: '{{ ec2config.ec2_volume_size }}'
+#          delete_on_termination: True
+    labels:
+      tag:prj_id: "{{ prj_id }}"
+      tag:suite: "{{ suite }}"
+      tag:host_type: "{{ tag_assignment.host_type }}"
+      tag:idx: "{{ tag_assignment.exp_host_type_idx }}"
+
+      tag:exp_name: "{{ tag_assignment.exp_name }}"
+      tag:is_controller: "{{ tag_assignment.is_controller }}"
+      tag:check_status: "{{ tag_assignment.check_status }}"
+#      instance-state-name: ["pending", "running"]
+  # First, we calculate max_n_sum which sums up the number of instances per host_type and then selects the maximum
+  # Second, we create a list of dictionaries {"host_type": X, "idx": X} with a cross product of host_types and range(max_n_sum)
+  # Third, now with this list, there are entries that don't actually represent instances (because we use the max_n_sum), hence we filter
+  # them out in the where condition and skip them.
+#  when: (my_host['idx']|int) < (n_sum|int)
+  vars:
+#    max_n_sum: "{{ host_types | json_query('*.*.n') | map('sum') | max  }}"
+#    n_sum: "{{ host_types[my_host['host_type']] | json_query('*.n') | sum }}"
+#    ec2config: "{{ host_type_specific_vars[my_host['host_type']] | combine( exp_base ) }}"
+    name_tag: "prj_id__{{ prj_id }}___suite__{{ suite }}___exp_name__{{ tag_assignment.exp_name }}___host_type__{{ tag_assignment.host_type }}___host_type_idx__{{ tag_assignment.exp_host_type_idx }}___is_controller__{{ tag_assignment.is_controller }}___check_status__{{ tag_assignment.check_status }}"
+
+  loop: "{{ tag_assignment_lst }}"
+  loop_control:
+    loop_var: tag_assignment
+
+#######################################################################
+# Assign instances to experiments and define role in experiments
+# (e.g., instance is controller)
+# -> done by assigning tags to ec2 instances
+######################################################################
+
+#- name: Collect infos on ec2 instances (filter by prj_id and suite tags)
+#  community.aws.ec2_instance_info:
+#      region: "{{ exp_base.aws_region }}"
+#      filters:
+#        instance-state-name: [ "pending", "running" ]
+#        "tag:prj_id": "{{ prj_id }}"
+#        "tag:suite": "{{ suite }}"
+#  register: ec2_instance_info
+#
+#- name: Convert collected infos on ec2 instances into list with relevant infos of hosts
+#  set_fact:
+#    tag_assignment_lst: "{{ instance_infos | to_tag_assignment(host_types)}}"
+#    # list of all instances with their id and other relevant infos
+#    # [{"instance_id": X, "exp_name": X, "is_controller": X, "host_type": X, "exp_host_type_idx": X, "exp_host_type_n": X, "init_roles": X, "check_status": X}, ...]
+#  vars:
+#    instance_infos: "{{ ec2_instance_info | json_query('instances[*].{instance_id: instance_id, tags: tags}') }}"
+
+
+#- name: Assign exp_name and is_controller tag to ec2 instances
+#  amazon.aws.ec2_tag:
+#    region: "{{ exp_base.aws_region }}"
+#    resource: "{{ tag_assignment.instance_id }}"
+#    tags:
+#      exp_name: "{{ tag_assignment.exp_name }}"
+#      is_controller: "{{ tag_assignment.is_controller }}"
+#      check_status: "{{ tag_assignment.check_status }}"
+#      Name: "{{ name_tag | truncate(252, killwords=True, end='...', leeway=3) }}" # truncate because aws has a limit of 255 chars for a tag
+#  vars:
+#    name_tag: "{'prj_id': {{ prj_id }}, 'suite': {{ suite }}, 'exp_name': {{ tag_assignment.exp_name }}, 'host_type': {{ tag_assignment.host_type }}, 'is_controller': {{ tag_assignment.is_controller }}, 'check_status': {{ tag_assignment.check_status }} }"
+#  loop: "{{ tag_assignment_lst }}"
+#  loop_control:
+#    loop_var: tag_assignment
+
+######################################################
+# Terminate all instances that are not assigned but have the matching prj_id and suite tag
+######################################################
+
+- name: Terminate all instances that are not assigned but have the matching prj_id and suite tag
+  include_role:
+    name: suite-cloud-instances-delete
+    tasks_from: aws
+  vars:
+    filter_by_suite: True
+    instance_ids_in_use: "{{ tag_assignment_lst | json_query('[*].instance_id') }}"
+
+
+######################################################
+# Wait until all ec2 instances have state 'running'
+######################################################
+
+- name: Debug lengths
+  debug:
+    msg: "instance_info_docker = {{ instance_info_docker | length }}, tag_assignment_lst = {{ tag_assignment_lst | length }}"
+
+- name: Wait until enough docker images exist
+  community.docker.docker_host_info:
+    containers: yes
+    containers_filters:
+      label:
+        - "tag:prj_id={{ prj_id }}"
+        - "tag:suite={{ suite }}"
+  register: instance_info_docker
+  until: "instance_info_docker | json_query('containers[*]') | length == tag_assignment_lst | length"
+  retries: 120
+  delay: 5
+
+- name: Deb
+  debug:
+    msg: "{{ instance_info_docker | json_query('containers[*]') }}"
+
+
+######################################################
+# Wait until we can reach all ec2 instances via ssh
+###################################################### .{result: join(\":\", [IP, PublicPort | to_string()])}.result
+- name: Store IP addresses from docker containers. If this step fails, the container/image may not be exposing port 22 for SSH
+  set_fact:
+    public_dns_names: "{{ instance_info_docker | json_query('containers[*].Ports[?PrivatePort==`22`] | [*][0]') | json_query('[*].{host: IP, port: PublicPort}') }}"
+    suite_hosts_lst: []
+
+- debug:
+    var: public_dns_names
+
+
+- name: Wait for SSH of the created EC2 instances to come up
+  ansible.builtin.wait_for:
+    host: "{{ public_dns_name.host }}"
+    port: "{{ public_dns_name.port }}" # ssh
+    connect_timeout: 3
+    timeout: 320
+  loop: "{{ public_dns_names }}"
+  loop_control:
+    loop_var: public_dns_name
+
+######################################################
+# Refresh Dynamic Inventory
+######################################################
+
+- name: Refresh dynamic ec2 inventory
+  meta: refresh_inventory
+
+- pause:
+    seconds: 5
+
+
+- name: Debug public_dns_lookup
+  debug:
+    msg: "{{ instance_info_docker | json_query('containers[*].{ key: Names[0], value: Ports[?PrivatePort==`22`] | [0].PublicPort }') | items2dict }}"
+
+
+- name: enrich host list with public_dns_name, private_dns_name and ansible_host_id
+  set_fact:
+  # , 'hostvars': hostvars[public_dns_lookup[tag_assignment.instance_id]]
+    suite_hosts_lst: "{{ suite_hosts_lst + [tag_assignment | combine({'public_dns_name': public_dns_lookup['/' + name_tag], 'public_port': public_port_lookup['/' + name_tag], 'private_dns_name': 'null', 'ansible_host_id': name_tag })] }}"
+    # list of all instances with their id and other relevant infos (+ public and private dns names)
+    # [{"instance_id": X, "exp_name": X, "is_controller": X, "host_type": X, "exp_host_type_idx": X, "exp_host_type_n": X, "init_roles": X, "check_status": X, "public_dns_name": X, "private_dns_name": X}, ...]
+
+  loop: "{{ tag_assignment_lst }}"
+  loop_control:
+    loop_var: tag_assignment
+  vars:
+    name_tag: "prj_id__{{ prj_id }}___suite__{{ suite }}___exp_name__{{ tag_assignment.exp_name }}___host_type__{{ tag_assignment.host_type }}___host_type_idx__{{ tag_assignment.exp_host_type_idx }}___is_controller__{{ tag_assignment.is_controller }}___check_status__{{ tag_assignment.check_status }}"
+    public_dns_lookup: "{{ instance_info_docker | json_query('containers[*].{ key: Names[0], value: Ports[?PrivatePort==`22`] | [0].IP }') | items2dict }}"
+    public_port_lookup: "{{ instance_info_docker | json_query('containers[*].{ key: Names[0], value: Ports[?PrivatePort==`22`] | [0].PublicPort }') | items2dict }}"
+    private_dns_lookup: {}
