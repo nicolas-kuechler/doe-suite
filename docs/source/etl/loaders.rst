@@ -104,46 +104,50 @@ Below we show the hierarchical structure of the IDs, starting from the top-level
         An example featuring a single figure comprising two subplots positioned side by side.
         One subplot showcases a grouped stacked bar chart, while the other contains a simple bar chart.
 
+
+        .. image:: colcross.png
+            :width: 800
+            :alt: Alternative text
+
         .. code-block:: sh
-            :emphasize-lines: 2,4,6, 9, 11, 12, 14, 16,17, 19, 22, 24,25, 27, 29, 30, 33, 35,36,37
+            :emphasize-lines: 2,4,6, 9, 11, 12, 14, 16,17, 19, 22, 24,25, 27, 29, 30, 33, 35,36
 
             GroupBy Figure Cols
             └── Figure1 # only one figure
-                GroupBy Subplot Cols
-                ├── Subplot1 # [row_idx=0, col_idx=0] # grouped stacked bar chart
-                │   GroupBy Group Cols
-                │   ├── BarGroup1
-                |   |   GroupBy Bar Cols
+                GroupBy Metric [Time, Memory] # subplot cols
+                ├── Subplot1 -> Time # [row_idx=0, col_idx=0] # grouped stacked bar chart
+                │   GroupBy System Config [v1, v2] # group cols
+                │   ├── BarGroup1 -> v1
+                |   |   GroupBy Workload [wl1, wl2] # bar cols
                 │   |   |
-                │   │   ├── Bar1
-                │   │   │   GroupBy Part Cols
-                │   │   │   ├── BarPart1 # Artist1
-                │   │   │   └── BarPart2 # Artist2
+                │   │   ├── Bar1 -> wl1
+                │   │   │   GroupBy part [overhead, base] # part cols
+                │   │   │   ├── BarPart1 -> overhead # Artist1
+                │   │   │   └── BarPart2 -> base     # Artist2
                 |   |   |
-                │   │   └── Bar2
-                │   │       GroupBy Part Cols
-                │   │       ├── BarPart1 # Artist1
-                │   │       └── BarPart2 # Artist2
+                │   │   └── Bar2 -> wl2
+                │   │       GroupBy part [overhead, base] # part cols
+                │   │       ├── BarPart1 -> overhead # Artist1
+                │   │       └── BarPart2 -> base     # Artist2
                 |   |
-                │   └── BarGroup2
-                |       GroupBy Bar Cols
+                │   └── BarGroup2 -> v2
+                |       GroupBy Workload [wl1, wl2] # bar cols
                 │       |
-                │       ├── Bar1
-                │       │   GroupBy Part Cols
-                │       │   ├── BarPart1 # Artist1
-                │       │   └── BarPart2 # Artist2
+                │       ├── Bar1 -> wl1
+                │       │   GroupBy part [overhead, base] # part cols
+                │       │   ├── BarPart1 -> overhead # Artist1
+                │       │   └── BarPart2 -> base     # Artist2
                 |       |
-                │       └── Bar2
-                │           GroupBy Part Cols
-                │           ├── BarPart1 # Artist1
-                │           └── BarPart2 # Artist2
+                │       └── Bar2 -> wl2
+                │           GroupBy part [overhead, base] # part cols
+                │           ├── BarPart1 -> overhead # Artist1
+                │           └── BarPart2 -> base     # Artist2
                 |
                 |
-                └── Subplot2 # [row_idx=0, col_idx=1] # simple bar chart (no groups, no stacks)
-                    GroupBy Bar Cols
-                    ├── Bar1 # Artist1
-                    ├── Bar2 # Artist2
-                    └── Bar3 # Artist3
+                └── Subplot2 -> Memory # [row_idx=0, col_idx=1] # simple bar chart (no groups, no stacks)
+                    GroupBy Workload [wl1, wl2] # bar cols
+                    ├── Bar1 -> wl1 # Artist1
+                    └── Bar2 -> wl2 # Artist2
 
 
 
