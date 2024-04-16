@@ -2,15 +2,16 @@
 plugin: community.docker.docker_containers
 docker_host: unix:///var/run/docker.sock
 connection_type: ssh
+verbose_output: yes
 
 filters:
-{% if is_ansible_controller %} # for the ansible controller, we only filter for controllers but not projects
-  tag:Name: ansible_controller
-{% else %}
-  tag:prj_id: {{ prj_id }}
 {% if not prj_clear %}
-  instance-state-name: ["running"]
-  tag:suite: {{ suite }}
+  - include: >-
+        docker_config['Labels']['tag:suite']: {{ suite }}
+        {% if is_ansible_controller %} # for the ansible controller, we only filter for controllers but not projects
+         docker_config['Labels']['tag:Name']: ansible_controller
+        {% else %}
+         docker_config['Labels']['tag:prj_id']: {{ prj_id }}
 {% endif %}
 {% endif %}
 
@@ -20,28 +21,28 @@ strict: False
 keyed_groups:
   - prefix: ""
     separator: ""
-    key: tags.prj_id
+    key: docker_config['Labels']['tag:prj_id']
 
   - prefix: ""
     separator: ""
-    key: tags.suite
+    key: docker_config['Labels']['tag:suite']
 
   - prefix: ""
     separator: ""
-    key: tags.exp_name
+    key: docker_config['Labels']['tag:exp_name']
 
   - prefix: ""
     separator: ""
-    key: tags.host_type
+    key: docker_config['Labels']['tag:host_type']
 
   - prefix: "is_controller"
     separator: "_"
-    key: tags.is_controller
+    key: docker_config['Labels']['tag:is_controller']
 
   - prefix: "check_status"
     separator: "_"
-    key: tags.check_status
+    key: docker_config['Labels']['tag:check_status']
 
-  - prefix: ""
-    separator: ""
-    key: tags.Name
+#  - prefix: ""
+#    separator: ""
+#    key: tags.Name

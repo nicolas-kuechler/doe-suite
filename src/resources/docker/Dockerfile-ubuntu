@@ -1,7 +1,7 @@
 
 FROM ubuntu:20.04
 
-RUN apt update && apt install -y openssh-server sudo
+RUN apt update && apt install -y openssh-server sudo rsync
 RUN sed -i 's/PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 
 RUN useradd -m -s /bin/bash ubuntu
