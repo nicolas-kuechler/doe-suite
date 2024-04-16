@@ -117,6 +117,8 @@
     image: doe-ubuntu:latest
     state: started
     network_mode: bridge
+    networks:
+      - name: "{{ exp_base.vpc_name }}"
     publish_all_ports: yes
     name: "{{ name_tag }}"
 #    command: "sleep infinity"
@@ -161,6 +163,11 @@
   loop: "{{ tag_assignment_lst }}"
   loop_control:
     loop_var: tag_assignment
+  register: docker_container_info
+
+- name: Debug container info
+  debug:
+      var: docker_container_info
 
 #######################################################################
 # Assign instances to experiments and define role in experiments
@@ -271,16 +278,28 @@
 - pause:
     seconds: 5
 
+#- name: Get container info to retrieve private ip addresses
+#  community.docker.docker_:
+#    containers: yes
+#    containers_filters:
+#      label:
+#        - "tag:prj_id={{ prj_id }}"
+#        - "tag:suite={{ suite }}"
+#  register: instance_info_docker
+#  until: "instance_info_docker | json_query('containers[*]') | length == tag_assignment_lst | length"
+#  retries: 120
+#  delay: 5
 
-- name: Debug public_dns_lookup
+
+- name: Debug private_dns
   debug:
-    msg: "{{ instance_info_docker | json_query('containers[*].{ key: Names[0], value: Ports[?PrivatePort==`22`] | [0].PublicPort }') | items2dict }}"
+    msg: "{{ docker_container_info }} and {{ docker_container_info | json_query('results[*].container.{ key: Name, value: Config.Hostname }') | items2dict }}"
 
 
 - name: enrich host list with public_dns_name, private_dns_name and ansible_host_id
   set_fact:
   # , 'hostvars': hostvars[public_dns_lookup[tag_assignment.instance_id]]
-    suite_hosts_lst: "{{ suite_hosts_lst + [tag_assignment | combine({'public_dns_name': public_dns_lookup['/' + name_tag], 'public_port': public_port_lookup['/' + name_tag], 'private_dns_name': 'null', 'ansible_host_id': name_tag })] }}"
+    suite_hosts_lst: "{{ suite_hosts_lst + [tag_assignment | combine({'public_dns_name': public_dns_lookup['/' + name_tag], 'public_port': public_port_lookup['/' + name_tag], 'private_dns_name': private_dns_lookup['/' + name_tag], 'ansible_host_id': name_tag })] }}"
     # list of all instances with their id and other relevant infos (+ public and private dns names)
     # [{"instance_id": X, "exp_name": X, "is_controller": X, "host_type": X, "exp_host_type_idx": X, "exp_host_type_n": X, "init_roles": X, "check_status": X, "public_dns_name": X, "private_dns_name": X}, ...]
 
@@ -291,4 +310,4 @@
     name_tag: "prj_id__{{ prj_id }}___suite__{{ suite }}___exp_name__{{ tag_assignment.exp_name }}___host_type__{{ tag_assignment.host_type }}___host_type_idx__{{ tag_assignment.exp_host_type_idx }}___is_controller__{{ tag_assignment.is_controller }}___check_status__{{ tag_assignment.check_status }}"
     public_dns_lookup: "{{ instance_info_docker | json_query('containers[*].{ key: Names[0], value: Ports[?PrivatePort==`22`] | [0].IP }') | items2dict }}"
     public_port_lookup: "{{ instance_info_docker | json_query('containers[*].{ key: Names[0], value: Ports[?PrivatePort==`22`] | [0].PublicPort }') | items2dict }}"
-    private_dns_lookup: {}
+    private_dns_lookup: "{{ docker_container_info | json_query('results[*].container.{ key: Name, value: Config.Hostname }') | items2dict }}"

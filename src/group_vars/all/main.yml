@@ -8,6 +8,7 @@ ssh_key_name: "{{ lookup('env', 'DOES_SSH_KEY_NAME') }}"
 
 euler_user: "{{ lookup('env', 'DOES_EULER_USER') }}"
 aws_user: "{{ lookup('env', 'DOES_AWS_USER', default='ubuntu') }}"
+docker_user: "{{ lookup('env', 'DOES_DOCKER_USER', default='ubuntu') }}"
 
 euler_base_env: "python/3.9.9" # needed for multi command jobs
 cloud: "aws"

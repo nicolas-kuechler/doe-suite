@@ -1,0 +1,20 @@
+---
+
+# This role creates a VPC for the project (i.e., not one per suite, one per project)
+# with a single subnet and security group. All ec2 instances are placed into this security group
+# and all ports are open for instances within the security group.
+
+- assert:
+    that:
+    - exp_base is defined
+
+- debug:
+    msg: "-> creating VPC..."
+  tags: [print_action]
+
+- name: Create Docker Network
+  community.docker.docker_network:
+    name: "{{ exp_base.vpc_name }}"
+
+- debug: msg="exp base config= {{ exp_base }}"
+  #tags: [print_action]

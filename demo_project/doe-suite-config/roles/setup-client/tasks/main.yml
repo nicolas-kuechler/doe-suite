@@ -10,3 +10,4 @@
   apt:
     pkg:
     # TODO: add other required packages (only for client)
+    - netcat
