@@ -301,3 +301,25 @@ Additional Components
 
 .. autopydantic_model:: doespy.etl.steps.colcross.components.AxisConfig
     :inherited-members: BaseModel
+
+
+
+Extending the ColumnCrossPlotLoader
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The `ColumnCrossPlotLoader` module is designed with extensibility in mind, allowing for project-specifc customizations through hooks at various stages of the plot generation.
+By leveraging these hooks, developers can integrate custom functions to modify plot configurations or introduce additional elements.
+We showcase this functionality with an example, where the objective is to include a watermark label on each subplot.
+See the :download:`resulting Bar Plot with Watermark <../../../demo_project/doe-suite-results-super/demo02-colcross/custom/$metrics$=time.pdf>`.
+
+Here how it's achieved:
+
+* We extend the `SubplotConfig` with a `watermark` attribute (so that we can define the content of the watermark from the `yaml` config of the step).
+
+* We create a new loader, `MyCustomColumnCrossPlotLoader,` which replaces the default `SublotConfig` with the custom config containing the watermark.
+
+* We register a new function that adds the watermark to the subplot. We register it in the `CcpHooks.SubplotPostChart` hook, which is called after the chart has been created in the subplot.
+
+.. literalinclude:: ../../../demo_project/doe-suite-config/does_etl_custom/etl/plots/colcross.py
+   :language: python
+   :caption: demo_project/doe-suite-config/does_etl_custom/etl/plots/colcross.py
