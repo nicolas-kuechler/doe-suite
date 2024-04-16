@@ -5,11 +5,15 @@ import sys
 sys.path.append(os.path.abspath('../../doespy/etl/steps'))
 sys.path.append(os.path.abspath('../..'))
 
-
 sys.path.append(os.path.abspath("./ext"))
 
 
 sys.path.append(os.path.join(os.environ["DOES_PROJECT_DIR"], "doe-suite-config"))
+
+# needs manual import to prevent circular import
+from doespy.design.etl_design import MyETLBaseModel
+
+
 #sys.path.insert(0, os.path.abspath('../..'))
 
 # Configuration file for the Sphinx documentation builder.
@@ -65,6 +69,7 @@ autodoc_member_order = 'bysource'
 autosectionlabel_prefix_document = True
 
 autodoc_pydantic_model_show_field_summary = False
+autodoc_pydantic_field_list_validators = False
 autodoc_pydantic_model_show_json = False
 autodoc_pydantic_settings_show_json = False
 autodoc_pydantic_model_show_config_summary = False
@@ -89,7 +94,8 @@ html_theme = 'alabaster'
 html_static_path = ['_static']
 
 html_theme_options = {
-    "page_width":  "1280px" #"940px"
+    "page_width":  "1440px", # "1280px", #"940px"
+    "fixed_sidebar": True,
 }
 
 html_css_files = [

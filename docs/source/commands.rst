@@ -34,7 +34,7 @@ Running an Experiment Suite
 ---------------------------
 
 Here we focus on the commands that are used to start and continue an experiment suite.
-For more information on the experiment suite design, see :ref:`design/index:suite design` and on the execution, see  :ref:`execution/index:execution`.
+For more information on the experiment suite design, see :ref:`design/index:suite design` and on the execution, see  :ref:`execution/index:running experiments`.
 
 .. code-block:: sh
     :caption: Start a new experiment suite

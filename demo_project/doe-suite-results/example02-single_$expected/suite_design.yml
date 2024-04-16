@@ -8,8 +8,9 @@ experiment_1:
       init_roles:
       - setup-small
       $CMD$:
-      - main: /home/ubuntu/code/demo_project/.venv/bin/python /home/ubuntu/code/demo_project/demo_latency.py --opt [% my_run.opt %] --size [% my_run.payload_size_mb %] --out [% my_run.out %]
+      - main: '[% my_run.python_run %]/demo_project/demo_latency.py --opt [% my_run.opt %] --size [% my_run.payload_size_mb %] --out [% my_run.out %]'
   base_experiment:
+    python_run: "[% 'demo_project_python' | at_runtime(exp_host_lst) %] [% 'exp_code_dir' | at_runtime(exp_host_lst) %]"
     out: json
     payload_size_mb:
       $FACTOR$:
@@ -33,8 +34,9 @@ experiment_2:
       init_roles:
       - setup-small
       $CMD$:
-      - main: /home/ubuntu/code/demo_project/.venv/bin/python /home/ubuntu/code/demo_project/demo.py --config config.json
+      - main: '[% my_run.python_run %]/demo_project/demo.py --config config.json'
   base_experiment:
+    python_run: "[% 'demo_project_python' | at_runtime(exp_host_lst) %] [% 'exp_code_dir' | at_runtime(exp_host_lst) %]"
     out: csv
     problem:
       opt: false
@@ -74,7 +76,7 @@ $ETL$:
       - count
     loaders:
       CsvSummaryLoader:
-        skip_empty: false
+        skip_empty: true
       DemoLatencyPlotLoader: {}
   pipeline2:
     experiments:
@@ -94,4 +96,4 @@ $ETL$:
     transformers: []
     loaders:
       CsvSummaryLoader:
-        skip_empty: false
+        skip_empty: true

@@ -1,0 +1,112 @@
+---
+
+# This role is always executed an ensures that the task spooler is installed and the code repository is downloaded.
+
+- debug:
+    msg: "-> setup suite"
+  tags: [print_action]
+
+- name: Check for git
+  shell: "which git"
+  register: git_installed_which
+  failed_when: false
+
+- name: Ensure git is installed
+  become: True
+  ansible.builtin.package:
+    name:
+      - git
+    state: present
+  when: git_installed_which.rc != 0
+
+
+- name: Check for python3
+  shell: "which python3"
+  register: python_installed_which
+  failed_when: false
+
+- name: Ensure python is installed
+  become: True
+  ansible.builtin.package:
+    name:
+      - python3
+    state: present
+  when: python_installed_which.rc != 0
+
+
+- name: check task spooler executable is present
+  shell: "which tsp"
+  register: tsp_installed_which
+  failed_when: false
+
+- name: Install task spooler
+  block:
+    - name: Install task spooler from package manager
+      become: True
+      apt:
+        pkg:
+        - task-spooler
+        update_cache: yes
+  rescue:
+    - name: Manually build task spooler (1. ensure git is installed)
+      become: True
+      ansible.builtin.package:
+        name:
+          - build-essential
+          - pkgconfig
+        state: present
+
+    - name: Manually build task spooler (3. clone git repo)
+      become: True
+      git:
+        repo: "https://github.com/thomaspreece/task-spooler"
+        dest: "task-spooler"
+        accept_hostkey: yes
+        force: yes
+
+    - name: Manually build task spooler (4. build)
+      ansible.builtin.shell: |
+        cd task-spooler
+        make
+        sudo make install
+        ./post_setup.sh || true
+  when: tsp_installed_which.rc != 0
+
+# Use ssh-agent to get code from Git Remote Repository:
+#
+# 1. Configure ~/.ssh/config:  (add to file and replace the key for example with aws_ppl.pem)
+#    ```
+#    Host ec2*
+#    IdentifyFile ~/.ssh/{{ ssh_key_name }}
+#    ForwardAgent yes
+#    ```
+#
+# 2. Add the GitHub private key to ssh-agent:
+#
+#   ssh-add ~/.ssh/private_key_rsa
+#
+# 3. (On a MAC, need add to keychain)
+
+- name: Update Code from Git remote repository (or multiple)  [if this fails, did you setup ssh-agent (see docs)?]
+  git:
+    repo: "{{ git_repo.repo }}"
+    dest: "{{ remote.dir }}/{{ git_repo.dir }}"
+    accept_hostkey: yes
+    force: yes
+    version: "{{ git_repo.version }}"
+  loop: "{{ git_remote_repository | git_repo_list }}"
+  loop_control:
+    loop_var: git_repo
+
+
+- name: Move python multi-command runner to remote
+  block:
+  - name: Create dirs in path
+    ansible.builtin.file:
+      path: "{{ remote.dir }}"
+      state: directory
+      recurse: yes
+  - name: Move python runner
+    ansible.builtin.copy:
+      src: resources/runner.py
+      dest: "{{ remote.dir }}/runner.py"

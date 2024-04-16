@@ -39,8 +39,7 @@ def main():
             suite=args.suite,
             suite_id=args.id,
             etl_output_dir=args.output_path,
-            etl_from_design=args.load_from_design,
-            return_df=False,
+            etl_from_design=args.load_from_design
         )
 
     elif args.all:
@@ -49,8 +48,7 @@ def main():
                 suite=x["suite"],
                 suite_id=x["suite_id"],
                 etl_output_dir=args.output_path,
-                etl_from_design=args.load_from_design,
-                return_df=False,
+                etl_from_design=args.load_from_design
             )
     else:
         raise ValueError(

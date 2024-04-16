@@ -1,0 +1,34 @@
+---
+
+all:
+  children:
+    <HOST-TYPE-1>: # corresponds to an entry under `host_types` in suite designs (and to doe-suite-config/group_vars/<HOST-TYPE-1>` folder)
+      hosts:      # multiple instances of the same host_type (see parameter `n` in suite designs)
+        <HOST-ID-1>:
+          ansible_host: <IP ADDRESS or DNS> # (connect to this host via ssh)
+          ansible_user: <USERNAME> #(login ssh username)
+          private_dns_name: <IP ADDRESS or DNS> # [optional]: alternative dns available in experiment design
+
+          #job_scheduler: <CUSTOM SCHEDULER: slurm|[tsp]> # [optional]
+          #remote_dir: <HOST-SPECIFIC DIR> # [optional]
+          #remote_results_dir: <HOST-SPECIFIC RESULTS DIR> # [optional]
+
+        <HOST-ID-2>:
+          ansible_host: <IP ADDRESS or DNS>
+          ansible_user: <USERNAME>
+          #private_dns_name: <IP ADDRESS or DNS>
+
+          #job_scheduler: <CUSTOM SCHEDULER: slurm|[tsp]> # [optional]
+          #remote_dir: <HOST-SPECIFIC DIR>
+          #remote_results_dir: <HOST-SPECIFIC RESULTS DIR>
+
+    <HOST-TYPE-2>: # another host type
+      hosts:
+         <HOST-ID-3>:
+          ansible_host: <IP ADDRESS or DNS>
+          ansible_user: <USERNAME>
+          #private_dns_name: <IP ADDRESS or DNS>
+
+          #job_scheduler: <CUSTOM SCHEDULER: slurm|[tsp]> # [optional]
+          #remote_dir: <HOST-SPECIFIC DIR> # [optional]
+          #remote_results_dir: <HOST-SPECIFIC RESULTS DIR> # [optional]

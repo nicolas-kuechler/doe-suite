@@ -1,0 +1,48 @@
+# NOTE: fallback used if cloud is neither euler nor aws => must be a custom manually provided invenotry
+
+- name: Create temporary directory
+  file:
+    path: "{{ does_config_dir }}/inventory/tmp"
+    state: directory
+
+
+- name: Check if the inventory file for manual cloud exists
+  stat:
+    path: "{{ does_config_dir }}/inventory/{{ cloud }}.yml"
+  register: inventory_file
+
+
+- assert:
+    that:
+    - inventory_file.stat.exists
+    fail_msg: "The inventory file for cloud={{ cloud}} is missing: {{ does_config_dir }}/inventory/{{ cloud }}.yml"
+
+
+- name: Apply jinja templating to inventory (and move to tmp directory)
+  template:
+    src: "{{ does_config_dir }}/inventory/{{ cloud }}.yml"
+    dest: "{{ does_config_dir }}/inventory/{{ prj_id }}_{{ suite }}_{{ cloud }}.yml"
+    mode: 0755
+  vars:
+    is_single_host_per_host_type: "{{ host_types | json_query('*.*.n') | list | flatten | unique == [1] }}" # on east host type n=1
+    is_single_host_type_per_exp: "{{ (host_types | json_query('*.keys(@)') | list | flatten | unique) == (host_types | json_query('*.keys(@)') | list | flatten) }}" # each experiment has only one host type
+
+- name: Include vars of {{ cloud }}.yml into available_inventory variable
+  ansible.builtin.include_vars:
+    file: "{{ does_config_dir }}/inventory/{{ prj_id }}_{{ suite }}_{{ cloud }}.yml"
+    name: manual_hostsfile # available inventory
+
+- name: Delete the custom inventory file
+  file:
+    path: "{{ does_config_dir }}/inventory/{{ prj_id }}_{{ suite }}_{{ cloud }}.yml"
+    state: absent
+
+
+- name: custom inv
+  debug:
+    msg="available_inventory = {{ manual_hostsfile }}"
+
+- name: Check that the manual inventory contains the required host_types
+  assert:
+      that:
+      - host_types | check_manual_inventory(manual_hostsfile)

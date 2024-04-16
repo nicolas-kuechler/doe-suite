@@ -1,0 +1,45 @@
+dummydata:
+  n_repetitions: 1
+  common_roles: []
+  host_types:
+    small:
+      n: 1
+      check_status: true
+      init_roles:
+      - setup-small
+      $CMD$:
+      - main: sleep 3 && printf '[%  my_run.n_measurements | generate_fake_data(my_run.system, my_run.system_config, my_run.workload) %]' > results/performance.yaml
+        bg1: echo 'bg1 start' && sleep 1 && echo 'bg1 end'
+        bg2: echo 'bg2 start' && sleep 50 && cat nonexistent.txt
+  base_experiment:
+    n_measurements: 5
+    system:
+      $FACTOR$:
+      - system1
+      - system2
+      - system3
+    system_config:
+      $FACTOR$:
+      - v1
+      - v2
+    workload:
+      $FACTOR$:
+      - workload1
+      - workload2
+  factor_levels:
+  - {}
+  except_filters: []
+$ETL$:
+  check_error:
+    experiments:
+    - dummydata
+    extractors:
+      ErrorExtractor:
+        file_regex:
+        - ^stderr.log$
+      IgnoreExtractor:
+        file_regex:
+        - stdout.log
+        - performance.yaml
+    transformers: []
+    loaders: {}

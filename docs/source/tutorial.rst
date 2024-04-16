@@ -31,6 +31,8 @@ As a summary, these environment variables should now be set:
     # for AWS
     export DOES_SSH_KEY_NAME=<YOUR-PRIVATE-SSH-KEY-FOR-AWS>
 
+    export DOES_AWS_USER=<SSH-USERNAME>
+
     # for Euler
     export DOES_EULER_USER=<YOUR-NETHZ>
 
@@ -52,7 +54,7 @@ For a start, it should be fine to accept default values except for the **repo** 
 
 Note that ``make new`` first checks whether there is already a ``doe-suite-config`` in the ``DOES_PROJECT_DIR``.
 
-------------
+--------------
 
 Project Layout
 --------------
@@ -78,6 +80,7 @@ The complete folder structure for a project looks as follows:
             │   ├── designs                # experiment suite designs
             │   ├── does_etl_custom        # custom steps for processing results
             │   ├── group_vars             # host type config (e.g.,instance type)
+            │   ├── inventory              # manual inventories for ansible
             │   ├── roles                  # setup host types setup roles
             │   ├── super_etl              # multi suite results processing
             |   └── pyproject.toml
@@ -108,6 +111,10 @@ The complete folder structure for a project looks as follows:
             │   │   │   └── main.yml
             │   │   └── <host-type2>
             │   │       └── main.yml
+            |   ├── inventory              # manual inventories for ansible (custom clouds)
+            |   |   ├── euler.yml          # euler cloud is implemented as inventory
+            |   |   ├── <cloud-inventory1>.yml
+            |   |   └── <cloud-inventory2>.yml
             │   ├── roles                  # setup host types setup roles
             │   │   ├── <setup-1>
             │   │   │   └── tasks
@@ -153,9 +160,8 @@ The complete folder structure for a project looks as follows:
             │   └── ...
             └── ...                        # your project files
 
+
 ------------
-
-
 Suite Design
 ------------
 
@@ -179,9 +185,7 @@ The experiment suite runs experiments based on `YAML` files in `doe-suite-config
 The `YAML` files represent the structure discussed above.
 
 
-------------
-
-
+---------------
 (Add) Host Type
 ---------------
 
@@ -213,9 +217,7 @@ For example, the host type ``small`` of the ``demo_project``:
    :language: yaml
    :caption: doe-suite-config/group_vars/small/main.yml
 
-------------
-
-
+----------------
 (Add) Setup Role
 ----------------
 
@@ -242,8 +244,8 @@ The name of the file under ``tasks/`` determines whether they are the same on al
                     ├── aws.yml
                     └── euler.yml
 
-------------
 
+--------------
 (Add) ETL Step
 --------------
 

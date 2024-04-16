@@ -1,0 +1,38 @@
+---
+
+- debug:
+    msg: "-> small only"
+  tags: [print_action]
+
+- name: Install required packages
+  become: True
+  apt:
+    pkg:
+    - python3.9
+    - python3.9-venv
+    - python3-venv
+    - python3-pip
+    update_cache: yes
+
+- name: Install pipx
+  ansible.builtin.pip:
+    name: pipx
+    executable: pip3
+
+- name: Install poetry
+  community.general.pipx:
+    name: poetry
+    state: install
+
+- name: make path to poetry available in variable
+  set_fact:
+    poetry: "{{ ansible_env.HOME }}/.local/bin/poetry"
+
+- name: Set config to create .venv folder in project directory
+  ansible.builtin.shell:
+    cmd: "{{ poetry }} config virtualenvs.in-project true"
+
+- name: Install python packages with poetry (-> afterward can run {{ poetry }} run python demo.py)
+  ansible.builtin.shell:
+    cmd: "{{ poetry }} install"
+    chdir: "{{ exp_code_dir }}/demo_project"

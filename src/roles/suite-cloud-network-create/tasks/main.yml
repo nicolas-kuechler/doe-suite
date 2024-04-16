@@ -1,0 +1,9 @@
+---
+
+# This role creates a VPC for the project (i.e., not one per suite, one per project)
+# with a single subnet and security group. All ec2 instances are placed into this security group
+# and all ports are open for instances within the security group.
+
+- debug:
+    msg: "-> creating VPC... --> NoOp for non-aws"
+  tags: [print_action]

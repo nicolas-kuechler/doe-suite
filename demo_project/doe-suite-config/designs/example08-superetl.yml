@@ -1,0 +1,34 @@
+# The goal of this design is to generate test data to showcase features of the super etl
+#  (see `demo_project/doe-suite-config/super_etl/demo_plots.yml`).
+#
+
+# Demonstrate:
+#  (1) using a custom jinja filter_plugin `generate_fake_data` to improve the readability of the design
+#       see `demo_project/doe-suite-config/designs/filter_plugins/data.py`
+
+dummydata:
+  n_repetitions: 1
+  host_types:
+    small:
+        n: 1
+        init_roles: setup-small
+        # (1) The filter_plugin `generate_fake_data` allows formatting part of the command using python code
+        #      see `demo_project/doe-suite-config/designs/filter_plugins/data.py`
+        $CMD$:
+          main: sleep 3 && printf '[%  my_run.n_measurements | generate_fake_data(my_run.system, my_run.system_config, my_run.workload) %]' > results/performance.yaml
+          bg1: echo 'bg1 start' && sleep 1 && echo 'bg1 end'  # Background cmds run
+          bg2: echo 'bg2 start' && sleep 50 && cat nonexistent.txt #  -> they are bound to the lifetime of the main cmd (i.e., `nonexistent.txt` is not accessed)
+  base_experiment:
+    n_measurements: 5
+    system:
+      $FACTOR$: [system1, system2, system3]
+    system_config:
+      $FACTOR$: [v1, v2]
+    workload:
+      $FACTOR$: [workload1, workload2]
+
+
+$ETL$: # ensures that stderr.log is empty everywhere and that no files are generated except stdout.log
+  check_error:
+    experiments: "*"
+    extractors: {ErrorExtractor: {},  IgnoreExtractor: {file_regex: ["stdout.log", "performance.yaml"]} }

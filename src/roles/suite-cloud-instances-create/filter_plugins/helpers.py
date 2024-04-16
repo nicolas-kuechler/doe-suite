@@ -64,17 +64,95 @@ def to_eni_assignment(ec2_eni_info, ec2_instance_info, host_types, host_type_spe
     return assignment
 
 
-def to_euler_tag_assignment(groups, host_types):
-    """builds the tag assignment list for the euler cloud
+def to_manual_tag_assignment(available_inventory, host_types):
+    """builds the tag assignment list for a cloud based on a custom inventory
     (abuses the ec2 to_tag_assignment filter)
+
+    available_inventory:{
+                    "all": {
+                        "children": {
+                            <host_type_1>: {
+                                "hosts": {
+                                    <host_1>: {
+                                        "ansible_host": <ip>,
+                                        "ansible_user": <user>,
+                                    },
+                                    <host_2>: {...}
+                                }
+                            },
+                                }
+                            }
+                        }
+
+
     """
+
+    available_hosts = available_inventory['all']['children']
+
     instance_infos = []
-    i = 0
-    for ht, d in host_types.items():
-        for idx, exp in enumerate(d.keys()):
-            instance_infos += [{"instance_id": groups[i], "tags": {"host_type": ht, "idx": idx}}]
-            i = i+1
+    for ht, d in available_hosts.items():
+        for idx, host_id in enumerate(d["hosts"].keys()):
+            instance_infos += [{"instance_id": host_id, "tags": {"host_type": ht, "idx": idx}}]
     return to_tag_assignment(instance_infos, host_types)
+
+
+def build_manual_inventory(available_inventory, tag_assignment_lst):
+    """Based on the available inventory and the tag assignment list,
+        this function creates a new inventory which removes surplus hosts
+        and introduces the required host groups (by experiment, controller, check_status)
+
+    """
+
+    #print(f"available_inventory={available_inventory}")
+
+    #print(f"\n\n\ntag_assignment_lst={tag_assignment_lst}")
+
+    instance_id_map = {}
+    experiments = set()
+    used_host_types = set()
+
+
+    for x in tag_assignment_lst:
+        instance_id_map[x["instance_id"]] = x
+        experiments.add(x["exp_name"])
+        used_host_types.add(x["host_type"])
+
+    inventory = {"all": {"children": {"is_controller_yes": {"hosts": {}}, "check_status_yes": {"hosts": {}} }}}
+
+    for exp in experiments:
+        inventory["all"]["children"][exp] = {"hosts": {}}
+
+    available_hosts = available_inventory['all']['children']
+
+    for ht, d in available_hosts.items():
+
+        if ht in used_host_types:
+
+            inventory["all"]["children"][ht] = {"hosts": {}}
+
+            for host_id, x in d["hosts"].items():
+                # mark all used hosts
+                if host_id in instance_id_map:
+                    inventory["all"]["children"][ht]["hosts"][host_id] = x
+
+                    # mark controller group
+                    if instance_id_map[host_id]["is_controller"] == "yes":
+                        inventory["all"]["children"]["is_controller_yes"]["hosts"][host_id] = x
+
+
+                    # mark check status
+                    if instance_id_map[host_id]["check_status"] == "yes":
+                        inventory["all"]["children"]["check_status_yes"]["hosts"][host_id] = x
+
+                    # grouping by experiment
+                    exp = instance_id_map[host_id]["exp_name"]
+                    inventory["all"]["children"][exp]["hosts"][host_id] = x
+
+    #print(f"\n\n\ninventory= {inventory}")
+
+
+    return inventory
+
 
 def to_tag_assignment(ec2_instances_info, host_types):
 
@@ -151,5 +229,6 @@ class FilterModule(object):
             'to_tag_assignment': to_tag_assignment,
             'to_eni_assignment': to_eni_assignment,
             'to_network': to_network,
-            'to_euler_tag_assignment': to_euler_tag_assignment,
+            'to_manual_tag_assignment': to_manual_tag_assignment,
+            'build_manual_inventory': build_manual_inventory,
         }

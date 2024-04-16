@@ -1,0 +1,109 @@
+dummydata:
+- n_measurements: 5
+  system: system1
+  system_config: v1
+  workload: workload1
+  $CMD$:
+    small:
+    - main: "sleep 3 && printf '[{base_s: 19.6, overhead1_s: 5.2, overhead2_s: 9.5, base_mb: 755.5, overhead_mb: 239.3}, {base_s: 22.3, overhead1_s: 5.2, overhead2_s: 9.8, base_mb: 813.6, overhead_mb: 269.1}, {base_s: 24.5, overhead1_s: 4.5, overhead2_s: 10.1, base_mb: 832.2, overhead_mb: 305.5}, {base_s: 26.7, overhead1_s: 3.6, overhead2_s: 9.7, base_mb: 971.1, overhead_mb: 292.1}, {base_s: 25.3, overhead1_s: 3.8, overhead2_s: 12.9, base_mb: 871.9, overhead_mb: 275.2}]' > results/performance.yaml"
+      bg1: echo 'bg1 start' && sleep 1 && echo 'bg1 end'
+      bg2: echo 'bg2 start' && sleep 50 && cat nonexistent.txt
+- n_measurements: 5
+  system: system1
+  system_config: v1
+  workload: workload2
+  $CMD$:
+    small:
+    - main: "sleep 3 && printf '[{base_s: 24.3, overhead1_s: 7.4, overhead2_s: 11.2, base_mb: 695.8, overhead_mb: 313.9}, {base_s: 28.7, overhead1_s: 7.5, overhead2_s: 11.6, base_mb: 765.4, overhead_mb: 364.8}, {base_s: 32.5, overhead1_s: 6.2, overhead2_s: 12.0, base_mb: 788.2, overhead_mb: 429.0}, {base_s: 36.2, overhead1_s: 4.6, overhead2_s: 11.4, base_mb: 959.2, overhead_mb: 404.5}, {base_s: 33.7, overhead1_s: 4.9, overhead2_s: 16.2, base_mb: 831.9, overhead_mb: 374.2}]' > results/performance.yaml"
+      bg1: echo 'bg1 start' && sleep 1 && echo 'bg1 end'
+      bg2: echo 'bg2 start' && sleep 50 && cat nonexistent.txt
+- n_measurements: 5
+  system: system1
+  system_config: v2
+  workload: workload1
+  $CMD$:
+    small:
+    - main: "sleep 3 && printf '[{base_s: 31.3, overhead1_s: 8.4, overhead2_s: 15.2, base_mb: 1208.9, overhead_mb: 382.9}, {base_s: 57.1, overhead1_s: 13.6, overhead2_s: 25.0, base_mb: 2083.0, overhead_mb: 689.0}, {base_s: 100.6, overhead1_s: 18.9, overhead2_s: 41.1, base_mb: 3409.1, overhead_mb: 1251.5}, {base_s: 175.2, overhead1_s: 24.2, overhead2_s: 63.3, base_mb: 6364.9, overhead_mb: 1914.6}, {base_s: 265.2, overhead1_s: 40.6, overhead2_s: 134.2, base_mb: 9143.8, overhead_mb: 2886.6}]' > results/performance.yaml"
+      bg1: echo 'bg1 start' && sleep 1 && echo 'bg1 end'
+      bg2: echo 'bg2 start' && sleep 50 && cat nonexistent.txt
+- n_measurements: 5
+  system: system1
+  system_config: v2
+  workload: workload2
+  $CMD$:
+    small:
+    - main: "sleep 3 && printf '[{base_s: 38.9, overhead1_s: 11.9, overhead2_s: 17.9, base_mb: 1113.3, overhead_mb: 502.2}, {base_s: 73.5, overhead1_s: 19.3, overhead2_s: 29.7, base_mb: 1959.4, overhead_mb: 933.7}, {base_s: 133.0, overhead1_s: 25.7, overhead2_s: 49.2, base_mb: 3228.3, overhead_mb: 1756.7}, {base_s: 237.3, overhead1_s: 30.4, overhead2_s: 74.9, base_mb: 6286.0, overhead_mb: 2650.5}, {base_s: 353.0, overhead1_s: 51.7, overhead2_s: 170.5, base_mb: 8722.4, overhead_mb: 3922.6}]' > results/performance.yaml"
+      bg1: echo 'bg1 start' && sleep 1 && echo 'bg1 end'
+      bg2: echo 'bg2 start' && sleep 50 && cat nonexistent.txt
+- n_measurements: 5
+  system: system2
+  system_config: v1
+  workload: workload1
+  $CMD$:
+    small:
+    - main: "sleep 3 && printf '[{base_s: 21.8, overhead1_s: 6.1, overhead2_s: 10.7, base_mb: 758.3, overhead_mb: 241.6}, {base_s: 23.3, overhead1_s: 6.1, overhead2_s: 10.9, base_mb: 787.5, overhead_mb: 256.7}, {base_s: 24.5, overhead1_s: 5.7, overhead2_s: 11.0, base_mb: 796.5, overhead_mb: 274.1}, {base_s: 25.6, overhead1_s: 5.1, overhead2_s: 10.8, base_mb: 863.0, overhead_mb: 268.1}, {base_s: 24.9, overhead1_s: 5.2, overhead2_s: 12.6, base_mb: 818.9, overhead_mb: 260.4}]' > results/performance.yaml"
+      bg1: echo 'bg1 start' && sleep 1 && echo 'bg1 end'
+      bg2: echo 'bg2 start' && sleep 50 && cat nonexistent.txt
+- n_measurements: 5
+  system: system2
+  system_config: v1
+  workload: workload2
+  $CMD$:
+    small:
+    - main: "sleep 3 && printf '[{base_s: 17.7, overhead1_s: 4.2, overhead2_s: 8.6, base_mb: 779.0, overhead_mb: 211.8}, {base_s: 19.9, overhead1_s: 4.2, overhead2_s: 8.8, base_mb: 832.9, overhead_mb: 235.6}, {base_s: 21.7, overhead1_s: 3.7, overhead2_s: 9.0, base_mb: 850.1, overhead_mb: 264.3}, {base_s: 23.4, overhead1_s: 3.0, overhead2_s: 8.7, base_mb: 977.8, overhead_mb: 253.9}, {base_s: 22.3, overhead1_s: 3.1, overhead2_s: 11.2, base_mb: 887.9, overhead_mb: 240.7}]' > results/performance.yaml"
+      bg1: echo 'bg1 start' && sleep 1 && echo 'bg1 end'
+      bg2: echo 'bg2 start' && sleep 50 && cat nonexistent.txt
+- n_measurements: 5
+  system: system2
+  system_config: v2
+  workload: workload1
+  $CMD$:
+    small:
+    - main: "sleep 3 && printf '[{base_s: 34.8, overhead1_s: 9.8, overhead2_s: 17.1, base_mb: 1213.3, overhead_mb: 386.6}, {base_s: 59.6, overhead1_s: 15.8, overhead2_s: 27.7, base_mb: 2015.9, overhead_mb: 657.1}, {base_s: 100.2, overhead1_s: 23.6, overhead2_s: 44.9, base_mb: 3262.4, overhead_mb: 1122.5}, {base_s: 167.4, overhead1_s: 34.0, overhead2_s: 70.5, base_mb: 5655.4, overhead_mb: 1756.6}, {base_s: 260.6, overhead1_s: 55.7, overhead2_s: 131.1, base_mb: 8586.6, overhead_mb: 2729.5}]' > results/performance.yaml"
+      bg1: echo 'bg1 start' && sleep 1 && echo 'bg1 end'
+      bg2: echo 'bg2 start' && sleep 50 && cat nonexistent.txt
+- n_measurements: 5
+  system: system2
+  system_config: v2
+  workload: workload2
+  $CMD$:
+    small:
+    - main: "sleep 3 && printf '[{base_s: 28.3, overhead1_s: 6.7, overhead2_s: 13.7, base_mb: 1246.4, overhead_mb: 339.0}, {base_s: 51.0, overhead1_s: 10.8, overhead2_s: 22.5, base_mb: 2132.3, overhead_mb: 603.2}, {base_s: 89.0, overhead1_s: 15.3, overhead2_s: 36.9, base_mb: 3482.0, overhead_mb: 1082.6}, {base_s: 153.8, overhead1_s: 20.1, overhead2_s: 57.1, base_mb: 6408.1, overhead_mb: 1663.8}, {base_s: 234.1, overhead1_s: 33.5, overhead2_s: 118.1, base_mb: 9310.6, overhead_mb: 2523.8}]' > results/performance.yaml"
+      bg1: echo 'bg1 start' && sleep 1 && echo 'bg1 end'
+      bg2: echo 'bg2 start' && sleep 50 && cat nonexistent.txt
+- n_measurements: 5
+  system: system3
+  system_config: v1
+  workload: workload1
+  $CMD$:
+    small:
+    - main: "sleep 3 && printf '[{base_s: 22.3, overhead1_s: 6.4, overhead2_s: 10.1, base_mb: 705.8, overhead_mb: 297.8}, {base_s: 27.0, overhead1_s: 6.5, overhead2_s: 10.5, base_mb: 787.2, overhead_mb: 353.5}, {base_s: 31.1, overhead1_s: 5.2, overhead2_s: 10.9, base_mb: 814.2, overhead_mb: 425.2}, {base_s: 35.2, overhead1_s: 3.6, overhead2_s: 10.3, base_mb: 1018.0, overhead_mb: 397.2}, {base_s: 32.4, overhead1_s: 3.9, overhead2_s: 15.3, base_mb: 862.1, overhead_mb: 362.8}]' > results/performance.yaml"
+      bg1: echo 'bg1 start' && sleep 1 && echo 'bg1 end'
+      bg2: echo 'bg2 start' && sleep 50 && cat nonexistent.txt
+- n_measurements: 5
+  system: system3
+  system_config: v1
+  workload: workload2
+  $CMD$:
+    small:
+    - main: "sleep 3 && printf '[{base_s: 19.2, overhead1_s: 5.5, overhead2_s: 9.0, base_mb: 711.1, overhead_mb: 278.6}, {base_s: 24.6, overhead1_s: 5.6, overhead2_s: 9.5, base_mb: 820.5, overhead_mb: 348.1}, {base_s: 29.6, overhead1_s: 4.1, overhead2_s: 10.0, base_mb: 858.1, overhead_mb: 442.3}, {base_s: 34.8, overhead1_s: 2.5, overhead2_s: 9.3, base_mb: 1144.5, overhead_mb: 403.5}, {base_s: 31.0, overhead1_s: 2.7, overhead2_s: 15.3, base_mb: 910.7, overhead_mb: 356.9}]' > results/performance.yaml"
+      bg1: echo 'bg1 start' && sleep 1 && echo 'bg1 end'
+      bg2: echo 'bg2 start' && sleep 50 && cat nonexistent.txt
+- n_measurements: 5
+  system: system3
+  system_config: v2
+  workload: workload1
+  $CMD$:
+    small:
+    - main: "sleep 3 && printf '[{base_s: 35.7, overhead1_s: 10.3, overhead2_s: 16.2, base_mb: 1129.3, overhead_mb: 476.5}, {base_s: 69.1, overhead1_s: 16.7, overhead2_s: 27.0, base_mb: 2015.3, overhead_mb: 904.9}, {base_s: 127.3, overhead1_s: 21.5, overhead2_s: 45.0, base_mb: 3335.2, overhead_mb: 1741.7}, {base_s: 230.8, overhead1_s: 24.1, overhead2_s: 68.0, base_mb: 6672.3, overhead_mb: 2603.4}, {base_s: 339.4, overhead1_s: 41.3, overhead2_s: 161.8, base_mb: 9040.3, overhead_mb: 3804.9}]' > results/performance.yaml"
+      bg1: echo 'bg1 start' && sleep 1 && echo 'bg1 end'
+      bg2: echo 'bg2 start' && sleep 50 && cat nonexistent.txt
+- n_measurements: 5
+  system: system3
+  system_config: v2
+  workload: workload2
+  $CMD$:
+    small:
+    - main: "sleep 3 && printf '[{base_s: 30.7, overhead1_s: 8.8, overhead2_s: 14.3, base_mb: 1137.7, overhead_mb: 445.8}, {base_s: 62.8, overhead1_s: 14.3, overhead2_s: 24.2, base_mb: 2100.3, overhead_mb: 891.1}, {base_s: 120.7, overhead1_s: 16.9, overhead2_s: 40.8, base_mb: 3514.3, overhead_mb: 1811.5}, {base_s: 227.4, overhead1_s: 16.2, overhead2_s: 60.4, base_mb: 7499.8, overhead_mb: 2644.2}, {base_s: 324.6, overhead1_s: 28.4, overhead2_s: 159.4, base_mb: 9548.8, overhead_mb: 3742.4}]' > results/performance.yaml"
+      bg1: echo 'bg1 start' && sleep 1 && echo 'bg1 end'
+      bg2: echo 'bg2 start' && sleep 50 && cat nonexistent.txt

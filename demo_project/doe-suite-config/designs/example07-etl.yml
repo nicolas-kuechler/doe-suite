@@ -29,7 +29,7 @@ $ETL$:                                                         # Visualization o
       - df.filter: {items: ["exp_name", "x", "y"]}             #                    df.filter
       - df.eval: {expr: "color = 'black'"}                     #                        |
     loaders:                                                   #                        V
-      CsvSummaryLoader: {} # writing a csv                     #                     df.eval
+      CsvSummaryLoader: {skip_empty: True} # writing a csv     #                     df.eval
       CoordinateLoader: {} # plotting a scatter plot           #                        |
                                                                #                        V
                                                                #       --------------------------------------

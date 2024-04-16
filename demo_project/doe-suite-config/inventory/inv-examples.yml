@@ -1,0 +1,52 @@
+---
+# The inventory needed to run all the examples on a custom cloud
+
+
+# TODO: Provide the IP address of the host where you intend to execute the examples experiment suites.
+#        -> A single small host allows running the suites: `example01-minimal`, `example06-vars`, `example08-superetl`
+#           To run other experiments, you need to have additional hosts (see below)
+# TODO: Uncomment and fill out the other hosts depending on which examples you want to run.
+
+
+all:
+  children:
+    small: # host_type
+      hosts:
+        small_01: # host_id
+          ansible_host: <IP ADDRESS or DNS> # (connect to this host via ssh)
+          ansible_user: <USERNAME> #(login ssh username)
+
+#        small_02: # 2 small hosts required for `example02-single`, `example07-etl`,
+#          ansible_host: <IP ADDRESS or DNS>
+#          ansible_user: <USERNAME> #(login ssh username)
+#        small_03: # 3 small hosts required for `example03-format`, `example05-complex`
+#          ansible_host: <IP ADDRESS or DNS>
+#          ansible_user: <USERNAME> #(login ssh username)
+#
+#    small_v2: # host type -> required for `example07-etl`
+#      hosts:
+#        small_v2_01:
+#          ansible_host: <IP ADDRESS or DNS>
+#          ansible_user: <USERNAME> #(login ssh username)
+#        small_v2_02:
+#          ansible_host: <IP ADDRESS or DNS>
+#          ansible_user: <USERNAME> #(login ssh username)
+
+
+#    client: # host type -> required for `example04-multi`, `example05-complex`
+#      hosts:
+#        client_01:
+#          ansible_host: <IP ADDRESS or DNS>
+#          ansible_user: <USERNAME> #(login ssh username)
+#        client_02:
+#          ansible_host: <IP ADDRESS or DNS>
+#          ansible_user: <USERNAME> #(login ssh username)
+#        client_03: # 3rd client only required for `example05-complex`
+#          ansible_host: <IP ADDRESS or DNS>
+#          ansible_user: <USERNAME> #(login ssh username)
+#
+#    server: # host type -> required for `example04-multi`, `example05-complex`
+#      hosts:
+#        <HOST-ID-3>:
+#          ansible_host: <IP ADDRESS or DNS>
+#          ansible_user: <USERNAME> #(login ssh username)

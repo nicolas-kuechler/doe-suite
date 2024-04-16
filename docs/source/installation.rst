@@ -28,11 +28,19 @@ To run experiments on AWS, you need to create a ``key pair for AWS`` in the regi
 You can find detailed instructions on how to create a key pair in the `official AWS documentation <https://docs.aws.amazon.com/servicecatalog/latest/adminguide/getstarted-keypair.html>`_.
 
 
+Manual Inventory - Specific Prerequisites
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To run experiments using a manual inventory, you must ensure that you can connect to all the hosts with SSH.
+
+
 ETHZ Euler - Specific Prerequisites
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To run experiments on ETHZ Euler, you must ensure that you can connect to ``euler.ethz.ch`` with SSH.
 Check the instructions provided by ETHZ Euler for `accessing the clusters using SSH <https://scicomp.ethz.ch/wiki/Accessing_the_clusters#SSH>`_.
+
+
 
 
 Base Installation
@@ -156,6 +164,9 @@ In addition to the environment variables defined in :ref:`installation:General E
     # name of ssh key used for setting up access to aws machines
     export DOES_SSH_KEY_NAME=<YOUR-PRIVATE-SSH-KEY-FOR-AWS>
 
+    # Replace <SSH-USERNAME> with your ssh username on the AWS instances (defaults to 'ubuntu')
+    export DOES_AWS_USER=<SSH-USERNAME>
+
     # Note: don't forget DOES_PROJECT_DIR and DOES_PROJECT_ID_SUFFIX from above
 
 The environment variable ``DOES_SSH_KEY_NAME`` defines the key used when creating new EC2 instances and needs to match the IdentityFile specified in the SSH config.
@@ -177,6 +188,63 @@ The test will take about ~4 minutes to complete.
 It will set up an EC2 instance on AWS and run the minimal example on it.
 Once the experiment completes, the results will be fetched to your local machine compared to the expected results structure found in the :repodir:`demo_project/doe-suite-results/example01-minimal_$expected <demo_project/doe-suite-results/example01-minimal_$expected/>` directory.
 If the example test runs successfully, you are ready to start with the :ref:`tutorial:tutorial` for your own project.
+
+
+Manuel Inventory - Specific
+---------------------------
+
+
+
+SSH Config (Inventory)
+~~~~~~~~~~~~~~~~~~~~~~
+
+To configure SSH access to all hosts listed in the inventory, you need to modify the ``~/.ssh/config`` file:
+
+.. code-block::
+    :caption: ~/.ssh/config
+
+    Host <IP-ADDRESS or DNS>  # same as in the inventory file
+        IdentityFile <YOUR-PRIVATE-SSH-KEY>
+        User <YOUR-USERNAME-ON-THE-HOST>
+        ForwardAgent yes
+
+
+If the ssh-config is correct, you should be able to connect to the hosts listed in the inventory by running the following command:
+
+.. code-block:: sh
+    :caption: Check that you can connect to the hosts in the inventory
+
+    ssh <HOST-NAME>
+
+
+Setting up Inventory
+~~~~~~~~~~~~~~~~~~~~
+
+To run experiments using a manual inventory, you need to modify the inventory file:
+:repodir:`demo_project/doe-suite-config/inventory/inv-minimal.yml <demo_project/doe-suite-config/inventory/inv-minimal.yml/>`
+
+
+.. literalinclude:: ../../demo_project/doe-suite-config/inventory/inv-minimal.yml
+   :language: yaml
+   :caption: doe-suite-config/inventory/inv-minimal.yml
+
+
+Check Installation (Inventory)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To ensure that your setup for Euler is configured correctly, you can run the first example ``example01-minimal`` of the :repodir:`demo project <demo_project>`.
+Navigate to the ``doe-suite`` folder and run the following command:
+
+.. code-block:: sh
+    :caption: Verify that Euler installation is complete
+
+    make test-example01-minimal cloud=inv-minimal
+
+
+The test will connect to the host that you specified in `inv-minimal.yml` and schedule the jobs of the minimal example using the `task spooler`.
+Once the experiment completes, the results will be fetched to your local machine and compared to the expected results structure found in the :repodir:`demo_project/doe-suite-results/example01-minimal_$expected <demo_project/doe-suite-results/example01-minimal_$expected/>` directory.
+If the example runs successfully, you are ready to start with the :ref:`tutorial:tutorial` for your own project.
+
 
 
 ETHZ Euler - Specific

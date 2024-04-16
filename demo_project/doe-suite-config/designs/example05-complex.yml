@@ -6,7 +6,9 @@
 #  (1) a mix of single instance experiments and multi instance experiments
 #  (2) a mix of design formats (`cross`and `level-list`)
 #  (3) running different commands on different instances of the same host_type
-#  (4) write a results file (csv)
+#  (4) running a main command and one or more background commands on the same host
+#  (5) write a results file (csv)
+
 
 # Suite with 3 experiments:
 # - exp1: experiment on single instance
@@ -47,19 +49,25 @@ exp_multi_1:
       $CMD$: # (3) run a different command on each client instance -> at the moment can only run one command (main) per instance, later support will be added for multiple commands per instance (e.g., run some monitoring service)
         # send messages to the server with nc
         # use exp_host_lst variable to extract ip address from server, the delay `sleep 5` ensures that the server is running when the client sends the message
-        - main: sleep 5 && echo '[% my_run.host_vars.client.msg %] from client 1' | netcat -q 1 [% exp_host_lst | json_query('[?host_type==`server`].private_dns_name') | default(['<UNDEFINED-DNS>'], true) | first %] [% my_run.port %]
+        - main: sleep 5 && echo '[% my_run.host_vars.client.msg %] from client 1' | netcat -q 1 [% my_run.server_dns %] [% my_run.port %]
         # have three commands to distinguish messages from client 1, 2, and 3
-        - main: sleep 5 && echo '[% my_run.host_vars.client.msg %] from client 2' | netcat -q 1 [% exp_host_lst | json_query('[?host_type==`server`].private_dns_name') | default(['<UNDEFINED-DNS>'], true) | first %] [% my_run.port %]
-        - main: sleep 5 && echo '[% my_run.host_vars.client.msg %] from client 3' | netcat -q 1 [% exp_host_lst | json_query('[?host_type==`server`].private_dns_name') | default(['<UNDEFINED-DNS>'], true) | first %] [% my_run.port %]
+        - main: sleep 5 && echo '[% my_run.host_vars.client.msg %] from client 2' | netcat -q 1 [% my_run.server_dns %] [% my_run.port %]
+          aux1: echo 'aux1 start' && sleep 3 && echo 'aux1 end'  # (4) Auxiliary cmds run on client 2
+          aux2: echo 'aux2 start' && sleep 50 && cat nonexistent.txt #      -> they are bound to the lifetime of the main cmd (i.e., `nonexistent.txt` is accessed -> would raise an error)
+        - main: sleep 5 && echo '[% my_run.host_vars.client.msg %] from client 3' | netcat -q 1 [% my_run.server_dns %] [% my_run.port %]
 
     server:
       n: 1
       check_status: False
       init_roles: setup-server
       # run a single ncat server -> writes all incoming messages to stdout
-      $CMD$: ncat -l [% my_run.port %] --keep-open
+      $CMD$:
+        main: ncat -l [% my_run.port %] --keep-open
+        bg1: echo 'bg1 start' && sleep 3 && echo 'bg1 end' # (4) Auxiliary (i.e., background) cmds run on the server
+        bg2: echo 'bg2 start' && sleep 600 && cat nonexistent.txt
 
   base_experiment:
+    server_dns: "[% exp_host_lst | to_private_dns_name('server') | default('<UNDEFINED-DNS>') %]"
     port: 2807
     host_vars:
       client:

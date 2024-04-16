@@ -3,7 +3,7 @@ import ruamel.yaml
 import jinja2
 import jmespath
 from glob import glob
-
+import importlib.util
 
 def get_project_dir():
     if "DOES_PROJECT_DIR" not in os.environ:
@@ -278,6 +278,28 @@ def jinja2_env(loader, undefined, variable_start_string="{{", variable_end_strin
     from math import ceil, floor
     env.filters["ceil"] = ceil
     env.filters["floor"] = floor
+
+    # load design specific fiters
+    filter_folder = os.path.join(get_suite_design_dir(), "filter_plugins")
+    source_files = [file for file in os.listdir(filter_folder) if file.endswith(".py")] \
+        if os.path.exists(filter_folder) else [] # skip if folder does not exist for backwards compatibility
+    for file in source_files:
+        try:
+            path = os.path.join(filter_folder, file)
+            module_name = 'design_filters_' + file.removesuffix(".py")
+            DesignFilterSpec = importlib.util.spec_from_file_location(module_name, path)
+            DesignFilterModule = importlib.util.module_from_spec(DesignFilterSpec)
+            DesignFilterSpec.loader.exec_module(DesignFilterModule)
+            design_filters = DesignFilterModule.FilterModule().filters()
+        except:
+            continue
+        if isinstance(design_filters, dict):
+            for name, function in design_filters.items():
+                env.filters[name] = function
+        else:
+            raise ValueError(
+                f"filters method for FilterModule in Design does not return dict"
+            )
 
     return env
 

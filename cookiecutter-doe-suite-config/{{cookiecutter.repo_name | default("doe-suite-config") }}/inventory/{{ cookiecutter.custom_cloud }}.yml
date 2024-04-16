@@ -1,0 +1,26 @@
+---
+
+
+all:
+  children:
+    {{ cookiecutter.host_name }}: # corresponds to an entry under `host_types` in suite designs (and to doe-suite-config/group_vars/<HOST-TYPE-1>` folder)
+      hosts:      # multiple instances of the same host_type (see parameter `n` in suite designs)
+        {{ cookiecutter.host_name }}_01:
+          ansible_host: {{ cookiecutter.custom_cloud_host }} # (connect to this host via ssh)
+          ansible_user: {{ cookiecutter.custom_cloud_user }} #(login ssh username)
+#         private_dns_name: <IP ADDRESS or DNS> # [optional]: alternative dns available in experiment design
+#         job_scheduler: <CUSTOM SCHEDULER: slurm|[tsp]> # [optional] choose a scheduler for this host (most use task spooler (tsp))
+#         remote_dir: <HOST-SPECIFIC DIR> # [optional] change directory used on remote host
+#         remote_results_dir: <HOST-SPECIFIC RESULTS DIR> # [optional] change directory used on remote host for storing results
+#         ... more host_specific vars (they are accessible in the experiment design via `exp_host_lst` (see `at_runtime` filter))
+
+
+#        <HOST-ID-2>:
+#          ansible_host: <IP ADDRESS or DNS>
+#          ansible_user: <USERNAME>
+#
+#    <HOST-TYPE-2>: # another host type
+#      hosts:
+#         <HOST-ID-3>:
+#          ansible_host: <IP ADDRESS or DNS>
+#          ansible_user: <USERNAME>

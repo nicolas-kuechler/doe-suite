@@ -1,6 +1,10 @@
 does_config_dir=$(DOES_PROJECT_DIR)/doe-suite-config
 does_results_dir=$(DOES_PROJECT_DIR)/doe-suite-results
 
+# default output path for super etl
+DOES_SUPERETL_OUT?=$(DOES_PROJECT_DIR)/doe-suite-results-super
+out?=$(DOES_SUPERETL_OUT)
+
 DOES_CLOUD?=aws
 cloud?=$(DOES_CLOUD) # env variable with default (aws)
 
@@ -86,7 +90,8 @@ help:
 # initialize a doe-suite-config from cookiecutter template (use defaults + ask user for inputs)
 new:
 	@if [ ! -f $(does_config_dir)/pyproject.toml ]; then \
-		cookiecutter cookiecutter-doe-suite-config -o $(DOES_PROJECT_DIR); \
+		poetry -C doespy install && \
+		poetry -C doespy run cookiecutter cookiecutter-doe-suite-config -o $(DOES_PROJECT_DIR); \
 	fi
 
 # depending on`cloud` variable, check if connection can be established
@@ -276,17 +281,24 @@ rescomp: install
 	@cd $(does_config_dir) && \
 	poetry run pytest $(PWD)/doespy -q -k 'test_does_results' -s --suite $(suite) --id $(id)
 
+# compares all the results of the suite with the expected results
+rescompall: install
+	@cd $(does_config_dir) && \
+	poetry run pytest $(PWD)/doespy -q -k 'test_all_does_results'
+
+
 # for aws cloud setup there can be race conditions for network setup, delay each example by 10s
 # use sed to extract the example id and multiply it by 10 -> feed this to sleep
+# (sed first extract the number and then removes leading zeros: example05-xyz -> 05 -> 5)
 test-%:
-	@TMP=$$(echo $*|sed -r 's/example([0-9]*).*/echo "$$((\1*$(test_delay)))"/e') ;\
-	sleep $$TMP
+	@TMP=$$(echo $*|sed -r 's/example([0-9]*).*/\1/' | sed 's/^0//') ;\
+	sleep $$((TMP*$(test_delay)))
 	@$(MAKE) run suite=$* id=new
 	@$(MAKE) rescomp suite=$* id=last
 
 
 # make single-test -j5 -O -> to run them in parallel
-single-test: test-example01-minimal test-example02-single test-example03-format test-example06-vars test-example07-etl
+single-test: test-example01-minimal test-example02-single test-example03-format test-example06-vars test-example07-etl test-example08-superetl
 
 # make multi-test -j2 -O -> to run them in parallel
 multi-test: test-example04-multi test-example05-complex
@@ -297,7 +309,7 @@ aws-test:
 
 # runs all examples compatible with euler (no multi instance experiments)
 euler-test:
-	@$(MAKE) single-test -j5 -O cloud=euler
+	@$(MAKE) single-test -j6 -O cloud=euler
 
 test: aws-test euler-test
 

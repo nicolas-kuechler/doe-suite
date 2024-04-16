@@ -1,0 +1,15 @@
+{
+    "$CMD$": {
+        "small": [
+            {
+                "bg1": "echo 'bg1 start' && sleep 1 && echo 'bg1 end'",
+                "bg2": "echo 'bg2 start' && sleep 50 && cat nonexistent.txt",
+                "main": "sleep 3 && printf '[{base_s: 24.3, overhead1_s: 7.4, overhead2_s: 11.2, base_mb: 695.8, overhead_mb: 313.9}, {base_s: 28.7, overhead1_s: 7.5, overhead2_s: 11.6, base_mb: 765.4, overhead_mb: 364.8}, {base_s: 32.5, overhead1_s: 6.2, overhead2_s: 12.0, base_mb: 788.2, overhead_mb: 429.0}, {base_s: 36.2, overhead1_s: 4.6, overhead2_s: 11.4, base_mb: 959.2, overhead_mb: 404.5}, {base_s: 33.7, overhead1_s: 4.9, overhead2_s: 16.2, base_mb: 831.9, overhead_mb: 374.2}]' > results/performance.yaml"
+            }
+        ]
+    },
+    "n_measurements": 5,
+    "system": "system1",
+    "system_config": "v1",
+    "workload": "workload2"
+}

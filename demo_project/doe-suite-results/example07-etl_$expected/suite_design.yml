@@ -121,7 +121,7 @@ $ETL$:
         expr: color = 'black'
     loaders:
       CsvSummaryLoader:
-        skip_empty: false
+        skip_empty: true
       CoordinateLoader: {}
   coord_plus:
     experiments:
@@ -147,7 +147,7 @@ $ETL$:
         expr: color = 'black'
     loaders:
       CsvSummaryLoader:
-        skip_empty: false
+        skip_empty: true
       CoordinateLoader: {}
   coord_triangle:
     experiments:
@@ -174,7 +174,7 @@ $ETL$:
         expr: color = 'black'
     loaders:
       CsvSummaryLoader:
-        skip_empty: false
+        skip_empty: true
       CoordinateLoader: {}
   coord_all:
     experiments:
@@ -209,7 +209,7 @@ $ETL$:
         triangle2: blue
     loaders:
       CsvSummaryLoader:
-        skip_empty: false
+        skip_empty: true
       CoordinateLoader: {}
   commands:
     experiments:

@@ -32,20 +32,7 @@
 ##########################################
 
 - set_fact:
-    exp_specific_vars: []
-
-- name: build specific vars for experiment
-  set_fact:
-    exp_specific_vars: "{{ exp_specific_vars | combine({my_exp_name: {'exp_host_lst': suite_hosts_d[my_exp_name] | json_query(query_exp_host_lst)}}, recursive=True) }}"
-  loop: "{{ hostvars['localhost'].my_suite_design.keys() }}"
-  loop_control:
-    loop_var: my_exp_name
-  vars:
-    # suite_hosts_lst -> group by exp_name
-    # {<exp_name1>: [{"instance_id": X, "exp_name": <exp_name1>, "is_controller": X, "host_type": X, "exp_host_type_idx": X, "exp_host_type_n": X, "init_roles": X, "check_status": X, "public_dns_name": X, "private_dns_name": X}, ...], ...}
-    suite_hosts_d: "{{ hostvars['localhost'].suite_hosts_lst | collect_items2dict(key_name='exp_name', multiset=True) }}"
-    query_exp_host_lst: "[*].{host_type: host_type, host_type_idx: exp_host_type_idx, host_type_n: exp_host_type_n, public_dns_name: public_dns_name, private_dns_name: private_dns_name}"
-
+    exp_specific_vars: "{{ hostvars['localhost'].suite_hosts_lst | to_exp_specific_vars(hostvars['localhost'].my_suite_design.keys(), hostvars | to_json | from_json ) }}"
 
 - name: expand experiment suite design + replace variables
   suite_design_extend:
@@ -56,11 +43,6 @@
   # my_suite_design_ext.design: {<exp_name1>: [{<run_config1>}, {<run_config2>}, ...], }
   delegate_to: localhost
   # run_once: True -> would like to do this but for strategy free not supported and it's not a relevant overhead
-
-
-- debug:
-    msg="my_suite_design_ext= {{ my_suite_design_ext }}"
-#  tags: [print_action]
 
 
 

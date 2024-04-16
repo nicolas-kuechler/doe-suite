@@ -8,7 +8,7 @@
 #  (4) we can repeat each run configuration multiple times (`n_repetitions`).
 #  (5) an `$ETL$` pipeline can automatically process result files (e.g., extract from result structure, transform into a suited df, load a summary)
 #  (6) we can use the Python range syntax do define $FACTORS$ via jinja
-
+#  (7) some variables can only be known at runtime (e.g., cloud dependent), for these we can use the `at_runtime` filter to read the variable out of `exp_host_lst`
 
 # experiment with two factors: one with 3 levels and one with 2 levels (cross-product). We repeat each run config twice.
 experiment_1:
@@ -19,8 +19,10 @@ experiment_1:
       init_roles: setup-small
       # runs the python script demo_latency.py within the code directory fetched from the code repository: the demo script creates a result file in csv or json
       # (3) passes arguments on the command line
-      $CMD$: "{{ demo_project_python }} {{ exp_code_dir }}/demo_project/demo_latency.py --opt [% my_run.opt %] --size [% my_run.payload_size_mb %] --out [% my_run.out %]"
+      $CMD$: "[% my_run.python_run %]/demo_project/demo_latency.py --opt [% my_run.opt %] --size [% my_run.payload_size_mb %] --out [% my_run.out %]"
   base_experiment:
+    # (7) Uses the `| at runtime(exp_host_lst)` to access a hostvar (info: at_runtime w/o additional arguments requires that the variable has the same value across all host types)
+    python_run: "[% 'demo_project_python' | at_runtime(exp_host_lst) %] [% 'exp_code_dir' | at_runtime(exp_host_lst) %]"
     out: json
     payload_size_mb:
       $FACTOR$: [10, 20, 30]
@@ -34,9 +36,10 @@ experiment_2:
     small:
       n: 1
       init_roles: setup-small
-      $CMD$: "{{ demo_project_python }} {{ exp_code_dir }}/demo_project/demo.py --config config.json" # (3) uses the config.json in the working dir of the command with the run config
+      $CMD$: "[% my_run.python_run %]/demo_project/demo.py --config config.json" # (3) uses the config.json in the working dir of the command with the run config
 
   base_experiment:
+    python_run: "[% 'demo_project_python' | at_runtime(exp_host_lst) %] [% 'exp_code_dir' | at_runtime(exp_host_lst) %]"
     out: csv
     problem:
       opt: False
@@ -63,7 +66,7 @@ $ETL$:
       - name: RepAggTransformer # aggregate over all repetitions of a run and calc `mean`, `std`, etc.
         data_columns: [latency] # the names of the columns in the dataframe that contain the measurements
     loaders:
-      CsvSummaryLoader: {} # write the transformed detl_info["suite_dir"]ataframe across the whole experiment as a csv file
+      CsvSummaryLoader: {skip_empty: True} # write the transformed detl_info["suite_dir"]ataframe across the whole experiment as a csv file
       DemoLatencyPlotLoader: {} # create a plot based on project-specific plot loader
 
 
@@ -78,4 +81,4 @@ $ETL$:
         file_regex: '^stdout.log$'
     transformers: [] # no transformation
     loaders:
-      CsvSummaryLoader: {}
+      CsvSummaryLoader: {skip_empty: True}

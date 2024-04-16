@@ -89,10 +89,11 @@ def extend(suite_design, exp_specific_vars, use_cmd_shellcheck=False):
                     variable_end_string="%]",
                 )
 
-                # TODO [nku] can we do the templating for each host in $CMD$ separately?
+                # TODO [nku]can we do the templating for each host in $CMD$ separately?
                 # -> this would allow setting `host_type_idx` as exp_vars and then we can use it in multi instance experiments
                 # (In MPC audit would allow a single command rather than a list of commands that only differs by a player id)
                 # -> should probably not be a big issue if $CMD$ already follows the list structure at this point
+                # At the moment, host specific variables are available via the hostvars in `exp_host_lst`
 
                 template = json.dumps(run_config)
                 while "[%" in template and "%]" in template:
@@ -241,7 +242,7 @@ class CmdExt(MyExtBaseModel):
 
 class RunConfig(MyExtBaseModel):
 
-    cmd: Dict[str, Union[CmdExt, List[CmdExt], List[Dict[Literal['main'], CmdExt]]]] = Field(alias="$CMD$")
+    cmd: Dict[str, Union[CmdExt, Dict[str, CmdExt], List[CmdExt], List[Dict[str, CmdExt]]]] = Field(alias="$CMD$")
 
     class Config:
         extra = "allow"

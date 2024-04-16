@@ -39,21 +39,9 @@ class DfTransformer(Transformer):
         pass
 
 class ConditionalTransformer(Transformer):
-
-    col: str
-    dest: str
-    value: Dict[Any, Any]
-
-    r"""The `ConditionalTransformer` replaces the value in the ``dest`` column with ``repl``
-    if the value in ``col`` is ``value``, i.e., ``if df.col == value: df.dest = repl``
-
-    :param col: Name of condition column in data frame.
-
-    :param dest: Name of destination column in data frame.
-
-    :param value: Dictionary of replacement rules:
-                  The dict key is the entry in the condition ``col`` and
-                  the value is the replacement for the ``repl`` column.
+    """
+    The `ConditionalTransformer` replaces the value in the ``dest`` column with a
+    value from the ``value`` dict, if the value in the ``col`` column is equal to the key.
 
     .. code-block:: yaml
        :caption: Example ETL Pipeline Design
@@ -97,8 +85,19 @@ class ConditionalTransformer(Transformer):
 
     """
 
-    def transform(self, df: pd.DataFrame, options: Dict) -> pd.DataFrame:
+    col: str
+    """Name of condition column in data frame."""
 
+    dest: str
+    """Name of destination column in data frame."""
+
+    value: Dict[Any, Any]
+    """Dictionary of replacement rules:
+        The dict key is the entry in the condition ``col`` and
+        the value is the replacement used in the ``dest`` column."""
+
+
+    def transform(self, df: pd.DataFrame, options: Dict) -> pd.DataFrame:
 
         col = self.col
         value = self.value
@@ -216,27 +215,9 @@ class RepAggTransformer(Transformer):
 
 
 class GroupByAggTransformer(Transformer):
-
-    data_columns: List[str]
-
-    groupby_columns: List[str]
-
-    agg_functions: List[str] = ["mean", "min", "max", "std", "count"]
-
-    custom_tail_length: int =  5
-
-    r"""The `GroupByAggTransformer` performs a group by followed by a set of aggregate functions.
-    GroupBy all columns of data frame except ``data_columns``.
-    Afterward, apply specified aggregate functions ``agg_functions`` on the ``data_columns``.
-
-    :param groupby_columns: The columns to perform the group by.
-                            The list can contain the magic entry `$FACTORS$` that expands to all factors of the experiment.
-                            e.g., [exp_name, host_type, host_idx, $FACTORS$] would perform a group by of each run.
-
-
-    :param data_columns: The columns that contain the data to aggregate, see ``agg_function``.
-
-    :param agg_functions: List of aggregate function to apply on ``data_columns``, defaults to ``["mean", "min", "max", "std", "count"]``
+    """
+    The `GroupByAggTransformer` performs a group by followed
+    by a set of aggregate functions applied to the ``data_columns``.
 
     .. code-block:: yaml
        :caption: Example ETL Pipeline Design
@@ -277,6 +258,21 @@ class GroupByAggTransformer(Transformer):
             ===  ==== ========
 
     """
+
+    data_columns: List[str]
+    """ The columns that contain the data to aggregate, see ``agg_function``."""
+
+    groupby_columns: List[str]
+    """The columns to perform the group by.
+        The list can contain the magic entry `$FACTORS$` that expands to all factors of the experiment.
+        e.g., [exp_name, host_type, host_idx, $FACTORS$] would perform a group by of each run.
+    """
+
+    agg_functions: List[str] = ["mean", "min", "max", "std", "count"]
+    """List of aggregate function to apply on ``data_columns``"""
+
+    custom_tail_length: int =  5
+    """"custom_tail" is a custom aggregation function that calculates the mean over the last `custom_tail_length` entries of a column."""
 
     def custom_tail_build(self, custom_tail_length):
 

@@ -8,7 +8,8 @@ import matplotlib.pyplot as plt
 
 
 class MyExtractor(Extractor):
-    def file_regex_default(self):
+
+    def default_file_regex():
         return [r".*\.txt$", r".*\.log$"]
 
     def extract(self, path: str, options: Dict) -> List[Dict]:

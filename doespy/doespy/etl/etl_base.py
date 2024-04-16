@@ -55,6 +55,7 @@ def run_single_suite(
     )
 
 
+
 def run_multi_suite(
     super_etl: str,
     etl_output_dir: str,
@@ -64,10 +65,9 @@ def run_multi_suite(
     pipeline_filter: List[str] = None,
     overwrite_suite_id_map: Dict[str, str] = None,
     return_df: bool = False,
+    return_df_until_transformer_step: str = None,
 ):
-
     pipeline_design = _load_super_etl_design(name=super_etl, overwrite_suite_id_map=overwrite_suite_id_map)
-
 
     # filtering out pipelines by the pipeline_filter
     if pipeline_filter is not None:
@@ -92,6 +92,7 @@ def run_multi_suite(
         etl_output_pipeline_name=flag_output_dir_pipeline,
         etl_from_design=etl_from_design,
         return_df=return_df,
+        return_df_until_transformer_step=return_df_until_transformer_step,
     )
 
 
@@ -103,6 +104,7 @@ def run_etl(
     etl_output_pipeline_name: bool = False,
     etl_from_design: bool = False,
     return_df: bool = False,
+    return_df_until_transformer_step: str = None,
 ):
 
     etl_config = pipeline_design["$ETL$"]
@@ -181,12 +183,16 @@ def run_etl(
         # ensure dir exists
         config_post = config_name if etl_output_config_name else None
         pipeline_post = pipeline_name if etl_output_pipeline_name else None
-        etl_output_dir_full = _get_output_dir_name(
-            etl_output_dir, config_post, pipeline_post
-        )
 
-        if not os.path.exists(etl_output_dir):
-            os.makedirs(etl_output_dir)
+        if etl_output_dir is None:
+            etl_output_dir_full = None
+        else:
+            etl_output_dir_full = _get_output_dir_name(
+                etl_output_dir, config_post, pipeline_post
+            )
+
+            if not os.path.exists(etl_output_dir):
+                os.makedirs(etl_output_dir)
 
         df = pd.concat(experiments_df)
 
@@ -209,9 +215,13 @@ def run_etl(
                     )
 
                 else:
+
+                    if return_df_until_transformer_step is not None and x["transformer"].name == return_df_until_transformer_step:
+                        output_dfs[pipeline_name] = df.copy()
+
                     df = x["transformer"].transform(df, options=x["options"])
 
-            if return_df:
+            if return_df and return_df_until_transformer_step is None:
                 output_dfs[pipeline_name] = df
             else:
                 # execute all loaders on df
@@ -436,14 +446,6 @@ def _load_processes(module_name, extractors, transformers, loaders):
     # go over all members of the module
     for member_name, _ in getmembers(module):
 
-        # check for duplicates
-        if (
-            member_name in extractors
-            or member_name in transformers
-            or member_name in loaders
-        ):
-            raise ValueError(f"duplicate class={member_name}")
-
         # find members that are actually an ETL process step
         # by checking if they inherit from the abstract base class
         try:
@@ -455,6 +457,12 @@ def _load_processes(module_name, extractors, transformers, loaders):
                     # TODO: Should we warn or fail if ETL Step Validation failed?
                     warnings.warn(f"ETL Validation failed for Extractor: {member_name}")
                     pass
+                except TypeError as e:
+                    if member_name != "Extractor":
+                        # added because if the extractor class does not overwrite the proper regex function, a type error is thrown
+                        print(f"ETL Extractor TypeError: {member_name}  {e}")
+                    raise e
+                assert member_name not in extractors, f"Duplicate Extractor: {member_name} already exists"
                 extractors[member_name] = etl_candidate
             elif issubclass(etl_candidate, Transformer):
                 try:
@@ -463,6 +471,7 @@ def _load_processes(module_name, extractors, transformers, loaders):
                     # TODO: Should we warn or fail if ETL Step Validation failed?
                     warnings.warn(f"ETL Validation failed for Extractor: {member_name}")
                     pass
+                assert member_name not in transformers, f"Duplicate Transformer: {member_name} already exists"
                 transformers[member_name] = etl_candidate
             elif issubclass(etl_candidate, Loader):
                 try:
@@ -471,6 +480,7 @@ def _load_processes(module_name, extractors, transformers, loaders):
                     # TODO: Should we warn or fail if ETL Step Validation failed?
                     warnings.warn(f"ETL Validation failed for Extractor: {member_name}")
                     pass
+                assert member_name not in loaders, f"Duplicate Loader: {member_name} already exists"
                 loaders[member_name] = etl_candidate
 
         except TypeError:

@@ -148,7 +148,6 @@
 
 
 - name: Check for any errors during setup, and terminate all hosts if any error is detected
-  # TODO [eopel] Does this need to run on all or would it be possible to only run on localhost?
   hosts: all  # intersection of hosts in project and in suite (via aws_ec2 dynamic inventory plugin)
   strategy: linear
   any_errors_fatal: true

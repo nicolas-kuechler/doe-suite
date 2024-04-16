@@ -47,7 +47,7 @@
   args:
     chdir: "{{ job.exp_working_dir }}"
     executable: /bin/bash
-  delegate_to: "{{ job.host_info.public_dns_name }}"
+  delegate_to: "{{ job.host_info.ansible_host_id }}"
   loop: "{{ exp_jobs_to_enqueue }}"
   loop_control:
     loop_var: job

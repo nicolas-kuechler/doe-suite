@@ -1,5 +1,0 @@
----
-
-- debug:
-    msg: "-> deleting VPC.. --> No-Op for euler"
-  tags: [print_action]

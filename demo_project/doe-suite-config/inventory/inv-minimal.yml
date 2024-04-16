@@ -1,0 +1,14 @@
+# TODO: Provide the IP address of the host where you intend to execute the examples experiment suites.
+#        -> A single small host allows running the suites:
+#           `example01-minimal`, `example06-vars`, `example08-superetl`
+#           To run other experiments, you need to have additional hosts (see below)
+
+all:
+  children:
+    small: # host_type
+      hosts:
+        small_01: # host_id
+          ansible_host: <IP ADDRESS or DNS> # (connect to this host via ssh)
+          ansible_user: <USERNAME> #(login ssh username)
+
+## could add more host_types and/or more hosts

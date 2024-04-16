@@ -146,3 +146,21 @@ The ``suite=example07-etl`` demonstrates advance usages of ETL results processin
    .. command-output:: make design suite=example07-etl
       :cwd: ../../..
       :shell:
+
+
+example08-superetl
+------------------
+
+The ``example08-superetl`` generates dummy data that is used to showcase advanced (super) etil processing.
+
+
+.. literalinclude:: ../../../demo_project/doe-suite-config/designs/example08-superetl.yml
+   :language: yaml
+   :caption: doe-suite-config/designs/example08-superetl.yml
+
+
+.. collapse:: Show Resulting Commands
+
+   .. command-output:: make design suite=example08-superetl
+      :cwd: ../../..
+      :shell:
