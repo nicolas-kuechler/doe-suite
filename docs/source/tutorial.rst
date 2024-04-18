@@ -36,6 +36,10 @@ As a summary, these environment variables should now be set:
     # for Euler
     export DOES_EULER_USER=<YOUR-NETHZ>
 
+    # for Docker
+    export DOES_DOCKER_USER=<SSH-USERNAME>
+    export DOES_DOCKER_SSH_PUBLIC_KEY=<SSH-PUBLIC-KEY>
+
 ..  tip::
 
     `Direnv <https://direnv.net/>`_ allows project-specific env vars in an `.envrc` file.

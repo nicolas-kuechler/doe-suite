@@ -40,6 +40,20 @@ ETHZ Euler - Specific Prerequisites
 To run experiments on ETHZ Euler, you must ensure that you can connect to ``euler.ethz.ch`` with SSH.
 Check the instructions provided by ETHZ Euler for `accessing the clusters using SSH <https://scicomp.ethz.ch/wiki/Accessing_the_clusters#SSH>`_.
 
+Docker - Specific Prerequisites
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Doe-Suite supports running experiments on hosts that are Docker containers.
+You can provide custom docker images that will be used for each host type.
+Doe-Suite also supports building the images for you.
+To do so, create a file named ``Dockerfile-<image_name>`` in the ``inventory/docker`` in your ``doe-suite-config`` directory,
+where ``<image_name>`` corresponds to the ``docker_image_id`` in the host specific variables for the host type (see :ref:`tutorial:(Add) Host Type`).
+
+You must ensure that you can connect to all the hosts with SSH using a keypair,
+so the Docker images of the containers you will be running on must have the necessary information to authenticate the host.
+We provide a helper task to set up the SSH (public) keys on the Docker image's ``authorized_keys`` folder,
+which can be used by specifying the path to the **public** key in the ``DOES_DOCKER_SSH_PUBLIC_KEY`` environment variable.
+You can then configure your ssh config to use the corresponding private key to connect to the Docker containers, as described in :ref:`installation:SSH Config (Docker)`.
 
 
 
@@ -299,3 +313,58 @@ The test will connect to the Euler login nodes and schedule the jobs of the mini
 It typically only takes a few minutes to complete, however, the time depends on how long the jobs remain in the scheduling queue.
 Once the experiment completes, the results will be fetched to your local machine and compared to the expected results structure found in the :repodir:`demo_project/doe-suite-results/example01-minimal_$expected <demo_project/doe-suite-results/example01-minimal_$expected/>` directory.
 If the example runs successfully, you are ready to start with the :ref:`tutorial:tutorial` for your own project.
+
+
+Docker-Specific
+---------------
+
+To run experiments with Docker, you need to complete the following steps:
+
+SSH Keys (Docker)
+~~~~~~~~~~~~~~~~~
+
+
+SSH Config (Docker)
+~~~~~~~~~~~~~~~~~~~
+
+To configure SSH access to Docker instances, you need to add a section to your ``~/.ssh/config`` file:
+
+.. code-block::
+    :caption: ~/.ssh/config
+
+    Host 0.0.0.0
+        IdentityFile ~/.ssh/<YOUR-PRIVATE-SSH-KEY-FOR-DOCKER>
+        User <IMAGE_USER>
+        ForwardAgent yes
+
+
+Please replace ``<YOUR-PRIVATE-SSH-KEY-FOR-DOCKER>`` with the actual name of the AWS key file that you used in :ref:`installation:Docker - Specific Prerequisites`.
+By using the pattern ``Host 0.0.0.0``, we match all containers listening on localhost (with SSH listening to different host ports).
+Since the DoE-Suite creates new hosts on demand, it is essential to use a pattern that can match all hosts and we cannot be more restrictive.
+Replace <IMAGE_USER> with the user that you use in your Docker image.
+For the default provided image Ubuntu 20.04 LTS, the user is ubuntu.
+To enable SSH agent forwarding, which is required for cloning repositories on a remote instance (such as from GitHub) without entering credentials or copying the private key, it is necessary to include the ForwardAgent yes option.
+
+
+Environment Variables (Docker)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In addition to the environment variables defined in :ref:`installation:General Environment Variables`, you need to set the following environment variable for Docker:
+
+.. code-block:: sh
+
+    export DOES_DOCKER_USER=<IMAGE_USER>
+    export DOES_DOCKER_SSH_PUBLIC_KEY=<PATH_TO_PUBLIC_KEY>
+
+    # Note: don't forget DOES_PROJECT_DIR and DOES_PROJECT_ID_SUFFIX from above
+
+
+Check Installation (Docker)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To ensure that your setup for Docker is configured correctly, you can run the first example ``example01-minimal`` of the :repodir:`demo project <demo_project>`.
+Navigate to the ``doe-suite`` folder and run the following command:
+
+.. code-block:: sh
+    :caption: Verify that Euler installation is complete
+
+    make test-example01-minimal cloud=euler
