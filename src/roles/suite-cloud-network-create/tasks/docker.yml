@@ -9,7 +9,7 @@
     - exp_base is defined
 
 - debug:
-    msg: "-> creating VPC..."
+    msg: "-> creating Docker network..."
   tags: [print_action]
 
 - name: Create Docker Network

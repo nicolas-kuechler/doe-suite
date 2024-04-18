@@ -5,7 +5,7 @@ prj_id: example_{{ does_project_id_suffix }} #| default('', True) }}
 # git_remote_repository: git@github.com:nicolas-kuechler/doe-suite.git
 # Can also get multiple repos and with a specific branch / commit
 git_remote_repository:
-- repo: git@github.com:nicolas-kuechler/doe-suite.git
+- repo: https://github.com/nicolas-kuechler/doe-suite.git
   version: main
 #- repo: git@github.com:nicolas-kuechler/doe-suite.git
 #  version: etl
