@@ -125,9 +125,6 @@
   loop_control:
     loop_var: my_host
 
-#- debug:
-#    var: ec2_instance_info
-
 - name: Convert collected infos on containers into list with relevant infos of hosts
   set_fact:
     tag_assignment_lst: "{{ instance_infos | to_tag_assignment(host_types)}}"
@@ -136,8 +133,6 @@
   vars:
     instance_infos: "{{ ec2_instance_info | json_query('[*].{instance_id: instance_id, tags: tags}') }}"
 
-#- debug:
-#    var: tag_assignment_lst
 
 #######################################################################
 # Create EC2 Instances for all host_types
@@ -152,24 +147,7 @@
       - name: "{{ exp_base.vpc_name }}"
     publish_all_ports: yes
     name: "{{ name_tag }}"
-#    command: "sleep infinity"
 
-#    key_name: '{{ ssh_key_name }}'
-#    image_id: '{{ ec2config.ec2_image_id }}'
-#    region: '{{ ec2config.aws_region }}'
-#    security_groups: "{{ ec2config.attach_eni | default(False) | ternary([], [ec2config.sg_name]) }} " #ec2config.sg_name "{{ omit }}" #
-#    vpc_subnet_id: '{{ ec2config.vpc_subnet_id }}'
-#    instance_role: '{{ ec2config.instance_role | default(None) }}'
-#    wait: no
-#    purge_tags: yes
-#    network: "{{ my_host | to_network(eni_assignment) }}"
-#    volumes:
-#      - device_name: '{{ volume_root_device_name | default("/dev/sda1") }}'
-#        ebs:
-#          volume_type: gp2
-#          snapshot_id: '{{ ec2config.ec2_volume_snapshot }}'
-#          volume_size: '{{ ec2config.ec2_volume_size }}'
-#          delete_on_termination: True
     labels:
       tag:prj_id: "{{ prj_id }}"
       tag:suite: "{{ suite }}"
@@ -187,48 +165,9 @@
     loop_var: tag_assignment
   register: docker_container_info
 
-- name: Debug container info
-  debug:
-      var: docker_container_info
-
-#######################################################################
-# Assign instances to experiments and define role in experiments
-# (e.g., instance is controller)
-# -> done by assigning tags to ec2 instances
-######################################################################
-
-#- name: Collect infos on ec2 instances (filter by prj_id and suite tags)
-#  community.aws.ec2_instance_info:
-#      region: "{{ exp_base.aws_region }}"
-#      filters:
-#        instance-state-name: [ "pending", "running" ]
-#        "tag:prj_id": "{{ prj_id }}"
-#        "tag:suite": "{{ suite }}"
-#  register: ec2_instance_info
-#
-#- name: Convert collected infos on ec2 instances into list with relevant infos of hosts
-#  set_fact:
-#    tag_assignment_lst: "{{ instance_infos | to_tag_assignment(host_types)}}"
-#    # list of all instances with their id and other relevant infos
-#    # [{"instance_id": X, "exp_name": X, "is_controller": X, "host_type": X, "exp_host_type_idx": X, "exp_host_type_n": X, "init_roles": X, "check_status": X}, ...]
-#  vars:
-#    instance_infos: "{{ ec2_instance_info | json_query('instances[*].{instance_id: instance_id, tags: tags}') }}"
-
-
-#- name: Assign exp_name and is_controller tag to ec2 instances
-#  amazon.aws.ec2_tag:
-#    region: "{{ exp_base.aws_region }}"
-#    resource: "{{ tag_assignment.instance_id }}"
-#    tags:
-#      exp_name: "{{ tag_assignment.exp_name }}"
-#      is_controller: "{{ tag_assignment.is_controller }}"
-#      check_status: "{{ tag_assignment.check_status }}"
-#      Name: "{{ name_tag | truncate(252, killwords=True, end='...', leeway=3) }}" # truncate because aws has a limit of 255 chars for a tag
-#  vars:
-#    name_tag: "{'prj_id': {{ prj_id }}, 'suite': {{ suite }}, 'exp_name': {{ tag_assignment.exp_name }}, 'host_type': {{ tag_assignment.host_type }}, 'is_controller': {{ tag_assignment.is_controller }}, 'check_status': {{ tag_assignment.check_status }} }"
-#  loop: "{{ tag_assignment_lst }}"
-#  loop_control:
-#    loop_var: tag_assignment
+#- name: Debug container info
+#  debug:
+#      var: docker_container_info
 
 ######################################################
 # Terminate all instances that are not assigned but have the matching prj_id and suite tag
@@ -259,11 +198,6 @@
   retries: 120
   delay: 5
 
-#- name: Deb
-#  debug:
-#    msg: "{{ instance_info_docker | json_query('containers[*]') }}"
-
-
 ######################################################
 # Wait until we can reach all ec2 instances via ssh
 ###################################################### .{result: join(\":\", [IP, PublicPort | to_string()])}.result
@@ -292,22 +226,6 @@
 
 - pause:
     seconds: 5
-
-#- name: Debug private_dns
-#  debug:
-#    msg: "{{ docker_container_info }} and {{ docker_container_info | json_query('results[*].container.{ key: Name, value: Config.Hostname }') | items2dict }}"
-
-#- name: Find the relevant docker containers for this suite (we may have containers from other suites running which we want to filter from tag_assignment_lst)
-#  set_fact:
-#    instance_ids_in_suite: "{{ docker_container_info | json_query('results[?Config.Labels.\"tag.suite\"==\"' + suite + '\"].Name') | map('regex_replace', '^/', '') | list }}"
-#
-#- name: Debug instance_ids_in_suite
-#  debug:
-#      var: instance_ids_in_suite
-#
-#- name: Filter tag_assignment_lst by instance_ids_in_suite
-#  set_fact:
-#      tag_assignment_lst: "{{ tag_assignment_lst | selectattr('instance_id', 'in', instance_ids_in_suite) | list }}"
 
 - name: enrich host list with public_dns_name, private_dns_name and ansible_host_id
   set_fact:

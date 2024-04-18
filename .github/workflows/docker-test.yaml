@@ -53,9 +53,6 @@ jobs:
       - name: Set permissions for SSH config
         run: chmod 600 ~/.ssh/config
 
-      - name: Echo ssh config
-        run: cat ~/.ssh/config
-
       - name: Make test
         working-directory: .
         run: make test-example01-minimal cloud=docker
