@@ -20,6 +20,9 @@ concurrency:
 env:
   DOES_PROJECT_DIR: ${{ github.workspace }}/demo_project
 
+services:
+  - docker
+
 
 jobs:
   test:
