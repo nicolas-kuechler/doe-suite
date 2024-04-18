@@ -8,7 +8,7 @@ RUN useradd -m -s /bin/bash ubuntu
 RUN echo "ubuntu:test" | chpasswd && adduser ubuntu sudo
 RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> \
 /etc/sudoers
-COPY id_rsa.pub /home/ubuntu/.ssh/authorized_keys
+COPY docker_public_key.pub /home/ubuntu/.ssh/authorized_keys
 
 EXPOSE 22
 

@@ -7,12 +7,13 @@ verbose_output: yes
 filters:
 {% if not prj_clear %}
   - include: >-
-        docker_config['Labels']['tag:suite']: {{ suite }}
-        {% if is_ansible_controller %} # for the ansible controller, we only filter for controllers but not projects
-         docker_config['Labels']['tag:Name']: ansible_controller
-        {% else %}
-         docker_config['Labels']['tag:prj_id']: {{ prj_id }}
-{% endif %}
+      {% if is_ansible_controller %} # for the ansible controller, we only filter for controllers but not projects
+      docker_config['Labels']['tag:suite']=="{{ suite }}" and docker_config['Labels']['tag:name']=="ansible_controller"
+      {% else %}
+      docker_config['Labels']['tag:suite']=="{{ suite }}" and docker_config['Labels']['tag:prj_id']=="{{ prj_id }}"
+      {% endif %}
+
+  - exclude: true
 {% endif %}
 
 # keyed_groups may be used to create custom groups
