@@ -49,7 +49,7 @@ jobs:
         run: ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ""
 
       - name: Write to SSH config for localhost
-        run: echo -e "Host 127.0.0.1\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null\n\tIdentityFile ~/.ssh/id_rsa\n\tUser ubuntu" > ~/.ssh/config
+        run: echo -e "Host 127.0.0.1 0.0.0.0\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null\n\tIdentityFile ~/.ssh/id_rsa\n\tUser ubuntu" > ~/.ssh/config
       - name: Set permissions for SSH config
         run: chmod 600 ~/.ssh/config
 

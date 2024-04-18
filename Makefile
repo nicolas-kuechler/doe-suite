@@ -127,7 +127,7 @@ run: install cloud-check
 	@cd $(does_config_dir) && \
 	ANSIBLE_CONFIG=$(PWD)/ansible.cfg \
 	ANSIBLE_INVENTORY=$(ansible_inventory) \
-	poetry run ansible-playbook $(PWD)/src/experiment-suite.yml -e "suite=$(suite) id=$(id) epoch=$(epoch) cloud=$(cloud) $(myexpfilter)" -vvvvv
+	poetry run ansible-playbook $(PWD)/src/experiment-suite.yml -e "suite=$(suite) id=$(id) epoch=$(epoch) cloud=$(cloud) $(myexpfilter)"
 
 .PHONY: run
 run-keep: install cloud-check
@@ -310,6 +310,9 @@ aws-test:
 # runs all examples compatible with euler (no multi instance experiments)
 euler-test:
 	@$(MAKE) single-test -j6 -O cloud=euler
+
+docker-test:
+	@$(MAKE) single-test -j6 test_delay=5 cloud=docker
 
 test: aws-test euler-test
 
