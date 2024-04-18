@@ -20,15 +20,13 @@ concurrency:
 env:
   DOES_PROJECT_DIR: ${{ github.workspace }}/demo_project
 
-services:
-  - docker
-
-
 jobs:
   test:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    services:
+      - docker
+#    environment:
+#      name: github-pages
+#      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       #----------------------------------------------
