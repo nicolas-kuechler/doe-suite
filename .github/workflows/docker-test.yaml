@@ -22,11 +22,6 @@ env:
 
 jobs:
   test:
-    services:
-      - docker
-#    environment:
-#      name: github-pages
-#      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       #----------------------------------------------
@@ -47,4 +42,4 @@ jobs:
       #----------------------------------------------
       - name: Make test
         working-directory: .
-        run: make test-example01-minimal
+        run: make test-example01-minimal cloud=docker
