@@ -3,6 +3,9 @@ on:
   push:
     branches:
       - "local"  # only deploy on main
+  pull_request:
+    branches:
+      - "main"
 #  pull_request: {}
   workflow_dispatch: {}
 
@@ -44,6 +47,9 @@ jobs:
       #----------------------------------------------
       - name: Generate SSH keypair
         run: ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ""
+
+      - name: Write to SSH config for localhost
+        run: echo -e "Host 0.0.0.0\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null\n\tIdentityFile ~/.ssh/id_rsa" > ~/.ssh/config
 
       - name: Make test
         working-directory: .
