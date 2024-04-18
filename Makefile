@@ -127,7 +127,7 @@ run: install cloud-check
 	@cd $(does_config_dir) && \
 	ANSIBLE_CONFIG=$(PWD)/ansible.cfg \
 	ANSIBLE_INVENTORY=$(ansible_inventory) \
-	poetry run ansible-playbook $(PWD)/src/experiment-suite.yml -e "suite=$(suite) id=$(id) epoch=$(epoch) cloud=$(cloud) $(myexpfilter)"
+	poetry run ansible-playbook $(PWD)/src/experiment-suite.yml -e "suite=$(suite) id=$(id) epoch=$(epoch) cloud=$(cloud) $(myexpfilter)" -vvvvv
 
 .PHONY: run
 run-keep: install cloud-check
