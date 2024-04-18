@@ -20,6 +20,7 @@ concurrency:
 env:
   DOES_PROJECT_DIR: ${{ github.workspace }}/demo_project
   DOES_PROJECT_ID_SUFFIX: "gh_action"
+  DOES_DOCKER_SSH_PUBLIC_KEY: "~/.ssh/id_rsa.pub"
 
 jobs:
   test:
@@ -39,8 +40,11 @@ jobs:
           virtualenvs-in-project: true
           installer-parallel: true
       #----------------------------------------------
-      # install dependencies
+      # generate keypair
       #----------------------------------------------
+      - name: Generate SSH keypair
+        run: ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ""
+
       - name: Make test
         working-directory: .
         run: make test-example01-minimal cloud=docker
