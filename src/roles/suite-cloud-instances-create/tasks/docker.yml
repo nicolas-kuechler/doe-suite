@@ -57,7 +57,6 @@
   copy:
     src: "{{ docker_public_key }}"
     dest: "{{ docker_build_dir }}/docker_public_key.pub"
-    mode: 0600
   when: docker_public_key is defined and docker_public_key != ""
 
 - name: Collect all docker images for all host types
