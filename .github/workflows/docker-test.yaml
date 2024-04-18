@@ -19,6 +19,7 @@ concurrency:
 
 env:
   DOES_PROJECT_DIR: ${{ github.workspace }}/demo_project
+  DOES_PROJECT_ID_SUFFIX: "gh_action"
 
 jobs:
   test:
