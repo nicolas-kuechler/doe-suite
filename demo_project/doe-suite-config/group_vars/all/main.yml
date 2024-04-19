@@ -45,8 +45,6 @@ exp_base:
   sg_name: "{{ prj_id }}_{{ suite | default('') }}_sg"
   sg_desc: "{{ prj_id }} {{ suite | default('') }} security group"
 
-  docker_image_id: "doe-ubuntu20"
-
 
 #  eni:
 #  - name: "{{ prj_id }}_eni0"

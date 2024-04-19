@@ -17,3 +17,6 @@ euler_env: {{ cookiecutter.euler_env }}
 {% raw %}
 euler_scratch_dir: "/cluster/scratch/{{ euler_user }}"
 {% endraw %}
+
+docker_image_id: "doe-ubuntu20"
+docker_image_tag: "latest"

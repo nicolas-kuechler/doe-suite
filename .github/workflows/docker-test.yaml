@@ -1,18 +1,22 @@
 name: Docs
 on:
-  push:
-    branches:
-      - "local"  # only deploy on main
+#  push:
+#    branches:
+#      - "main"  # only deploy on main
   pull_request:
     branches:
       - "main"
-#  pull_request: {}
   workflow_dispatch: {}
 
 permissions:
   contents: read
   pages: write
   id-token: write
+
+# Allow one concurrent deployment
+concurrency:
+  group: "test"
+  cancel-in-progress: true
 
 env:
   DOES_PROJECT_DIR: ${{ github.workspace }}/demo_project
