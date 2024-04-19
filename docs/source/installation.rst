@@ -53,6 +53,14 @@ You must ensure that you can connect to all the hosts with SSH using a keypair,
 so the Docker images of the containers you will be running on must have the necessary information to authenticate the host.
 We provide a helper task to set up the SSH (public) keys on the Docker image's ``authorized_keys`` folder,
 which can be used by specifying the path to the **public** key in the ``DOES_DOCKER_SSH_PUBLIC_KEY`` environment variable.
+Ansible will copy the public key to the local directory in which the Dockerfile is built under the name ``docker_public_key.pub``,
+which can then be copied during the build process to the ``authorized_keys`` folder:
+
+.. code-block:: Dockerfile
+    :caption: Dockerfile
+
+    COPY docker_public_key.pub /home/ubuntu/.ssh/authorized_keys
+
 You can then configure your ssh config to use the corresponding private key to connect to the Docker containers, as described in :ref:`installation:SSH Config (Docker)`.
 
 
@@ -365,6 +373,6 @@ To ensure that your setup for Docker is configured correctly, you can run the fi
 Navigate to the ``doe-suite`` folder and run the following command:
 
 .. code-block:: sh
-    :caption: Verify that Euler installation is complete
+    :caption: Verify that Docker installation is complete
 
-    make test-example01-minimal cloud=euler
+    make test-example01-minimal cloud=docker

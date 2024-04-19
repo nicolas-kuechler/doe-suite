@@ -12,7 +12,7 @@
     msg: "-> creating Docker network..."
   tags: [print_action]
 
-- name: Create Docker Network
+- name: Create Docker Network (if this fails, is the Docker daemon running?)
   community.docker.docker_network:
     name: "{{ exp_base.vpc_name }}"
 
