@@ -14,12 +14,6 @@ permissions:
   pages: write
   id-token: write
 
-
-# Allow one concurrent deployment
-concurrency:
-  group: "pages"
-  cancel-in-progress: true
-
 env:
   DOES_PROJECT_DIR: ${{ github.workspace }}/demo_project
   DOES_PROJECT_ID_SUFFIX: "gh_action"
