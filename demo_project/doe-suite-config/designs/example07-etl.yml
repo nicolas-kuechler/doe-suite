@@ -24,8 +24,11 @@ $ETL$:                                                         # Visualization o
     extractors:                                                #--------------------------------------------------
       YamlExtractor: {} # by default loads all .yaml files     #| YamlExtractor  ErrorExtractor  IgnoreExtractor | Extractors:
       ErrorExtractor: {} # error stderr.log if non-empty       #--------------------------------------------------    result files to pandas df
-      IgnoreExtractor: {} # ignore stdout.log                  #                        |                          Transformers:
-    transformers:                                              #                        V                             transform df
+      IgnoreExtractor: {} # ignore stdout.log                  #                                                   Transformers:
+    transformers:                                              #                        |                             transform df
+      - df.sort_values:                                        #                        |
+          by: [ exp_name, run, rep ]                           #                        V
+          ignore_index: True                                   #
       - df.filter: {items: ["exp_name", "x", "y"]}             #                    df.filter
       - df.eval: {expr: "color = 'black'"}                     #                        |
     loaders:                                                   #                        V
@@ -64,6 +67,7 @@ $ETL$:                                                         # Visualization o
     # by including all we have a more complex color assignment -> we only include extractors + loaders and provide a custom transformer stage
         # (2) use df.X syntax to directly use pandas df transformations: https://pandas.pydata.org/docs/reference/frame.html
         #       (note there are a few limitations: some functions on df require indexes which cannot be defined here -> e.g., see Conditional Transformer)
+        - df.sort_values: { by: [ exp_name, run, rep ], ignore_index: True }
         - df.filter: {items: ["exp_name", "x", "y"]}
         - {name: ConditionalTransformer, col: "exp_name", dest: "color", value: {plus: black, square: green, triangle1: blue, triangle2: blue}}
     loaders:
