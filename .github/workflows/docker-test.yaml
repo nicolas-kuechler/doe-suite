@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        suite: [example01-minimal, example02-single, example03-format, example04-multi, example05-complex, example06-vars example07-etl example08-superetl]
+        suite: [example01-minimal, example02-single, example03-format, example04-multi, example05-complex, example06-vars, example07-etl, example08-superetl]
     steps:
       #----------------------------------------------
       # checkout repo and setup python + poetry
