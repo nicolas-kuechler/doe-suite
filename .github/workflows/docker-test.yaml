@@ -1,8 +1,8 @@
 name: Docker E2E Test
 on:
-#  pull_request:
-#    branches:
-#      - "main"
+  pull_request:
+    branches:
+      - "main"
   workflow_dispatch: {}
 
 permissions:
@@ -12,7 +12,7 @@ permissions:
 
 # Allow one concurrent deployment
 concurrency:
-  group: "test"
+  group: "test-e2e"
   cancel-in-progress: true
 
 env:
@@ -23,6 +23,9 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        suite: [example01-minimal, example02-single, example03-format, example04-multi, example05-complex, example06-vars example07-etl example08-superetl]
     steps:
       #----------------------------------------------
       # checkout repo and setup python + poetry
@@ -43,39 +46,15 @@ jobs:
       #-----------------------------------------------------------
       - name: Generate SSH keypair
         run: ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ""
-#
+
       - name: Write to SSH config for localhost
         run: echo -e "Host 127.0.0.1 0.0.0.0\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null\n\tUser ubuntu" > ~/.ssh/config
+
       - name: Set permissions for SSH config
         run: chmod 600 ~/.ssh/config
 
-      - name: Run the docker tests
-        run: make docker-mini-test testid=1234
-
-      - name: Show log
-        if: always()
-        run: cat $DOES_PROJECT_DIR/doe-suite-tests/docker-mini-test_1234/progress.log
-
-#      - name: Test test-example01-minimal
-#        run: make test-example01-minimal cloud=docker
-#
-#      - name: Test test-example02-single
-#        run: make test-example02-single cloud=docker
-#
-#      - name: Test test-example03-format
-#        run: make test-example03-format cloud=docker
-#
-#      - name: Test test-example04-multi
-#        run: make test-example04-multi cloud=docker
-#
-#      - name: Test test-example05-complex
-#        run: make test-example05-complex cloud=docker
-#
-#      - name: Test test-example06-vars
-#        run: make test-example06-vars cloud=docker
-#
-#      - name: Test test-example07-etl
-#        run: make test-example07-etl cloud=docker
-#
-#      - name: Test test-example08-superetl
-#        run: make test-example08-superetl cloud=docker
+      #-----------------------------------------------------------
+      # run the doe-suite e2e test
+      #-----------------------------------------------------------
+      - name: Run the e2e test on docker
+        run: make test-${{ matrix.suite }} cloud=docker
