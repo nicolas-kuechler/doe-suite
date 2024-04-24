@@ -57,6 +57,7 @@
   copy:
     src: "{{ docker_public_key }}"
     dest: "{{ docker_build_dir }}/docker_public_key.pub"
+    mode: u=r,g=r,o=r  # necessary (pub key needs to be read-only)
   when: docker_public_key is defined and docker_public_key != ""
 
 - name: Collect all docker images for all host types
@@ -220,6 +221,10 @@
 ######################################################
 # Refresh Dynamic Inventory
 ######################################################
+
+#- name: check docker version
+#  debug:
+#    msg: "community.docker version {{ lookup('community.general.collection_version', 'community.docker') }}"
 
 - name: Refresh dynamic inventory
   meta: refresh_inventory

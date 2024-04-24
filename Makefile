@@ -282,39 +282,74 @@ rescomp: install
 	poetry run pytest $(PWD)/doespy -q -k 'test_does_results' -s --suite $(suite) --id $(id)
 
 # compares all the results of the suite with the expected results
-rescompall: install
-	@cd $(does_config_dir) && \
-	poetry run pytest $(PWD)/doespy -q -k 'test_all_does_results'
+# TODO [nku] delete this test
+#rescompall: install
+#	@cd $(does_config_dir) && \
+#	poetry run pytest $(PWD)/doespy -q -k 'test_all_does_results'
+
+
+
+# TODO [nku] add gnu parallel to docs
+does_test_run_dir=$(DOES_PROJECT_DIR)/doe-suite-tests/$@_$(epoch)
+PARGS = --bar --jobs 4 --delay 2s --joblog $(does_test_run_dir)/progress.log --results $(does_test_run_dir)/
+PARALLEL = mkdir -p /$(does_test_run_dir) && parallel $(PARGS)
+E2ETEST = echo "Running doe-suite e2e test: \n  cloud= $${TEST_CLOUD}\n  suites= $${TEST_SUITES}\n  results= $(does_test_run_dir) \n"; $(PARALLEL) make test-{} cloud=$${TEST_CLOUD} ::: $${TEST_SUITES}
+
+docker-mini-test:
+	@TEST_SUITES="example01-minimal example02-single example05-complex"; TEST_CLOUD="docker" ;\
+	$(E2ETEST)
+
+docker-test:
+	@TEST_SUITES="example01-minimal example02-single example03-format example04-multi example06-vars example07-etl example08-superetl example05-complex"; TEST_CLOUD="docker" ;\
+	$(E2ETEST)
+
+aws-mini-test:
+	@TEST_SUITES="example01-minimal example02-single example05-complex"; TEST_CLOUD="aws" ;\
+	$(E2ETEST)
+
+aws-test:
+	@TEST_SUITES="example01-minimal example02-single example03-format example04-multi example05-complex example06-vars example07-etl example08-superetl"; TEST_CLOUD="aws" ;\
+	$(E2ETEST)
+
+euler-mini-test:
+	@TEST_SUITES="example01-minimal example02-single"; TEST_CLOUD="euler" ;\
+	$(E2ETEST)
+
+euler-test:
+	@TEST_SUITES="example01-minimal example02-single example03-format example06-vars example07-etl example08-superetl"; TEST_CLOUD="euler" ;\
+	$(E2ETEST)
+
+
+#demotest:
+#	parallel  make test-example{} cloud=docker ::: 01-minimal 02-single 03-format 04-multi 06-vars 07-etl 08-superetl 05-complex
 
 
 # for aws cloud setup there can be race conditions for network setup, delay each example by 10s
 # use sed to extract the example id and multiply it by 10 -> feed this to sleep
 # (sed first extract the number and then removes leading zeros: example05-xyz -> 05 -> 5)
 test-%:
-	@TMP=$$(echo $*|sed -r 's/example([0-9]*).*/\1/' | sed 's/^0//') ;\
-	sleep $$((TMP*$(test_delay)))
 	@$(MAKE) run suite=$* id=new
 	@$(MAKE) rescomp suite=$* id=last
 
 
-# make single-test -j5 -O -> to run them in parallel
-single-test: test-example01-minimal test-example02-single test-example03-format test-example06-vars test-example07-etl test-example08-superetl
-
-# make multi-test -j2 -O -> to run them in parallel
-multi-test: test-example04-multi test-example05-complex
-
-# runs the listed suites and compares the result with the expected result under `doe-suite-results`
-aws-test:
-	@$(MAKE) single-test multi-test -j9 test_delay=10
-
-# runs all examples compatible with euler (no multi instance experiments)
-euler-test:
-	@$(MAKE) single-test -j6 -O cloud=euler
-
-docker-test:
-	@$(MAKE) single-test -j6 test_delay=5 cloud=docker
-
-test: aws-test euler-test
+## make single-test -j5 -O -> to run them in parallel
+#single-test: test-example01-minimal test-example02-single test-example03-format test-example06-vars test-example07-etl test-example08-superetl
+#
+## make multi-test -j2 -O -> to run them in parallel
+#multi-test: test-example04-multi test-example05-complex
+#
+## runs the listed suites and compares the result with the expected result under `doe-suite-results`
+#aws-test:
+#	@$(MAKE) single-test multi-test -j9 test_delay=10
+#
+## runs all examples compatible with euler (no multi instance experiments)
+#euler-test:
+#	@$(MAKE) single-test -j6 -O cloud=euler
+#
+#docker-test:
+#	@$(MAKE) single-test -j6 test_delay=5 cloud=docker
+#
+#test: aws-test euler-test
 
 # convert a results dir to the expected results dir
 convert-to-expected:
