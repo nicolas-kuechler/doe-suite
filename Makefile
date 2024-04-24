@@ -290,8 +290,9 @@ rescomp: install
 
 
 # TODO [nku] add gnu parallel to docs --bar
-does_test_run_dir=$(DOES_PROJECT_DIR)/doe-suite-tests/$@_$(epoch)
-PARGS = --jobs 4 --delay 2s --joblog $(does_test_run_dir)/progress.log --results $(does_test_run_dir)/
+testid?=$(epoch)
+does_test_run_dir=$(DOES_PROJECT_DIR)/doe-suite-tests/$@_$(testid)
+PARGS = --progress --jobs 4 --delay 2s --joblog $(does_test_run_dir)/progress.log --results $(does_test_run_dir)/
 PARALLEL = mkdir -p /$(does_test_run_dir) && parallel $(PARGS)
 E2ETEST = echo "Running doe-suite e2e test: \n  cloud= $${TEST_CLOUD}\n  suites= $${TEST_SUITES}\n  results= $(does_test_run_dir) \n"; $(PARALLEL) make test-{} cloud=$${TEST_CLOUD} ::: $${TEST_SUITES}
 

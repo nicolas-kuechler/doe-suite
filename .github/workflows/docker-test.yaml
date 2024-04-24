@@ -50,7 +50,11 @@ jobs:
         run: chmod 600 ~/.ssh/config
 
       - name: Run the docker tests
-        run: make docker-mini-test
+        run: make docker-mini-test testid=1234
+
+      - name: Show log
+        if: always()
+        run: cat $DOES_PROJECT_DIR/doe-suite-tests/docker-mini-test_1234/progress.log
 
 #      - name: Test test-example01-minimal
 #        run: make test-example01-minimal cloud=docker
