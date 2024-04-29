@@ -276,25 +276,23 @@ status: install-silent
 #################################
 # https://patorjk.com/software/taag/#p=display&h=2&v=2&f=Small&t=TEST
 
-
+# compares the result directory from a suite run, with the expected result directory (ignoring some run-specific aspects)
 rescomp: install
 	@cd $(does_config_dir) && \
 	poetry run pytest $(PWD)/doespy -q -k 'test_does_results' -s --suite $(suite) --id $(id)
 
-# compares all the results of the suite with the expected results
-# TODO [nku] delete this test
-#rescompall: install
-#	@cd $(does_config_dir) && \
-#	poetry run pytest $(PWD)/doespy -q -k 'test_all_does_results'
 
 
-
-# TODO [nku] add gnu parallel to docs --bar
+# Uses GNU parallel to execute the tests:
 testid?=$(epoch)
 does_test_run_dir=$(DOES_PROJECT_DIR)/doe-suite-tests/$@_$(testid)
 PARGS = --progress --jobs 4 --delay 2s --joblog $(does_test_run_dir)/progress.log --results $(does_test_run_dir)/
 PARALLEL = mkdir -p /$(does_test_run_dir) && parallel $(PARGS)
-E2ETEST = echo "Running doe-suite e2e test: \n  cloud= $${TEST_CLOUD}\n  suites= $${TEST_SUITES}\n  results= $(does_test_run_dir) \n"; $(PARALLEL) make test-{} cloud=$${TEST_CLOUD} ::: $${TEST_SUITES}
+E2ETEST = echo "Running doe-suite e2e test: \n  cloud= $${TEST_CLOUD}\n  suites= $${TEST_SUITES}\n  results= $(does_test_run_dir) \n"; $(PARALLEL) make test-{} cloud=$${TEST_CLOUD} ::: $${TEST_SUITES} ; cat $(does_test_run_dir)/progress.log
+
+docker-minimal-test:
+	@TEST_SUITES="example01-minimal example02-single"; TEST_CLOUD="docker" ;\
+	$(E2ETEST)
 
 docker-mini-test:
 	@TEST_SUITES="example01-minimal example02-single example05-complex"; TEST_CLOUD="docker" ;\
@@ -321,36 +319,11 @@ euler-test:
 	$(E2ETEST)
 
 
-#demotest:
-#	parallel  make test-example{} cloud=docker ::: 01-minimal 02-single 03-format 04-multi 06-vars 07-etl 08-superetl 05-complex
-
-
-# for aws cloud setup there can be race conditions for network setup, delay each example by 10s
-# use sed to extract the example id and multiply it by 10 -> feed this to sleep
-# (sed first extract the number and then removes leading zeros: example05-xyz -> 05 -> 5)
+# runs the suite and then compares the results
 test-%:
 	@$(MAKE) run suite=$* id=new
 	@$(MAKE) rescomp suite=$* id=last
 
-
-## make single-test -j5 -O -> to run them in parallel
-#single-test: test-example01-minimal test-example02-single test-example03-format test-example06-vars test-example07-etl test-example08-superetl
-#
-## make multi-test -j2 -O -> to run them in parallel
-#multi-test: test-example04-multi test-example05-complex
-#
-## runs the listed suites and compares the result with the expected result under `doe-suite-results`
-#aws-test:
-#	@$(MAKE) single-test multi-test -j9 test_delay=10
-#
-## runs all examples compatible with euler (no multi instance experiments)
-#euler-test:
-#	@$(MAKE) single-test -j6 -O cloud=euler
-#
-#docker-test:
-#	@$(MAKE) single-test -j6 test_delay=5 cloud=docker
-#
-#test: aws-test euler-test
 
 # convert a results dir to the expected results dir
 convert-to-expected:
