@@ -12,9 +12,10 @@
     file:
       path: inventory
       state: directory
-      mode:  0755
+      mode: 0755
 
-  - name: Template dynamic inventory config file
+  # We could make this a separate role but that would be overkill, for now we can just multiplex on cloud here
+  - name: Template dynamic inventory config file (AWS)
     template:
       src: resources/inventory/aws_ec2.yml.j2
       dest: inventory/aws_ec2.yml
@@ -22,6 +23,22 @@
     vars:
       prj_clear: True
       is_ansible_controller: False
+    when: cloud == 'aws'
+
+  - name: Template dynamic inventory config file (docker)
+    template:
+      src: resources/inventory/docker.yml.j2
+      dest: inventory/docker.yml
+      mode: 0755
+    vars:
+      prj_clear: True
+      is_ansible_controller: False
+    when: cloud == 'docker'
+
+  - name: Throw error when trying to clear other clouds
+    fail:
+      msg: "Cannot clear cloud '{{ cloud }}' as it is not a supported operation."
+    when: cloud not in ['aws', 'docker']
 
   - name: Clear cloud instances
     include_role:
@@ -33,3 +50,4 @@
       name: suite-cloud-network-delete
       tasks_from: "{{ 'suite-cloud-network-delete' | multiplex_tasks(cloud) }}"
     when: exp_base.skip_network_delete is undefined or  exp_base.skip_network_delete == false
+

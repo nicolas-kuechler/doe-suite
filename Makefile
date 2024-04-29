@@ -242,7 +242,7 @@ clean-result-full: install
 clean-cloud: install
 	@cd $(does_config_dir) && \
 	ANSIBLE_CONFIG=$(PWD)/ansible.cfg \
-	poetry run ansible-playbook $(PWD)/src/clear.yml
+	poetry run ansible-playbook $(PWD)/src/clear.yml -e "cloud=$(cloud)"
 
 clean: clean-local-py clean-cloud
 

@@ -7,7 +7,7 @@
 # (it will just fail because there are other instances attached, so not a big deal)
 
 - debug:
-    msg: "-> deleting VPC.."
+    msg: "-> deleting Docker Network.."
   tags: [print_action]
 
 - name: Delete Docker Network
@@ -15,5 +15,3 @@
     name: "{{ exp_base.vpc_name }}"
     state: absent
     force: true
-
-- debug: msg="VPC Delete {{ vpc_delete }}"
