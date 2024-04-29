@@ -3,8 +3,12 @@
 The project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html): `major.minor.patch` i.e., `breaking.feature.bugfix`.
 
 We use annotated git tags for each release commit:
-`git tag -a <tag-name> -m"<annotation>" [commit]`
+1. Create a new tag locally: `git tag -a <tag-name> -m"<annotation>" [commit]`
 (Example for Head: `git tag -a v1.0.0 -m "release 1.0.0"`)
+2. Push the tag to remote repo: `git push origin tag <tag_name>`
+3. Create a release from the tag on Github
+
+
 <!--
 ## [Unreleased] - yyyy-mm-dd
 
