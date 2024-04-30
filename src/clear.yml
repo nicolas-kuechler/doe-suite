@@ -41,3 +41,7 @@
       tasks_from: "{{ 'suite-cloud-network-delete' | multiplex_tasks(cloud) }}"
     when: exp_base.skip_network_delete is undefined or  exp_base.skip_network_delete == false
 
+  - name: delete inventory directory
+    file:
+      path: "{{ inventory_dir }}"
+      state: absent
