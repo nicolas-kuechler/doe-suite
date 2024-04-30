@@ -1,6 +1,6 @@
 ---
 
-# This role uses the `host_types` variable to create the ec2 instances
+# This role uses the `host_types` variable to create the docker containers
 # described in the suite design.
 # We use instance tags to assign instances to experiments.
 #
@@ -113,7 +113,7 @@
 
 - name: Build infos on containers (filter by prj_id and suite tags)
   set_fact:
-    ec2_instance_info: "{{ ec2_instance_info | default([]) + [{ 'instance_id': prj_id + '--' + suite + '--' + my_host['host_type'] + '--' + (my_host['idx']|string), 'tags': { 'host_type': my_host['host_type'], 'idx': my_host['idx'] } }] }}"
+    docker_instance_info: "{{ docker_instance_info | default([]) + [{ 'instance_id': prj_id + '--' + suite + '--' + my_host['host_type'] + '--' + (my_host['idx']|string), 'tags': { 'host_type': my_host['host_type'], 'idx': my_host['idx'] } }] }}"
     # First, we calculate max_n_sum which sums up the number of instances per host_type and then selects the maximum
     # Second, we create a list of dictionaries {"host_type": X, "idx": X} with a cross product of host_types and range(max_n_sum)
     # Third, now with this list, there are entries that don't actually represent instances (because we use the max_n_sum), hence we filter
@@ -132,7 +132,7 @@
     # list of all instances with their id and other relevant infos
     # [{"instance_id": X, "exp_name": X, "is_controller": X, "host_type": X, "exp_host_type_idx": X, "exp_host_type_n": X, "init_roles": X, "check_status": X}, ...]
   vars:
-    instance_infos: "{{ ec2_instance_info | json_query('[*].{instance_id: instance_id, tags: tags}') }}"
+    instance_infos: "{{ docker_instance_info | json_query('[*].{instance_id: instance_id, tags: tags}') }}"
 
 
 #######################################################################

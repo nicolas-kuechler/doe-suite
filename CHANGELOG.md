@@ -15,7 +15,7 @@ We use annotated git tags for each release commit:
 
 -->
 
-## [1.1.0] - yyyy-mm-dd
+## [1.1.0] - 2024-04-30
 
 ### Added
 

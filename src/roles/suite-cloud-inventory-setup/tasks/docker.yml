@@ -9,7 +9,7 @@
     - does_inventory_source is defined
 
 - name: Template dynamic inventory config file
-  # we do this because we want to have the project id as an inventory filter (such that only ec2 instances with a corresponding tag are visible)
+  # we do this because we want to have the project id as an inventory filter (such that only docker containers with a corresponding tag are visible)
   template:
     src: resources/inventory/docker.yml.j2
     dest: "{{ does_inventory_source }}/docker.yml"

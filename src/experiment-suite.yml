@@ -21,6 +21,14 @@
         msg: "environment variable: DOES_PROJECT_ID_SUFFIX is not set"
       when: does_project_id_suffix | length == 0
 
+    - fail:
+        msg: "environment variable(s) for aws: DOES_SSH_KEY_NAME is not set"
+      when: cloud == 'aws' and (ssh_key_name | length == 0 or aws_user  | length == 0)
+
+    - fail:
+        msg: "environment variable(s) for docker: DOES_DOCKER_SSH_PUBLIC_KEY and/or DOES_DOCKER_USER not set"
+      when: cloud == 'docker' and (docker_public_key | length == 0 or docker_user | length == 0)
+
     - debug:
         msg: "Project Id: {{ prj_id }}"
       tags: [print_action]

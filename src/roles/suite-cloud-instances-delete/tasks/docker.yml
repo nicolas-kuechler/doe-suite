@@ -1,6 +1,6 @@
 ---
 
-# This role terminates all ec2 instances of the project or suite.
+# This role terminates all docker containers of the project or suite.
 # (there is a sanity check (delay) that allows the user to abort)
 
 # Parameters:
@@ -30,7 +30,7 @@
 
 - name: Extract instance ids of docker containers to remove
   set_fact:
-    ec2_instance_ids: "{{ docker_instance_info | json_query(query) | difference(instance_ids_in_use | default([]) | map('regex_replace', '^', '/') | list ) | list }}"
+    docker_instance_ids: "{{ docker_instance_info | json_query(query) | difference(instance_ids_in_use | default([]) | map('regex_replace', '^', '/') | list ) | list }}"
   vars:
     query: containers[*].Names[0]
 
@@ -38,10 +38,10 @@
     seconds: 10
     prompt: |
       "Removing instances with the following ids:
-       {{ ec2_instance_ids }}
+       {{ docker_instance_ids }}
 
        If the above instance IDs are wrong, abort now! (CTRL+C followed by 'A')"
-  when: (ec2_instance_ids | length) > 0
+  when: (docker_instance_ids | length) > 0
   tags: [print_action]
 
 
@@ -49,4 +49,4 @@
   community.docker.docker_container:
     name: "{{ item }}"
     state: absent
-  loop: "{{ ec2_instance_ids }}"
+  loop: "{{ docker_instance_ids }}"
