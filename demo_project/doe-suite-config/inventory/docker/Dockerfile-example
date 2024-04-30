@@ -1,0 +1,5 @@
+# Info: Provide project-specific Dockerfile for your project.
+# Files in this directory will be automatically built by doe-suite if they are included in your host types.
+# There are no restrictions on the contents of this file, but you must make sure that doe-suite
+# can access the running container over SSH. For more information see the [installation instructions](https://nicolas-kuechler.github.io/doe-suite/installation.html#docker-specific) in the documentation.
+# For an example Dockerfile see doe-suite/src/resources/docker/Dockerfile-doe-ubuntu20

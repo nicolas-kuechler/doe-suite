@@ -12,6 +12,5 @@ COPY docker_public_key.pub /home/ubuntu/.ssh/authorized_keys
 
 EXPOSE 22
 
-#CMD ["service", "ssh", "start", "-D"]
 RUN mkdir /var/run/sshd
 CMD ["/usr/sbin/sshd", "-D"]

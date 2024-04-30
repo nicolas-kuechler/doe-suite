@@ -60,9 +60,14 @@
     mode: u=r,g=r,o=r  # necessary (pub key needs to be read-only)
   when: docker_public_key is defined and docker_public_key != ""
 
+- name: Collect all host_type_specific_vars
+  set_fact:
+    host_type_specific_vars_items: "{{ host_type_specific_vars | dict2items }}"
+
 - name: Collect all docker images for all host types
   set_fact:
-    docker_images: "{{ host_type_specific_vars | dict2items | json_query('[?contains(' + host_types.keys() | list | string + ', key)].value.docker_image_id') | unique | list }}"
+    docker_images: "{{ host_type_specific_vars_items | json_query('[?contains(' + host_types.keys() | list | string + ', key)].value.docker_image_id') | list }}"
+    docker_tags: "{{ host_type_specific_vars_items | json_query('[?contains(' + host_types.keys() | list | string + ', key)].value.docker_image_tag') | list }}"
 
 - name: Copy doe-suite-provided docker images to build dir
   copy:
@@ -70,7 +75,7 @@
     dest: "{{ docker_build_dir }}/"
   vars:
     local_file: "resources/docker/Dockerfile-{{ item }}"
-  loop: "{{ docker_images }}"
+  loop: "{{ docker_images | unique | list }}"
   when: lookup( 'file', local_file, errors='ignore' )
 #  when: "('resources/docker/Dockerfile-' + item) is file"
 
@@ -79,23 +84,23 @@
     src: "{{ does_config_dir }}/inventory/docker/Dockerfile-{{ item }}"
     dest: "{{ docker_build_dir }}/"
     force: no
-  loop: "{{ docker_images }}"
+  loop: "{{ docker_images | unique | list }}"
   when: "(does_config_dir + '/inventory/docker') is directory and (does_config_dir + '/inventory/docker/Dockerfile-' + item) is file"
 
 - name: Build docker images in resources/docker (if this fails, did you set DOES_DOCKER_SSH_PUBLIC_KEY?)
   community.docker.docker_image:
     build:
       path: "{{ docker_build_dir }}"
-      dockerfile: "Dockerfile-{{ item }}"
-    name: "{{ item }}"
+      dockerfile: "Dockerfile-{{ item.0 }}"
+    name: "{{ item.0 }}"
     source: build
-    tag: "latest"
+    tag: "{{ item.1 }}"
     # `force_source` flag is ambiguous, but it is needed to force update the image if the dockerfile has changed.
     # see: https://github.com/ansible/ansible/issues/19379
     force_source: yes
     force_tag: yes
     debug: true
-  loop: "{{ docker_images }}"
+  loop: "{{ docker_images | zip(docker_tags) | unique | list }}"
   register: build_results
 
 - name: Show warning if some docker images were not built
@@ -114,14 +119,8 @@
 - name: Build infos on containers (filter by prj_id and suite tags)
   set_fact:
     docker_instance_info: "{{ docker_instance_info | default([]) + [{ 'instance_id': prj_id + '--' + suite + '--' + my_host['host_type'] + '--' + (my_host['idx']|string), 'tags': { 'host_type': my_host['host_type'], 'idx': my_host['idx'] } }] }}"
-    # First, we calculate max_n_sum which sums up the number of instances per host_type and then selects the maximum
-    # Second, we create a list of dictionaries {"host_type": X, "idx": X} with a cross product of host_types and range(max_n_sum)
-    # Third, now with this list, there are entries that don't actually represent instances (because we use the max_n_sum), hence we filter
-    # them out in the where condition and skip them.
   vars:
     max_n_sum: "{{ host_types | json_query('*.*.n') | map('sum') | max  }}"
-    n_sum: "{{ host_types[my_host['host_type']] | json_query('*.n') | sum }}"
-    ec2config: "{{ host_type_specific_vars[my_host['host_type']] | combine( exp_base ) }}"
   loop: "{{ host_types.keys() | product(range(max_n_sum|int)) | map('tuple2dict', keys=['host_type', 'idx']) }}"
   loop_control:
     loop_var: my_host

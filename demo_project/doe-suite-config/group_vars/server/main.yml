@@ -19,4 +19,4 @@ euler_env: "gcc/8.2.0 python/3.9.9"  # e.g., "gcc/8.2.0 python_gpu/3.9.9" for GP
 euler_scratch_dir: "/cluster/scratch/{{ euler_user }}"
 
 docker_image_id: "doe-ubuntu20"
-docker_image_tag: "latest"
+docker_image_tag: "0.2.0"
