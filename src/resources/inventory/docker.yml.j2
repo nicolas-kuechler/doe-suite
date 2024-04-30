@@ -1,0 +1,52 @@
+---
+plugin: community.docker.docker_containers
+docker_host: {{ docker_host }}
+connection_type: ssh
+verbose_output: yes
+
+filters:
+{% if not prj_clear %}
+  - include: >-
+      {% if is_ansible_controller %} # for the ansible controller, we only filter for controllers but not projects
+      docker_config['Labels']['tag:suite']=="{{ suite }}" and docker_config['Labels']['tag:name']=="ansible_controller"
+      {% else %}
+      docker_config['Labels']['tag:suite']=="{{ suite }}" and docker_config['Labels']['tag:prj_id']=="{{ prj_id }}"
+      {% endif %}
+
+  - exclude: true
+{% endif %}
+
+# keyed_groups may be used to create custom groups
+#leading_separator: False
+strict: False
+keyed_groups:
+  - prefix: ""
+    separator: ""
+    key: docker_config['Labels']['tag:prj_id']
+
+  - prefix: ""
+    separator: ""
+    key: docker_config['Labels']['tag:suite']
+
+  - prefix: ""
+    separator: ""
+    key: docker_config['Labels']['tag:exp_name']
+
+  - prefix: ""
+    separator: ""
+    key: docker_config['Labels']['tag:host_type']
+
+  - prefix: "is_controller"
+    separator: "_"
+    key: docker_config['Labels']['tag:is_controller']
+
+  - prefix: "check_status"
+    separator: "_"
+    key: docker_config['Labels']['tag:check_status']
+
+#  - prefix: ""
+#    separator: ""
+#    key: tags.Name
+
+compose:
+  ansible_user: "'{{ docker_user }}'"

@@ -79,10 +79,12 @@ def run_module():
             os.makedirs(local_results_dir, exist_ok=True)
 
             # fetch results
+            server_port = my_host.get('public_port', 22)
+            nonstandard_port = ['-e', f'ssh -p {server_port}'] if server_port != 22 else []
             src_path = f"{my_host['public_dns_name']}:{remote_results_dir}/*"
             try:
                 # -L is needed to follow symlinks
-                _completed_process = subprocess.run(["rsync", "-azL", src_path, local_results_dir], check=True)
+                _completed_process = subprocess.run(["rsync", "-azL"] + nonstandard_port + [src_path, local_results_dir], check=True)
             except subprocess.CalledProcessError as e:
                 warnings.warn(f"Rsync command failed to fetch results with return code {e.returncode}   dir={local_results_dir}")
                 raise e
@@ -92,7 +94,7 @@ def run_module():
             if i == 0:
                 src_path = f"{my_host['public_dns_name']}:{remote_config_file}"
                 try:
-                    _completed_process = subprocess.run(["rsync", "-az", src_path, local_results_dir_base], check=True)
+                    _completed_process = subprocess.run(["rsync", "-az"] + nonstandard_port + [src_path, local_results_dir_base], check=True)
                 except subprocess.CalledProcessError as e:
                     warnings.warn(f"Rsync command failed to fetch config.json with return code {e.returncode}")
                     raise e

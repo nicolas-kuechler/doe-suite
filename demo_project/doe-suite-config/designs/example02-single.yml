@@ -79,6 +79,8 @@ $ETL$:
         file_regex: '^stderr.log$'
       IgnoreExtractor:
         file_regex: '^stdout.log$'
-    transformers: [] # no transformation
+    transformers:
+      # sort values by [run, rep] to ensure the comparison of the test matches
+      - df.sort_values: { by: [run, rep], ignore_index: yes }
     loaders:
       CsvSummaryLoader: {skip_empty: True}

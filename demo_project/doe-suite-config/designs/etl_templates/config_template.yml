@@ -19,6 +19,7 @@ $ETL$:
       ErrorExtractor: {} # etl-error if stderr.log is non-empty
       IgnoreExtractor: {} # ignore stdout.log
     transformers:
+      - df.sort_values: { by: [ exp_name, run, rep ], ignore_index: True }
       - df.filter: {regex: "\\$CMD\\$"}
     loaders:
       CsvSummaryLoader: # write the transformed dataframe across the whole experiment as a csv file

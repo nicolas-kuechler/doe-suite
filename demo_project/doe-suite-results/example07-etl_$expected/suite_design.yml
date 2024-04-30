@@ -112,6 +112,12 @@ $ETL$:
         file_regex:
         - ^stdout.log$
     transformers:
+    - df.sort_values:
+        by:
+        - exp_name
+        - run
+        - rep
+        ignore_index: true
     - df.filter:
         items:
         - exp_name
@@ -138,6 +144,12 @@ $ETL$:
         file_regex:
         - ^stdout.log$
     transformers:
+    - df.sort_values:
+        by:
+        - exp_name
+        - run
+        - rep
+        ignore_index: true
     - df.filter:
         items:
         - exp_name
@@ -165,6 +177,12 @@ $ETL$:
         file_regex:
         - ^stdout.log$
     transformers:
+    - df.sort_values:
+        by:
+        - exp_name
+        - run
+        - rep
+        ignore_index: true
     - df.filter:
         items:
         - exp_name
@@ -194,6 +212,12 @@ $ETL$:
         file_regex:
         - ^stdout.log$
     transformers:
+    - df.sort_values:
+        by:
+        - exp_name
+        - run
+        - rep
+        ignore_index: true
     - df.filter:
         items:
         - exp_name
@@ -229,6 +253,12 @@ $ETL$:
         file_regex:
         - ^stdout.log$
     transformers:
+    - df.sort_values:
+        by:
+        - exp_name
+        - run
+        - rep
+        ignore_index: true
     - df.filter:
         regex: \$CMD\$
     loaders:
@@ -252,6 +282,12 @@ $ETL$:
         file_regex:
         - ^stdout.log$
     transformers:
+    - df.sort_values:
+        by:
+        - exp_name
+        - run
+        - rep
+        ignore_index: true
     - df.filter:
         regex: \$CMD\$
     loaders:

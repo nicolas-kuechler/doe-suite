@@ -1,0 +1,52 @@
+---
+
+# This role terminates all docker containers of the project or suite.
+# (there is a sanity check (delay) that allows the user to abort)
+
+# Parameters:
+# filter_by_suite: (default: False) if True -> expects that `suite` is defined and then we only delete instances with this suite tag
+# instance_ids_in_use: (default: []) list of instance ids to exclude (i.e., not to delete)
+
+- assert:
+    that:
+    - inventory_hostname == 'localhost'
+
+- set_fact:
+    my_docker_filter:
+      - "tag:prj_id={{ prj_id }}"
+  when: not (filter_by_suite | default(False))
+
+- set_fact:
+    my_docker_filter:
+      - "tag:prj_id={{ prj_id }}"
+      - "tag:suite={{ suite }}"
+  when: filter_by_suite | default(False)
+
+- community.docker.docker_host_info:
+    containers: yes
+    containers_filters:
+      label: "{{ my_docker_filter }}"
+  register: docker_instance_info
+
+- name: Extract instance ids of docker containers to remove
+  set_fact:
+    docker_instance_ids: "{{ docker_instance_info | json_query(query) | difference(instance_ids_in_use | default([]) | map('regex_replace', '^', '/') | list ) | list }}"
+  vars:
+    query: containers[*].Names[0]
+
+- pause:
+    seconds: 10
+    prompt: |
+      "Removing instances with the following ids:
+       {{ docker_instance_ids }}
+
+       If the above instance IDs are wrong, abort now! (CTRL+C followed by 'A')"
+  when: (docker_instance_ids | length) > 0
+  tags: [print_action]
+
+
+- name: Cleanup Docker
+  community.docker.docker_container:
+    name: "{{ item }}"
+    state: absent
+  loop: "{{ docker_instance_ids }}"

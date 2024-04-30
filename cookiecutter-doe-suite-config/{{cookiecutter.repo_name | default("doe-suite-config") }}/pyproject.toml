@@ -13,7 +13,7 @@ tqdm = "^4.64.0" # custom dependency only for custom etl steps
 doespy = {path = "{{ cookiecutter.relative_path_does_config_to_doespy }}", develop = true}
 
 [tool.poetry.dev-dependencies]
-pytest = "^5.2"
+pytest = ">=7.2.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

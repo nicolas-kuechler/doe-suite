@@ -1,0 +1,248 @@
+---
+
+# This role uses the `host_types` variable to create the docker containers
+# described in the suite design.
+# We use instance tags to assign instances to experiments.
+#
+# The assignment is stored in the variable `suite_hosts_lst` which is a list
+# of all hosts and contains the information on the assignment to experiments.
+#
+# In the end, we set the assignment information also as variables on the respective host.
+# (e.g., `exp_name` on the host shows the experiment)
+#
+# After this role, all instances are ready to use for the suite to run experiments.
+
+- name: Load the host specific vars from their groups_vars files
+  # builds a dictionary `host_type: vars`, where `vars` are the variables defined for that host type in `group_vars/host_type/main.yml`
+  block:
+  - name: Loop over different host types and load group vars from file.
+    include_vars:
+      dir: "{{ external_group_vars_dir }}/{{ host_type }}"
+      ignore_unknown_extensions: True
+      name: host_type_specific_vars
+    loop: "{{ host_types.keys() }}"
+    loop_control:
+      loop_var:
+        host_type
+    register: my_results
+
+    # note: At this point, host_type_specific_vars contains only the variables from the last host (of the previous loop).
+    #       However, the registered variable `my_results` contains a list with the variables from all hosts.
+    #       The following two tasks build a dictionary <HOST_TYPE>:<host type specific vars>
+
+  - name: clear host_type_specific_vars
+    set_fact:
+      host_type_specific_vars: {}
+
+  - name: use `my_results` to build host_type_specific_vars dictionary
+    set_fact:
+      host_type_specific_vars: "{{ host_type_specific_vars | combine({ res.host_type: res.ansible_facts.host_type_specific_vars }) }}"
+    loop: "{{ my_results.results }}"
+    loop_control:
+      loop_var:
+        res
+
+# Build docker images we need
+
+- name: Generate path for build directory for docker images
+  set_fact:
+    docker_build_dir: "{{ does_config_dir }}/inventory/docker/build_{{ prj_id }}_{{ suite }}"
+
+- name: Create build directory for docker images
+  file:
+    path: "{{ docker_build_dir }}"
+    state: directory
+
+- name: Copy docker public key to docker resource file
+  copy:
+    src: "{{ docker_public_key }}"
+    dest: "{{ docker_build_dir }}/docker_public_key.pub"
+    mode: u=r,g=r,o=r  # necessary (pub key needs to be read-only)
+  when: docker_public_key is defined and docker_public_key != ""
+
+- name: Collect all host_type_specific_vars
+  set_fact:
+    host_type_specific_vars_items: "{{ host_type_specific_vars | dict2items }}"
+
+- name: Collect all docker images for all host types
+  set_fact:
+    docker_images: "{{ host_type_specific_vars_items | json_query('[?contains(' + host_types.keys() | list | string + ', key)].value.docker_image_id') | list }}"
+    docker_tags: "{{ host_type_specific_vars_items | json_query('[?contains(' + host_types.keys() | list | string + ', key)].value.docker_image_tag') | list }}"
+
+- name: Copy doe-suite-provided docker images to build dir
+  copy:
+    src: "{{ local_file }}"
+    dest: "{{ docker_build_dir }}/"
+  vars:
+    local_file: "resources/docker/Dockerfile-{{ item }}"
+  loop: "{{ docker_images | unique | list }}"
+  when: lookup( 'file', local_file, errors='ignore' )
+#  when: "('resources/docker/Dockerfile-' + item) is file"
+
+- name: Copy config-provided docker images to build dir (if the directory exists)
+  copy:
+    src: "{{ does_config_dir }}/inventory/docker/Dockerfile-{{ item }}"
+    dest: "{{ docker_build_dir }}/"
+    force: no
+  loop: "{{ docker_images | unique | list }}"
+  when: "(does_config_dir + '/inventory/docker') is directory and (does_config_dir + '/inventory/docker/Dockerfile-' + item) is file"
+
+- name: Build docker images in resources/docker (if this fails, did you set DOES_DOCKER_SSH_PUBLIC_KEY?)
+  community.docker.docker_image:
+    build:
+      path: "{{ docker_build_dir }}"
+      dockerfile: "Dockerfile-{{ item.0 }}"
+    name: "{{ item.0 }}"
+    source: build
+    tag: "{{ item.1 }}"
+    # `force_source` flag is ambiguous, but it is needed to force update the image if the dockerfile has changed.
+    # see: https://github.com/ansible/ansible/issues/19379
+    force_source: yes
+    force_tag: yes
+    debug: true
+  loop: "{{ docker_images | zip(docker_tags) | unique | list }}"
+  register: build_results
+
+- name: Show warning if some docker images were not built
+  debug:
+      msg:
+        - "Some docker images were not built, because the dockerfile was not found."
+        - "This might be okay if you have built the dockerfile outside of doe"
+        - "{{ build_results.results | selectattr('image', 'equalto', None) | map(attribute='item') | list }}"
+  when: build_results.results | selectattr('image', 'equalto', None) | list | length > 0
+
+- name: Remove docker build directory
+  file:
+    path: "{{ docker_build_dir }}"
+    state: absent
+
+- name: Build infos on containers (filter by prj_id and suite tags)
+  set_fact:
+    docker_instance_info: "{{ docker_instance_info | default([]) + [{ 'instance_id': prj_id + '--' + suite + '--' + my_host['host_type'] + '--' + (my_host['idx']|string), 'tags': { 'host_type': my_host['host_type'], 'idx': my_host['idx'] } }] }}"
+  vars:
+    max_n_sum: "{{ host_types | json_query('*.*.n') | map('sum') | max  }}"
+  loop: "{{ host_types.keys() | product(range(max_n_sum|int)) | map('tuple2dict', keys=['host_type', 'idx']) }}"
+  loop_control:
+    loop_var: my_host
+
+- name: Convert collected infos on containers into list with relevant infos of hosts
+  set_fact:
+    tag_assignment_lst: "{{ instance_infos | to_tag_assignment(host_types)}}"
+    # list of all instances with their id and other relevant infos
+    # [{"instance_id": X, "exp_name": X, "is_controller": X, "host_type": X, "exp_host_type_idx": X, "exp_host_type_n": X, "init_roles": X, "check_status": X}, ...]
+  vars:
+    instance_infos: "{{ docker_instance_info | json_query('[*].{instance_id: instance_id, tags: tags}') }}"
+
+
+#######################################################################
+# Create EC2 Instances for all host_types
+######################################################################
+
+- name: Create Docker Containers Instances (only assign subset of tags yet)
+  community.docker.docker_container:
+    image: "{{ host_config['docker_image_id'] }}:{{ host_config['docker_image_tag'] | default('latest') }}"
+    state: started
+    network_mode: bridge
+    networks:
+      - name: "{{ exp_base.vpc_name }}"
+    publish_all_ports: yes
+    name: "{{ name_tag }}"
+
+    labels:
+      tag:prj_id: "{{ prj_id }}"
+      tag:suite: "{{ suite }}"
+      tag:host_type: "{{ tag_assignment.host_type }}"
+      tag:idx: "{{ tag_assignment.exp_host_type_idx }}"
+
+      tag:exp_name: "{{ tag_assignment.exp_name }}"
+      tag:is_controller: "{{ tag_assignment.is_controller }}"
+      tag:check_status: "{{ tag_assignment.check_status }}"
+  vars:
+    name_tag: "{{ tag_assignment.instance_id }}"
+    host_config: "{{ host_type_specific_vars[tag_assignment['host_type']] | combine( exp_base ) }}"
+  loop: "{{ tag_assignment_lst }}"
+  loop_control:
+    loop_var: tag_assignment
+  register: docker_container_info
+
+#- name: Debug container info
+#  debug:
+#      var: docker_container_info
+
+######################################################
+# Terminate all instances that are not assigned but have the matching prj_id and suite tag
+######################################################
+
+- name: Terminate all instances that are not assigned but have the matching prj_id and suite tag
+  include_role:
+    name: suite-cloud-instances-delete
+    tasks_from: docker
+  vars:
+    filter_by_suite: True
+    instance_ids_in_use: "{{ tag_assignment_lst | json_query('[*].instance_id') }}"
+
+
+######################################################
+# Wait until all ec2 instances have state 'running'
+######################################################
+
+- name: Wait until enough docker images exist
+  community.docker.docker_host_info:
+    containers: yes
+    containers_filters:
+      label:
+        - "tag:prj_id={{ prj_id }}"
+        - "tag:suite={{ suite }}"
+  register: instance_info_docker
+  until: "instance_info_docker | json_query('containers[*]') | length == tag_assignment_lst | length"
+  retries: 120
+  delay: 5
+
+######################################################
+# Wait until we can reach all ec2 instances via ssh
+###################################################### .{result: join(\":\", [IP, PublicPort | to_string()])}.result
+- name: Store IP addresses from docker containers. If this step fails, the container/image may not be exposing port 22 for SSH
+  set_fact:
+    public_dns_names: "{{ instance_info_docker | json_query('containers[*].Ports[?PrivatePort==`22`] | [*][0]') | json_query('[*].{host: IP, port: PublicPort}') }}"
+    suite_hosts_lst: []
+
+
+- name: Wait for SSH of the created containers to come up
+  ansible.builtin.wait_for:
+    host: "{{ public_dns_name.host }}"
+    port: "{{ public_dns_name.port }}" # ssh
+    connect_timeout: 3
+    timeout: 320
+  loop: "{{ public_dns_names }}"
+  loop_control:
+    loop_var: public_dns_name
+
+######################################################
+# Refresh Dynamic Inventory
+######################################################
+
+#- name: check docker version
+#  debug:
+#    msg: "community.docker version {{ lookup('community.general.collection_version', 'community.docker') }}"
+
+- name: Refresh dynamic inventory
+  meta: refresh_inventory
+
+- pause:
+    seconds: 5
+
+- name: enrich host list with public_dns_name, private_dns_name and ansible_host_id
+  set_fact:
+  # , 'hostvars': hostvars[public_dns_lookup[tag_assignment.instance_id]]
+    suite_hosts_lst: "{{ suite_hosts_lst + [tag_assignment | combine({'public_dns_name': public_dns_lookup['/' + tag_assignment.instance_id], 'public_port': public_port_lookup['/' + tag_assignment.instance_id], 'private_dns_name': private_dns_lookup['/' + tag_assignment.instance_id], 'ansible_host_id': tag_assignment.instance_id })] }}"
+    # list of all instances with their id and other relevant infos (+ public and private dns names)
+    # [{"instance_id": X, "exp_name": X, "is_controller": X, "host_type": X, "exp_host_type_idx": X, "exp_host_type_n": X, "init_roles": X, "check_status": X, "public_dns_name": X, "private_dns_name": X}, ...]
+
+  loop: "{{ tag_assignment_lst }}"
+  loop_control:
+    loop_var: tag_assignment
+  vars:
+#    name_tag: "{{ prj_id + '--' + suite + '--' + tag_assignment.host_type + '--' + tag_assignment.exp_host_type_idx|string }}"
+    public_dns_lookup: "{{ instance_info_docker | json_query('containers[*].{ key: Names[0], value: Ports[?PrivatePort==`22`] | [0].IP }') | items2dict }}"
+    public_port_lookup: "{{ instance_info_docker | json_query('containers[*].{ key: Names[0], value: Ports[?PrivatePort==`22`] | [0].PublicPort }') | items2dict }}"
+    private_dns_lookup: "{{ docker_container_info | json_query('results[*].container.{ key: Name, value: Config.Hostname }') | items2dict }}"

@@ -1,0 +1,60 @@
+name: Docker E2E Test
+on:
+  pull_request:
+    branches:
+      - "main"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment
+concurrency:
+  group: "test-e2e"
+  cancel-in-progress: true
+
+env:
+  DOES_PROJECT_DIR: ${{ github.workspace }}/demo_project
+  DOES_PROJECT_ID_SUFFIX: "gh_action"
+  DOES_DOCKER_SSH_PUBLIC_KEY: "~/.ssh/id_rsa.pub"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        suite: [example01-minimal, example02-single, example03-format, example04-multi, example05-complex, example06-vars, example07-etl, example08-superetl]
+    steps:
+      #----------------------------------------------
+      # checkout repo and setup python + poetry
+      #----------------------------------------------
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+           python-version: '3.9'
+      - uses: snok/install-poetry@v1
+        with:
+          version: 1.4.0
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
+
+      #-----------------------------------------------------------
+      # generate keypair that we use to access the docker instance
+      #-----------------------------------------------------------
+      - name: Generate SSH keypair
+        run: ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ""
+
+      - name: Write to SSH config for localhost
+        run: echo -e "Host 127.0.0.1 0.0.0.0\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null\n\tUser ubuntu" > ~/.ssh/config
+
+      - name: Set permissions for SSH config
+        run: chmod 600 ~/.ssh/config
+
+      #-----------------------------------------------------------
+      # run the doe-suite e2e test
+      #-----------------------------------------------------------
+      - name: Run the e2e test on docker
+        run: make test-${{ matrix.suite }} cloud=docker

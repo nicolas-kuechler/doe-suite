@@ -93,7 +93,12 @@ $ETL$:
       IgnoreExtractor:
         file_regex:
         - ^stdout.log$
-    transformers: []
+    transformers:
+    - df.sort_values:
+        by:
+        - run
+        - rep
+        ignore_index: yes
     loaders:
       CsvSummaryLoader:
         skip_empty: true

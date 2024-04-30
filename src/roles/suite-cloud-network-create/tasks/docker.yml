@@ -1,0 +1,18 @@
+---
+
+# This role creates a Docker Network for the project (i.e., not one per suite, one per project)
+
+- assert:
+    that:
+    - exp_base is defined
+
+- debug:
+    msg: "-> creating Docker network..."
+  tags: [print_action]
+
+- name: Create Docker Network (if this fails, is the Docker daemon running?)
+  community.docker.docker_network:
+    name: "{{ exp_base.vpc_name }}" # we re-use the aws vpc name
+
+- debug: msg="exp base config= {{ exp_base }}"
+  #tags: [print_action]

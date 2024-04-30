@@ -5,7 +5,7 @@ prj_id: example_{{ does_project_id_suffix }} #| default('', True) }}
 # git_remote_repository: git@github.com:nicolas-kuechler/doe-suite.git
 # Can also get multiple repos and with a specific branch / commit
 git_remote_repository:
-- repo: git@github.com:nicolas-kuechler/doe-suite.git
+- repo: https://github.com/nicolas-kuechler/doe-suite.git
   version: main
 #- repo: git@github.com:nicolas-kuechler/doe-suite.git
 #  version: etl
@@ -17,7 +17,7 @@ git_remote_repository:
 # Each experiments runs for at most #jobs * 'job_n_tries' * 'job_check_wait_time' seconds (usually less when the experiment finishes earlier).
 # The experiments are mostly run concurrently (apart from the setup and cleanup parts). Thus, the experiment with the most jobs defines the
 # maximal duration. But as experiments usually use fewer than 'job_n_tries' tries, an experiment with few long-running jobs can be the bottleneck too.
-job_n_tries: 100   # should be max 1000 (otherwise playbook freezes -> unsure why)
+job_n_tries: 150   # should be max 1000 (otherwise playbook freezes -> unsure why)
 job_check_wait_time: 5
 
 # if the previous job finished less than 30 seconds before

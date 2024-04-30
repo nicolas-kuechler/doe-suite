@@ -22,11 +22,14 @@ def test_suite_result(suite, suite_id, suite_idref="$expected"):
     path_pattern = r"\/.*\/demo_project" # we need to ignore the path to the demo project because it is different between euler and aws (+ on euler person dependent)
     code_path_pattern = r" \/.*\/code"
     job_finished_order= r"^exp_job_ids_finished: \[.*\]$" # on euler jobs can finish in different order
-    aws_ec2_host_ids = r"ip-[0-9a-z.-]*internal" # ip can change
-
+    netcat_internal_hostname = r"netcat -q 1 [0-9a-z.-]* 2807"
+    server_dns_yaml = r"- server_dns: [0-9a-z.-]*$"
+    server_dns_config = r"\"server_dns\": \"[0-9a-z.-]*\"$"
+    aws_ec2_host_ids = r"ip-[0-9a-z.-]*internal" # ip can change. This needs to come after netcat_internal_hostname, else the replacement will not work
 
     print(f"Comparing folders:\n   {d1}\nwith:\n   {d2}")
-    is_same = dircomp.compare_dir(d1, d2, ignore_infiles=[suite_id, suite_idref, path_pattern, code_path_pattern, job_finished_order, aws_ec2_host_ids], ignore_files=["stdout.log", "manual.yml", "aws_ec2.yml"])
+    is_same = dircomp.compare_dir(d1, d2, ignore_infiles=[suite_id, suite_idref, path_pattern, code_path_pattern, job_finished_order, netcat_internal_hostname, server_dns_yaml, server_dns_config, aws_ec2_host_ids],
+                                          ignore_files=["stdout.log", "manual.yml", "aws_ec2.yml", "docker.yml"])
     assert is_same
 
 

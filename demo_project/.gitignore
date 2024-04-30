@@ -1,4 +1,6 @@
 doe-suite-results/*
 
+doe-suite-tests/*
+
 # we want to have expected results in the repo
 !doe-suite-results/*_$expected
