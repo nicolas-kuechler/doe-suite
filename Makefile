@@ -244,7 +244,20 @@ clean-cloud: install
 	ANSIBLE_CONFIG=$(PWD)/ansible.cfg \
 	poetry run ansible-playbook $(PWD)/src/clear.yml -e "cloud=$(cloud)"
 
-clean: clean-local-py clean-cloud
+
+.PHONY: confirm
+confirm:
+	@echo -n 'Are you sure? [y/N] ' && read ans && [ $${ans:-N} = y ]
+
+clean-docker:
+	@echo "Terminating all doe-suite related docker containers..."
+	@if $(MAKE) confirm ; then  $(MAKE) clean-cloud cloud=docker; else echo "skipping clean-docker"; fi
+
+clean-aws:
+	@echo "Terminating all doe-suite related aws ec2 instances (+vpc)..."
+	@if $(MAKE) confirm ; then  $(MAKE) clean-cloud cloud=aws; else echo "skipping clean-aws"; fi
+
+clean:  clean-local-py clean-docker clean-aws
 
 
 #################################

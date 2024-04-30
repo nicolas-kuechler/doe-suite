@@ -19,7 +19,7 @@ If not, create a dummy project to work with.
 
 * Verify that you can clone remote repositories with SSH. This is necessary to access your project repository from the remote experiment environment. If you need help setting up SSH for GitHub, check out the `official documentation <https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh>`_.
 
-
+* (For parallel running of integration tests) Install `GNU Parallel <https://www.gnu.org/software/parallel/>`_.
 
 AWS - Specific Prerequisites
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -43,25 +43,7 @@ Check the instructions provided by ETHZ Euler for `accessing the clusters using 
 Docker - Specific Prerequisites
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Doe-Suite supports running experiments on hosts that are Docker containers.
-You can provide custom docker images that will be used for each host type.
-Doe-Suite also supports building the images for you.
-To do so, create a file named ``Dockerfile-<image_name>`` in the ``inventory/docker`` in your ``doe-suite-config`` directory,
-where ``<image_name>`` corresponds to the ``docker_image_id`` in the host specific variables for the host type (see :ref:`tutorial:(Add) Host Type`).
-
-You must ensure that you can connect to all the hosts with SSH using a keypair,
-so the Docker images of the containers you will be running on must have the necessary information to authenticate the host.
-We provide a helper task to set up the SSH (public) keys on the Docker image's ``authorized_keys`` folder,
-which can be used by specifying the path to the **public** key in the ``DOES_DOCKER_SSH_PUBLIC_KEY`` environment variable.
-Ansible will copy the public key to the local directory in which the Dockerfile is built under the name ``docker_public_key.pub``,
-which can then be copied during the build process to the ``authorized_keys`` folder:
-
-.. code-block:: Dockerfile
-    :caption: Dockerfile
-
-    COPY docker_public_key.pub /home/ubuntu/.ssh/authorized_keys
-
-You can then configure your ssh config to use the corresponding private key to connect to the Docker containers, as described in :ref:`installation:SSH Config (Docker)`.
+To run experiments on (local) Docker containers, you need to have `Docker installed <https://docs.docker.com/get-docker/>`_ and running.
 
 
 
@@ -326,10 +308,30 @@ If the example runs successfully, you are ready to start with the :ref:`tutorial
 Docker-Specific
 ---------------
 
-To run experiments with Docker, you need to complete the following steps:
+The  ``doe-suite`` supports running experiments on Docker containers, which can be useful for e.g., local testing.
+By default we build on the `Ubuntu 20:04 LTS` Dockerfile and make small ``doe-suite`` related adjustments (e.g., make reachable via ssh).
+
+However, you also have the option to provide a project-specific Dockerfile.
+To do so, create a file named ``Dockerfile-<image_name>`` in the ``inventory/docker`` in your ``doe-suite-config`` directory,
+where ``<image_name>`` corresponds to the ``docker_image_id`` in the host specific variables for the host type (see :ref:`tutorial:(Add) Host Type`).
+
+Once this setup is complete (or you opt for the default Dockerfile), you can proceed with running experiments using Docker by following the steps below:
+
+
+
+
 
 SSH Keys (Docker)
 ~~~~~~~~~~~~~~~~~
+
+You must ensure that you can connect to all the running docker containers with SSH using a keypair.
+
+
+First, ensure that the **public** key is listed in the ``authorized_keys`` folder of the Docker container.
+The default docker image of the doe-suite handles this automatically, but you'll need to specify the path to the key as an environment variable (see ``DOES_DOCKER_SSH_PUBLIC_KEY`` below).
+Additionally, make sure that the Docker container exposes the SSH port, which is also already done in the default docker image of the doe-suite.
+
+You can then configure your ssh config to use the corresponding private key to connect to the Docker containers, as described in :ref:`installation:SSH Config (Docker)`.
 
 
 SSH Config (Docker)
@@ -350,7 +352,7 @@ Please replace ``<YOUR-PRIVATE-SSH-KEY-FOR-DOCKER>`` with the actual name of the
 By using the pattern ``Host 0.0.0.0``, we match all containers listening on localhost (with SSH listening to different host ports).
 Since the DoE-Suite creates new hosts on demand, it is essential to use a pattern that can match all hosts and we cannot be more restrictive.
 Replace <IMAGE_USER> with the user that you use in your Docker image.
-For the default provided image Ubuntu 20.04 LTS, the user is ubuntu.
+For the default provided image `Ubuntu 20.04 LTS`, the user is ubuntu.
 To enable SSH agent forwarding, which is required for cloning repositories on a remote instance (such as from GitHub) without entering credentials or copying the private key, it is necessary to include the ForwardAgent yes option.
 
 
@@ -360,8 +362,9 @@ In addition to the environment variables defined in :ref:`installation:General E
 
 .. code-block:: sh
 
-    export DOES_DOCKER_USER=<IMAGE_USER>
-    export DOES_DOCKER_SSH_PUBLIC_KEY=<PATH_TO_PUBLIC_KEY>
+    export DOES_DOCKER_USER=<SSH-USERNAME>  # [optional] defaults to ubuntu
+    export DOES_DOCKER_SSH_PUBLIC_KEY=<SSH-PUBLIC-KEY>  # e.g., ~/.ssh/id_rsa.pub
+    export DOCKER_HOST=<DOCKER-HOST> # [optional]  defaults to unix://var/run/docker.sock
 
     # Note: don't forget DOES_PROJECT_DIR and DOES_PROJECT_ID_SUFFIX from above
 
