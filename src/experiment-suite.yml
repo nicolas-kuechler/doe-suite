@@ -65,6 +65,8 @@
       include_role:
         name: suite-cloud-inventory-setup
         tasks_from: "{{ 'suite-cloud-inventory-setup' | multiplex_tasks(cloud) }}"
+      vars:
+        prj_clear: False
 
     - assert:
         that:
