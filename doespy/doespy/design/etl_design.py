@@ -458,8 +458,13 @@ class ETLPipeline(ETLPipelineBase):
         return values
 
 
+suite_names = dict()
+for s in util.get_does_results():
+    suite_names[s["suite"].replace("-","_")] = s["suite"]
+for s in info.get_suite_designs():
+    suite_names[s.replace("-","_")] = s
 
-SuiteName = enum.Enum("SuiteName", {s.replace("-", "_"): s for s in info.get_suite_designs()})
+SuiteName = enum.Enum("SuiteName", suite_names)
 """Name of the available experiment suites in `doe-suite-config/designs`."""
 
 

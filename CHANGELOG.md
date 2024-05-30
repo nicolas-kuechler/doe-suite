@@ -15,6 +15,13 @@ We use annotated git tags for each release commit:
 
 -->
 
+## [1.1.1] - 2024-05-30
+
+### Fixed
+
+- update Python dependencies
+- allow referencing suite names in (super) ETL that do not have a design but instead have an existing result.
+
 ## [1.1.0] - 2024-04-30
 
 ### Added
