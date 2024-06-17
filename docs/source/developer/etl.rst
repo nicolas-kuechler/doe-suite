@@ -183,12 +183,13 @@ Full example
 
 .. code:: python
 
-   %env DOES_PROJECT_DIR= # place correct dir here
-   import sys
-   import os
-   sys.path.insert(0, os.path.abspath('doe-suite/src/scripts'))
-   import super_etl
+    %env DOES_PROJECT_DIR= # place correct dir here
+    import sys
+    import os
+    sys.path.insert(0, os.path.abspath('doe-suite/doespy'))
+    display(sys.path)
+    import doespy.etl.etl_base as etl_base
 
-   df = super_etl.run_multi_suite("pipeline.yml", return_df=True)
+   df = super_etl.run_multi_suite("pipeline.yml", "etl_output", return_df=True)
 
    # inspect df
