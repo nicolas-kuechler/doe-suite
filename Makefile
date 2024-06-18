@@ -338,3 +338,10 @@ docs-build: install
 
 docs: docs-build
 	@open docs/build/html/index.html
+
+
+jupyter: install cloud-check
+	@cd $(does_config_dir) && \
+	ANSIBLE_CONFIG=$(PWD)/ansible.cfg \
+	ANSIBLE_INVENTORY=$(ansible_inventory) \
+	poetry run jupyter lab --notebook-dir $(PWD)/../
