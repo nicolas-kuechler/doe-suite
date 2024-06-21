@@ -385,4 +385,4 @@ jupyter: install cloud-check
 	@cd $(does_config_dir) && \
 	ANSIBLE_CONFIG=$(PWD)/ansible.cfg \
 	ANSIBLE_INVENTORY=$(ansible_inventory) \
-	poetry run jupyter lab --notebook-dir $(PWD)/../
+	poetry run jupyter lab --ip 0.0.0.0 --port 8888 --notebook-dir $(PWD)/../
