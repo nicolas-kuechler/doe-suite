@@ -387,6 +387,8 @@ does_set:
 
 jupyter: does_set install cloud-check
 	@cd $(does_config_dir) && \
+	(cd ../MP-SPDZ && Scripts/setup-ssl.sh) && \
+    (cd ../MP-SPDZ && Scripts/setup-ssl.sh 10 Player-SSL-Data) && \
 	ANSIBLE_CONFIG=$(PWD)/ansible.cfg \
 	ANSIBLE_INVENTORY=$(ansible_inventory) \
 	poetry run jupyter lab --ip 0.0.0.0 --port 8888 --notebook-dir $(PWD)/../
