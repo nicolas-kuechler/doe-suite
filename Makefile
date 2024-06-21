@@ -381,7 +381,11 @@ docs: docs-build
 	@open docs/build/html/index.html
 
 
-jupyter: install cloud-check
+## Checks does_config_dir is set
+does_set:
+	@if [ ! -d "$(does_config_dir)" ]; then echo "DOES_PROJECT_DIR is not set, please set environment variables"; exit 1; fi
+
+jupyter: does_set install cloud-check
 	@cd $(does_config_dir) && \
 	ANSIBLE_CONFIG=$(PWD)/ansible.cfg \
 	ANSIBLE_INVENTORY=$(ansible_inventory) \
