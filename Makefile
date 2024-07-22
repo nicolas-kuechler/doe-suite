@@ -1,3 +1,8 @@
+ifndef DOES_PROJECT_DIR
+$(error Environment variable 'DOES_PROJECT_DIR' is not set.)
+endif
+
+
 does_config_dir=$(DOES_PROJECT_DIR)/doe-suite-config
 does_results_dir=$(DOES_PROJECT_DIR)/doe-suite-results
 
