@@ -1,14 +1,10 @@
-from typing import List
+from typing import Annotated, List
 from typing import Dict
 from typing import Optional, Any
 from typing import Union
 
-from pydantic import Field
+from pydantic import Discriminator, RootModel, Tag, field_validator, model_validator, ConfigDict, Field
 from pydantic import BaseModel
-from pydantic import root_validator
-from pydantic import validator
-from pydantic import ValidationError
-from pydantic import PydanticValueError
 
 
 import warnings
@@ -28,10 +24,7 @@ from doespy.etl.etl_base import _load_available_processes
 
 
 class MyETLBaseModel(BaseModel):
-    class Config:
-        extra = "forbid"
-        smart_union = True
-        use_enum_values = True
+    model_config = ConfigDict(extra="forbid", use_enum_values=True)
 
 class ETLContext(MyETLBaseModel):
 
@@ -51,13 +44,14 @@ class IncludeEtlSource(MyETLBaseModel):
     template: str = None
     pipeline: str = None
 
-    class Config:
-        extra = "forbid"
-        allow_reuse=True
 
+    model_config = ConfigDict(extra="forbid", allow_reuse=True)
 
+    etl_pipeline: 'ETLPipelineBase' = Field(None, alias="_ETL_PIPELINE", exclude=True)
+    """:meta private:"""
 
-    @validator("suite")
+    @field_validator("suite")
+    @classmethod
     def check_suite_available(cls, v):
         """checks that referenced suite exists"""
         if v is not None:
@@ -67,7 +61,8 @@ class IncludeEtlSource(MyETLBaseModel):
 
         return v
 
-    @validator("config")
+
+    @field_validator("config")
     def check_config_available(cls, v, values):
         """checks that referenced config exists"""
         if v is not None:
@@ -79,7 +74,8 @@ class IncludeEtlSource(MyETLBaseModel):
 
         return v
 
-    @validator("template")
+    @field_validator("template")
+    @classmethod
     def check_template_available(cls, v):
         """checks that referenced etl template exists"""
         if v is not None:
@@ -91,20 +87,20 @@ class IncludeEtlSource(MyETLBaseModel):
         return v
 
 
-    @validator("pipeline")
+    @field_validator("pipeline")
     def check_suite_xor_template(cls, v, values):
 
         """checks that either suite or template or config is used"""
 
         count = 0
 
-        if values.get("suite", None) is not None:
+        if values.data.get("suite", None) is not None:
             count += 1
 
-        if values.get("config", None) is not None:
+        if values.data.get("config", None) is not None:
             count += 1
 
-        if values.get("template", None) is not None:
+        if values.data.get("template", None) is not None:
             count += 1
 
         assert count == 1, f"IncludeSource malformed: suite, config, and template are mutually exclusive but are: suite={values.get('suite')}  config={values.get('config')}  template={values.get('template')}"
@@ -112,69 +108,63 @@ class IncludeEtlSource(MyETLBaseModel):
         return v
 
 
-    @validator("pipeline")
+    @field_validator("pipeline")
     def check_pipeline_available(cls, v, values):
         """checks that referenced pipeline in suite or template exists"""
 
-        if values.get("suite") is not None:
-            avl_pipelines = info.get_etl_pipelines(values["suite"])
-        elif values.get("config") is not None:
+        if values.data.get("suite") is not None:
+            avl_pipelines = info.get_etl_pipelines(values.data["suite"])
+        elif values.data.get("config") is not None:
             dir = util.get_super_etl_dir()
-            avl_pipelines = info.get_etl_pipelines(values["config"], designs_dir=dir)
-        elif values.get("template") is not None:
+            avl_pipelines = info.get_etl_pipelines(values.data["config"], designs_dir=dir)
+        elif values.data.get("template") is not None:
             dir = util.get_suite_design_etl_template_dir()
-            avl_pipelines = info.get_etl_pipelines(values["template"], designs_dir=dir)
+            avl_pipelines = info.get_etl_pipelines(values.data["template"], designs_dir=dir)
         else:
-            raise ValueError()
+            raise ValueError("no suite, config, or template found")
 
         if v not in avl_pipelines:
             raise ValueError(
-                f"source not found: suite={values['suite']}  template={values['template']}  pipeline={v}"
+                f"source not found: suite={values.data['suite']}  template={values.data['template']}  pipeline={v}"
             )
 
         return v
 
-    @root_validator(skip_on_failure=True)
-    def include_etl_pipeline(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="after")
+    def include_etl_pipeline(self):
         """loads the external etl source (and checks that the name of extractor, transformer, and loader are ok)"""
 
-        if values.get("suite") is not None:
-            design = util.get_suite_design(values["suite"])
 
-        elif values.get("config") is not None:
+        if self.suite is not None:
+            design = util.get_suite_design(self.suite)
+
+        elif self.config is not None:
             dir = util.get_super_etl_dir()
-            design = util.get_suite_design(suite=values["config"], folder=dir)
+            design = util.get_suite_design(suite=self.config, folder=dir)
 
-        elif values.get("template") is not None:
+        elif self.template is not None:
             templ_dir = util.get_suite_design_etl_template_dir()
-            design = util.get_suite_design(suite=values["template"], folder=templ_dir)
+            design = util.get_suite_design(suite=self.template, folder=templ_dir)
 
-        assert "pipeline" in values, "include etl pipeline requires pipeline field"
-        etl_pipeline = design["$ETL$"][values["pipeline"]]
+
+        etl_pipeline = design["$ETL$"][self.pipeline]
         if "experiments" in etl_pipeline:
             del etl_pipeline["experiments"]
 
-        values["etl_pipeline"] = ETLPipelineBase(**etl_pipeline)
-        if "experiments" in values["etl_pipeline"]:
-            del values["etl_pipeline"]["experiments"]
-        return values
+        self.etl_pipeline = ETLPipelineBase(**etl_pipeline)
+        return self
 
 
-class EtlIncludeError(PydanticValueError):
-    code = 'etl_include'
-    msg_template = 'failed to include etl pipeline (suite={suite} template={template} pipeline={pipeline})'
 
 def _build_extra(cls, values: Dict[str, Any]):
-    all_required_field_names = {
-        field.alias for field in cls.__fields__.values() if field.alias != "extra"
-    }  # to support alias
 
-    extra: Dict[str, Any] = {}
-    for field_name in list(values):
-        if field_name not in all_required_field_names:
-            extra[field_name] = values.pop(field_name)
+    extra = {}
+    keys = list(values.keys())
+    for k in keys:
+        if k not in cls.model_fields:
+            v = values.pop(k)
+            extra[k] = v
     values["extra"] = extra
-    return values
 
 
 
@@ -193,37 +183,32 @@ LoaderId = enum.Enum("LoaderId", loaders)
 
 
 
-class Extractor(MyETLBaseModel):
+class ExtractorDesign(MyETLBaseModel):
 
-    file_regex: Optional[Union[str, List[str]]]
+    file_regex: Optional[Union[str, List[str]]] = None
+    model_config = ConfigDict(extra="allow")
 
-    class Config:
-        extra = "allow"
-        smart_union = True
-
-    @root_validator(pre=True, skip_on_failure=True)
+    @model_validator(mode="before")
+    @classmethod
     def build_extra(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         _build_extra(cls, values)
         return values
 
 
-class Transformer(MyETLBaseModel):
+class TransformerDesign(MyETLBaseModel):
     pass
 
-class IncludeStepTransformer(Transformer):
+class IncludeStepTransformer(TransformerDesign):
     include_steps: IncludeEtlSource = Field(alias="$INCLUDE_STEPS$")
-
-    class Config:
-        extra = "forbid"
+    model_config = ConfigDict(extra="forbid")
 
 
-class NamedTransformer(Transformer):
+class NamedTransformer(TransformerDesign):
     name: TransformerId
+    model_config = ConfigDict(extra="allow")
 
-    class Config:
-        extra = "allow"
-
-    @root_validator(pre=True, skip_on_failure=True)
+    @model_validator(mode="before")
+    @classmethod
     def build_extra(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         _build_extra(cls, values)
         return values
@@ -235,104 +220,132 @@ for name, _ in inspect.getmembers(pd.DataFrame, predicate=inspect.isfunction):
         avl_df_functions.add(f"df.{name}")
 
 
-class DfTransformer(Transformer):
+class DfTransformer(TransformerDesign):
+    model_config = ConfigDict(extra="allow")
 
-    class Config:
-        extra = "allow"
+    @model_validator(mode="after")
+    def check_df_function(self) -> Dict[str, Any]:
 
-    @root_validator(skip_on_failure=True)
-    def check_df_function(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-
-        for v in values.keys():
+        for v in self.model_dump().keys():
             assert v in avl_df_functions, f"{v} is unknown df function"
 
-        return values
+        return self
 
-class Loader(MyETLBaseModel):
-    include_steps: Optional[List[IncludeEtlSource]] = Field(alias="$INCLUDE_STEPS$")
-
-    class Config:
-        extra = "allow"
+class LoaderDesign(MyETLBaseModel):
+    include_steps: Optional[List[IncludeEtlSource]] = Field(None, alias="$INCLUDE_STEPS$")
+    model_config = ConfigDict(extra="allow")
 
     extra: Dict[str, Any]
 
-    @root_validator(pre=True, skip_on_failure=True)
+    @model_validator(mode="before")
+    @classmethod
     def build_extra(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         _build_extra(cls, values)
-
         return values
 
+
+
+def get_transformer_disc_value(v: Any) -> str:
+    if "name" in v:
+        return "named"
+
+    if all(k == "$INCLUDE_STEPS$"  for k in v.keys()):
+        return "include"
+
+    if all(k.startswith("df.") for k in v.keys()):
+        return "df"
+
+    assert False, f"unknown transformer type: {v}"
+
+
+
+def get_extractor_disc_value(v: Any) -> str:
+    if isinstance(v, list):
+        return "include"
+    else:
+        return "extractor"
+
+
+def get_loader_disc_value(v: Any) -> str:
+    if isinstance(v, list):
+        return "include"
+    else:
+        return "loader"
 
 class ETLPipelineBase(MyETLBaseModel):
 
-    include_pipeline: Optional[IncludeEtlSource] = Field(alias="$INCLUDE_PIPELINE$", exclude=True)
+    include_pipeline: Optional[IncludeEtlSource] = Field(default=None, alias="$INCLUDE_PIPELINE$", exclude=True)
 
-    extractors: Dict[ExtractorId, Union[List[IncludeEtlSource], Extractor]] = {}
+    extractors: Dict[ExtractorId, Annotated[Union[Annotated[List[IncludeEtlSource], Tag("include")], Annotated[ExtractorDesign, Tag("extractor")], Annotated[Any, Tag("EXTERNAL")]], Discriminator(get_extractor_disc_value), ]] = {}
 
-    transformers: List[Union[IncludeStepTransformer, NamedTransformer, DfTransformer]] = []
+    transformers: List[Annotated[Union[Annotated[NamedTransformer, Tag('named')], Annotated[DfTransformer, Tag('df')], Annotated[IncludeStepTransformer, Tag('include')], Annotated[Any, Tag('EXTERNAL')]],Discriminator(get_transformer_disc_value),]] = []
 
     # TODO [nku] loaders should also be possible to be a list because may want to use same loader id multiple times
-    loaders: Dict[LoaderId, Union[Loader, List[IncludeEtlSource]]] = {}
+    loaders: Dict[LoaderId, Annotated[Union[Annotated[List[IncludeEtlSource], Tag("include")], Annotated[LoaderDesign, Tag("loader")], Annotated[Any, Tag("EXTERNAL")]], Discriminator(get_loader_disc_value), ]] = {}
+    model_config = ConfigDict(extra="forbid", use_enum_values=False)
 
-    class Config:
-        smart_union = True
-        extra = "forbid"
 
-    @root_validator(skip_on_failure=True)
-    def inc_pipeline(cls, values):
 
-        if values.get("include_pipeline") is not None:
-            for k in ["extractors", "transformers", "loaders"]:
-                assert len(values[k]) == 0
+    @model_validator(mode="after")
+    def inc_pipeline(self):
 
-            values["extractors"] = values["include_pipeline"].etl_pipeline.extractors
-            values["transformers"] = values["include_pipeline"].etl_pipeline.transformers
-            values["loaders"] = values["include_pipeline"].etl_pipeline.loaders
-            values["include_pipeline"] = None  # mark as complete
 
-        return values
+        if self.include_pipeline is not None:
 
-    @root_validator(skip_on_failure=True)
-    def inc_extractors(cls, values):
-        assert "extractors" in values
-        if ExtractorId.INCLUDE_STEPS.value in values['extractors']:
-            for include_etl_source in values['extractors'][ExtractorId.INCLUDE_STEPS.value]:
+
+            assert len(self.extractors) == 0
+            assert len(self.transformers) == 0
+            assert len(self.loaders) == 0
+
+            self.extractors = self.include_pipeline.etl_pipeline.extractors
+            self.transformers = self.include_pipeline.etl_pipeline.transformers
+            self.loaders = self.include_pipeline.etl_pipeline.loaders
+            self.include_pipeline = None  # mark as complete
+
+        return self
+
+    @model_validator(mode="after")
+    def inc_extractors(self):
+        if ExtractorId.INCLUDE_STEPS in self.extractors:
+            for include_etl_source in self.extractors[ExtractorId.INCLUDE_STEPS]:
                 for k, v in include_etl_source.etl_pipeline.extractors.items():
-                    values['extractors'][k] = v
-            del values['extractors'][ExtractorId.INCLUDE_STEPS.value]
+                    self.extractors[k] = v
+            del self.extractors[ExtractorId.INCLUDE_STEPS]
+        return self
 
-        return values
 
+    @model_validator(mode="after")
+    def inc_transformer(self):
 
-    @root_validator(skip_on_failure=True)
-    def inc_transformer(cls, values):
-        assert "transformers" in values
         steps = []
-        for t in values["transformers"]:
+        for t in self.transformers:
             if isinstance(t, IncludeStepTransformer):
                 for step in t.include_steps.etl_pipeline.transformers:
                     steps.append(step)
             else:
                 steps.append(t)
-        values["transformers"] = steps
-        return values
+        self.transformers = steps
+
+        return self
 
 
-    @root_validator(skip_on_failure=True)
-    def inc_loader(cls, values):
-        assert "loaders" in values
-        if LoaderId.INCLUDE_STEPS.value in values['loaders']:
-            for include_etl_source in values['loaders'][LoaderId.INCLUDE_STEPS.value]:
+    @model_validator(mode="after")
+    def inc_loader(self):
+
+        if LoaderId.INCLUDE_STEPS in self.loaders:
+            for include_etl_source in self.loaders[LoaderId.INCLUDE_STEPS]:
                 for k, v in include_etl_source.etl_pipeline.loaders.items():
-                    values['loaders'][k] = v
-            del values['loaders'][LoaderId.INCLUDE_STEPS.value]
-        return values
+                    self.loaders[k] = v
+            del self.loaders[LoaderId.INCLUDE_STEPS]
+
+        return self
 
 
-class ExperimentNames(MyETLBaseModel):
-    __root__: Union[str, List[str]]
+class ExperimentNames(RootModel):
+    root: Union[str, List[str]]
 
-    @validator("__root__")
+    @field_validator("root")
+    @classmethod
     def check_exp(cls, v):
         assert v == "*" or isinstance(v, list), f"experiments must be a list of strings or * but is: {v}"
         return v
@@ -344,34 +357,31 @@ class ETLPipeline(ETLPipelineBase):
 
     experiments: ExperimentNames
 
-    etl_vars: Optional[Dict[str, Any]] = Field(alias="$ETL_VARS$")
-
-    class Config:
-        smart_union = True
-        extra = "forbid"
+    etl_vars: Optional[Dict[str, Any]] = Field(None, alias="$ETL_VARS$")
+    model_config = ConfigDict(extra="forbid")
 
 
 
-    @root_validator(skip_on_failure=True)
-    def check_experiments(cls, values):
+    @model_validator(mode="after")
+    def check_experiments(self):
         """Resolves * in experiments and
         ensures that every experiment listed, also exists in the suite
         """
 
-        experiments = values['experiments'].__root__
-        avl_experiments = values['ctx'].experiment_names
+        experiments = self.experiments.root
+        avl_experiments = self.ctx.experiment_names
 
         if experiments == "*":
-            values['experiments'].__root__ = avl_experiments
+            self.experiments.root = avl_experiments
         else:
             missing = list(set(experiments).difference(avl_experiments))
-            assert len(missing) == 0, f"Non-existing experiments: {missing}   (Ctx={values['ctx']})"
+            assert len(missing) == 0, f"Non-existing experiments: {missing}   (Ctx={self.ctx})"
 
-        return values
+        return self
 
 
-    @root_validator(skip_on_failure=True)
-    def resolve_etl_vars(cls, values):
+    @model_validator(mode="after")
+    def resolve_etl_vars(self):
         """The field ``$ETL_VARS$`` allows defining variables that can be used for
         options of extractors, transformers, and loaders.
         Use the ``[% VAR %]`` syntax to refer to those variables.
@@ -390,26 +400,29 @@ class ETLPipeline(ETLPipelineBase):
                 template = template.render(**etl_vars)
             return json.loads(template)
 
-        etl_vars = values.pop("etl_vars", None)
+        etl_vars = self.etl_vars
         if etl_vars is not None:
 
             from itertools import chain
 
-            for step in chain(values["extractors"].values(), values["transformers"], values["loaders"].values()):
+            for step in chain(self.extractors.values(), self.transformers, self.loaders.values()):
                 if hasattr(step, 'extra') and len(step.extra) > 0:
                     step.extra = include_etl_vars(step.extra, etl_vars)
+        self.etl_vars = None
+        return self
 
-        return values
 
-
-    @root_validator(skip_on_failure=True)
-    def check_extractors(cls, values):
+    @model_validator(mode="after")
+    def check_extractors(self):
         """check that each extractor (also included) defines the correct values"""
-        assert "extractors" in values
+        #print(f"Create Extractor from ExtractorDesign (and check Extractor fields)")
+
         d = {}
-        for name_enum, extractor in values["extractors"].items():
-            if isinstance(extractor, Extractor):
-                args = extractor.dict()
+        for name_enum, extractor in self.extractors.items():
+            assert isinstance(name_enum, ExtractorId), f"invalid extractor id: {name_enum}"
+
+            if isinstance(extractor, ExtractorDesign):
+                args = extractor.model_dump()
                 if "extra" in args:
                     del args["extra"]
 
@@ -418,44 +431,47 @@ class ETLPipeline(ETLPipelineBase):
 
                 args = {**extractor.extra, **args}
 
-                ext = avl_extractors[name_enum](**args)
+                ext = avl_extractors[name_enum.value](**args)
+
                 d[name_enum] = ext
             else:
                 d[name_enum] = extractor
-        values["extractors"] = d
+        self.extractors = d
+        return self
 
-        return values
-
-    @root_validator(skip_on_failure=True)
-    def check_transformers(cls, values):
+    @model_validator(mode="after")
+    def check_transformers(self):
         """check that each transformer (also included) defines the correct values"""
-        assert "transformers" in values
+
+        #print(f"Create Transformer from TransformerDesign (and check Transformer fields)")
         steps = []
-        for t in values["transformers"]:
+        for t in self.transformers:
             assert not isinstance(t, IncludeStepTransformer)
 
             if isinstance(t, NamedTransformer) and t.name is not None:
-                trans = avl_transformers[t.name](**t.extra)
+                trans = avl_transformers[t.name](**t.extra, name=t.name)
                 steps.append(trans)
             else:
                 steps.append(t)
-        values["transformers"] = steps
-        return values
+        self.transformers = steps
+        return self
 
-    @root_validator(skip_on_failure=True)
-    def check_loaders(cls, values):
+    @model_validator(mode="after")
+    def check_loaders(self):
         """check that each loader (also included) defines the correct values"""
-        assert "loaders" in values
+        #print(f"Create Loader from LoaderDesign (and check Loader fields)")
 
         d = {}
-        for name_enum, loader in values["loaders"].items():
-            if isinstance(loader, Loader):
-                ext = avl_loaders[name_enum](**loader.extra)
+        for name_enum, loader in self.loaders.items():
+
+            assert isinstance(name_enum, LoaderId), f"invalid loader id: {name_enum}"
+            if isinstance(loader, LoaderDesign):
+                ext = avl_loaders[name_enum.value](**loader.extra)
                 d[name_enum] = ext
             else:
                 d[name_enum] = loader
-        values["loaders"] = d
-        return values
+        self.loaders = d
+        return self
 
 
 suite_names = dict()
@@ -469,6 +485,8 @@ SuiteName = enum.Enum("SuiteName", suite_names)
 
 
 class SuperETLContext(MyETLBaseModel):
+
+    model_config = ConfigDict(use_enum_values=False)
 
     class SuperETLSuiteContext(MyETLBaseModel):
 
@@ -491,23 +509,22 @@ class SuperETLPipeline(ETLPipeline):
     # etl_vars: Note -> inherited from ETLPipeline
 
 
-    @root_validator(skip_on_failure=True)
-    def check_experiments(cls, values):
+    @model_validator(mode="after")
+    def check_experiments(self):
         """Resolves * in experiments and
         #ensures that every experiment listed, also exists in the suite
         """
 
-        for suite_name, experiments in values.get("experiments", {}).items():
+        for suite_name, experiments in self.experiments.items():
+            avl_experiments = self.ctx.suites[suite_name].experiment_names
 
-            avl_experiments = values['ctx'].suites[suite_name].experiment_names
-
-            if experiments.__root__ == "*":
-                experiments.__root__ = avl_experiments
+            if experiments.root == "*":
+                experiments.root = avl_experiments
             else:
                 missing = list(set(experiments.__root__).difference(avl_experiments))
-                assert len(missing) == 0, f"Non-existing experiments: {missing}   (Ctx={values['ctx']})"
+                assert len(missing) == 0, f"Non-existing experiments: {missing}   (Ctx={self.ctx})"
 
-        return values
+        return self
 
 
 class SuperETL(MyETLBaseModel):
@@ -520,7 +537,8 @@ class SuperETL(MyETLBaseModel):
     etl: Dict[str, SuperETLPipeline] = Field(alias="$ETL$")
 
 
-    @root_validator(pre=True, skip_on_failure=True)
+    @model_validator(mode="before")
+    @classmethod
     def context(cls, values):
 
         # build info on avl suite ids

@@ -5,7 +5,7 @@ import pandas as pd
 import inspect
 import sys
 
-from pydantic import BaseModel, validator
+from pydantic import ConfigDict, BaseModel, field_validator
 
 import pandas as pd
 
@@ -14,12 +14,11 @@ from doespy.etl.etl_util import expand_factors
 
 class Transformer(BaseModel, ABC):
 
-    name: str = None
+    name: str
+    model_config = ConfigDict(extra="forbid")
 
-    class Config:
-        extra = "forbid"
-
-    @validator("name", pre=True, always=True)
+    @field_validator("name", mode="before")
+    @classmethod
     def set_name(cls, value):
         return cls.__name__
 

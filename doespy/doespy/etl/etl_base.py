@@ -263,7 +263,7 @@ def _load_super_etl_design(name, overwrite_suite_id_map=None):
 
     model = SuperETL(**pipeline_design)
 
-    pipeline_design_str = model.json(by_alias=True, exclude_none=True)
+    pipeline_design_str = model.model_dump_json(by_alias=True, exclude_none=True)
     pipeline_design = json.loads(pipeline_design_str)
 
     return pipeline_design
