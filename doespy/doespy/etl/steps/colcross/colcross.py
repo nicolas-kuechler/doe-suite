@@ -201,7 +201,7 @@ class BaseColumnCrossPlotLoader(PlotLoader):
     """
 
 
-    cum_plot_config: Optional[List[PlotConfig]]
+    cum_plot_config: Optional[List[PlotConfig]] = None
     """"This list contains plot configurations that are merged to create one plot configuration for each figure (refer to 'fig_foreach').
 
     The configurations are merged cumulatively, giving priority to those listed earlier in case of conflicts.
