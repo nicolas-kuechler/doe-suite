@@ -385,10 +385,3 @@ docs: docs-build
 does_set:
 	@if [ ! -d "$(does_config_dir)" ]; then echo "DOES_PROJECT_DIR is not set, please set environment variables"; exit 1; fi
 
-jupyter: does_set install cloud-check
-	@cd $(does_config_dir) && \
-	(cd ../MP-SPDZ && Scripts/setup-ssl.sh) && \
-    (cd ../MP-SPDZ && Scripts/setup-ssl.sh 10 Player-SSL-Data) && \
-	ANSIBLE_CONFIG=$(PWD)/ansible.cfg \
-	ANSIBLE_INVENTORY=$(ansible_inventory) \
-	poetry run jupyter lab --ip 0.0.0.0 --port 8888 --notebook-dir $(PWD)/../

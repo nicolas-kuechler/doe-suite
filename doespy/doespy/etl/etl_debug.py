@@ -82,7 +82,7 @@ def debug_super_etl_step(super_etl: str, pipeline: str, StepCls, df: pd.DataFram
 
         cfg = cfg["loaders"][StepCls.__name__]
 
-        # print(f"Config={cfg=}")
+        print(f"Config={cfg=}")
         step = StepCls(**cfg)
 
         etl_info = {
