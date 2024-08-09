@@ -14,6 +14,16 @@ We use annotated git tags for each release commit:
 
 
 -->
+## [1.2.0] - 2024-08-09
+
+### Added
+
+- Add `DOES_RESULTS_DIR` environment variable to change the default results dir `<DOES_PROJECT_DIR>/doe-suite-results` (can be useful for artefact evaluation)
+
+### Changed
+
+- Extend `etl_debug.py` to include an option to specify `overwrite_suite_id_map` that will overwrite specific suite ids in a super_etl.
+  The `overwrite_suite_id_map` can now also be used to filter `pipeline.experiments` in super etl designs.
 
 ## [1.1.1] - 2024-05-30
 
