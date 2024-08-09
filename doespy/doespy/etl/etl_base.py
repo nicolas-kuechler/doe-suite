@@ -261,6 +261,16 @@ def _load_super_etl_design(name, overwrite_suite_id_map=None):
         # overwrite suite id map
         pipeline_design["$SUITE_ID$"] = overwrite_suite_id_map
 
+        for pipeline_name, pipeline in pipeline_design["$ETL$"].items():
+            if pipeline_name == "$SUITE_ID$":
+                continue
+
+            # delete experiments that are not in the overwrite_suite_id_map
+            for suite in list(pipeline["experiments"].keys()):
+                if suite not in overwrite_suite_id_map.keys():
+                    # print("Removing suite", suite, "from pipeline", pipeline_name)
+                    del pipeline["experiments"][suite]
+
     model = SuperETL(**pipeline_design)
 
     pipeline_design_str = model.json(by_alias=True, exclude_none=True)
