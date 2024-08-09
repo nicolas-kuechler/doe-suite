@@ -379,9 +379,3 @@ docs-build: install
 
 docs: docs-build
 	@open docs/build/html/index.html
-
-
-## Checks does_config_dir is set
-does_set:
-	@if [ ! -d "$(does_config_dir)" ]; then echo "DOES_PROJECT_DIR is not set, please set environment variables"; exit 1; fi
-
