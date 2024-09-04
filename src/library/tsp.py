@@ -97,7 +97,7 @@ def get_tasks(return_pid):
 
     tasks = []
 
-    pattern = r'([0-9]+)\s+(queued|running|finished)\s+([^\s]+)\s+(?:([0-9]+)\s+([^\s]+)|\s+)\s(?:\[(.+)\](.+)|(.+))'
+    pattern = r'([0-9]+)\s+(queued|running|finished)\s+([^\s]+)\s+(?:(-?[0-9]+)\s+([^\s]+)|\s+)\s(?:\[(.+?)\](.+)|(.+))'
 
     for line in lines[1:]: # ignore the first line (header)
         m = re.search(pattern, line)
