@@ -564,7 +564,7 @@ class ArtistConfig(MyETLBaseModel):
     """
 
 
-    jp_query: str = None
+    jp_query: Optional[str] = None
     """The JMESPath query is applied to the artist_id (i.e., dict of col:data pairs) to determine whether this configuration entry applies or not.
     If the jp_query matches, then this configuration applies.
     If None, then this config applies to all artist_ids."""

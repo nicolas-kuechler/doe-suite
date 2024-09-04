@@ -521,7 +521,7 @@ class SuperETLPipeline(ETLPipeline):
             if experiments.root == "*":
                 experiments.root = avl_experiments
             else:
-                missing = list(set(experiments.__root__).difference(avl_experiments))
+                missing = list(set(experiments.root).difference(avl_experiments))
                 assert len(missing) == 0, f"Non-existing experiments: {missing}   (Ctx={self.ctx})"
 
         return self
