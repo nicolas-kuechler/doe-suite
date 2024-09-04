@@ -47,6 +47,7 @@
 
 - name: find existing eni
   amazon.aws.ec2_eni_info:
+    region: "{{ exp_base.aws_region }}"
     filters:
       vpc-id: "{{ exp_base.vpc_id }}"
   register: ec2_eni_info
