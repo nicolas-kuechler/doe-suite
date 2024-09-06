@@ -41,6 +41,8 @@ class PlotConfig(BasePlotConfig):
 
     # TODO: could add other logic other than a figure legend
 
+    # TODO: The data_filter or the subplot_grid should be moved here
+
 
 class SubplotConfig(BaseSubplotConfig):
     """
