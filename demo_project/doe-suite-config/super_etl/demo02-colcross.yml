@@ -152,14 +152,15 @@ $ETL$:
         #  cols: [$metrics$] # $metrics$
         #  # jp_except...
 
-        subplot_grid:
-          rows: [$metrics$]
-          cols: [system]   #$metrics$
-          #share_y: none
-          share_x: none
-          kwargs:
-            constrained_layout: True
-          # jp_except: "(orient == 'W') || (orient == 'E')"
+        cum_plot_config:
+        - subplot_grid:
+            rows: [$metrics$]
+            cols: [system]   #$metrics$
+            #share_y: none
+            share_x: none
+            kwargs:
+              constrained_layout: True
+            # jp_except: "(orient == 'W') || (orient == 'E')"
 
 
         # define metrics (select the data columns)
