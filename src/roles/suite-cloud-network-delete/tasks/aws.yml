@@ -37,6 +37,7 @@
   amazon.aws.ec2_eni:
     eni_id: "{{ eni_id }}"
     state: absent
+    region: "{{ exp_base.aws_region }}"
   loop: "{{ eni_ids | default([]) | list }}"
   loop_control:
     loop_var: eni_id
@@ -50,6 +51,7 @@
   amazon.aws.ec2_group_info:
     filters:
       vpc-id: "{{ vpc_id }}"
+    region: "{{ exp_base.aws_region }}"
   register: security_group_result
   when: vpc_id != 'undefined'
 

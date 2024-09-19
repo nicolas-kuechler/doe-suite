@@ -3,6 +3,7 @@
     "suite": "getting-started",
     "experiment_name": "exp1",
     "host_name": "base",
+    "host_ec2_region": "eu-central-1",
     "host_ec2_instance_type": "t2.medium",
     "host_ec2_volume_size": 16,
     "host_ec2_ami": "<LATEST-AMI>",

@@ -3,14 +3,13 @@ from doespy.etl.steps.transformers import Transformer
 from doespy.etl.steps.loaders import Loader, PlotLoader
 
 import pandas as pd
-from typing import Dict, List
+from typing import Dict, List, Union
 import matplotlib.pyplot as plt
 
 
 class MyExtractor(Extractor):
 
-    def default_file_regex():
-        return [r".*\.txt$", r".*\.log$"]
+    file_regex: Union[str, List[str]] = [r".*\.txt$", r".*\.log$"]
 
     def extract(self, path: str, options: Dict) -> List[Dict]:
         print("MyExtractor: do nothing")

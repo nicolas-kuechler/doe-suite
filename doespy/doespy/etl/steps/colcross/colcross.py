@@ -36,10 +36,36 @@ class PlotConfig(BasePlotConfig):
     The `PlotConfig` class is used to configure the appearance of figure-level aspects.
     """
 
-    legend_fig: LegendConfig = None
+    legend_fig: Optional[LegendConfig] = None
     """Configuring a figure-wide legend (refer to ``legend_ax`` for subplot-specific legends)."""
 
     # TODO: could add other logic other than a figure legend
+
+    subplot_grid: Optional[SubplotGrid] = None
+    """Create a grid of subplots within a single figure, where each subplot corresponds
+    to a unique combination of values from specified row and column columns.
+
+    .. code-block:: yaml
+       :caption: Example
+
+        # grid has a row for every unique value in col1 and
+        # a column for every unique combination of values in col2 and col3
+        # (except for the excluded combination)
+        subplot_grid:
+          rows: [col1]
+          cols: [col2, col3]
+          jp_except: "(col1 == 'A') && (col2 == 'B')"  # optional: exclude specific combinations
+
+
+    """
+
+    def get_cols(self) -> List[str]:
+        """:meta private:"""
+
+        if self.subplot_grid is not None:
+            return self.subplot_grid.get_cols()
+        else:
+            return []
 
 
 class SubplotConfig(BaseSubplotConfig):
@@ -158,25 +184,6 @@ class BaseColumnCrossPlotLoader(PlotLoader):
     """
 
 
-
-    subplot_grid: SubplotGrid = Field(default_factory=SubplotGrid.empty)
-    """Create a grid of subplots within a single figure, where each subplot corresponds
-    to a unique combination of values from specified row and column columns.
-
-    .. code-block:: yaml
-       :caption: Example
-
-        # grid has a row for every unique value in col1 and
-        # a column for every unique combination of values in col2 and col3
-        # (except for the excluded combination)
-        subplot_grid:
-          rows: [col1]
-          cols: [col2, col3]
-          jp_except: "(col1 == 'A') && (col2 == 'B')"  # optional: exclude specific combinations
-
-
-    """
-
     # NOTE: each subplot and thus each artist has one metric
     metrics: Dict[str, Metric]
     """A dictionary containing metrics that describe the format of measurement data (i.e., what you typically would visualize on the y-axis of a plot).
@@ -201,7 +208,7 @@ class BaseColumnCrossPlotLoader(PlotLoader):
     """
 
 
-    cum_plot_config: Optional[List[PlotConfig]]
+    cum_plot_config: List[PlotConfig] = []
     """"This list contains plot configurations that are merged to create one plot configuration for each figure (refer to 'fig_foreach').
 
     The configurations are merged cumulatively, giving priority to those listed earlier in case of conflicts.
@@ -256,7 +263,9 @@ class BaseColumnCrossPlotLoader(PlotLoader):
     def collect_cols(self):
         """:meta private:"""
         cols = self.fig_foreach.get_cols()
-        cols += self.subplot_grid.get_cols()
+        for cfg in self.cum_plot_config:
+            cols += cfg.get_cols()
+
         for cfg in self.cum_subplot_config:
             cols += cfg.get_cols()
         return cols
@@ -323,7 +332,12 @@ class BaseColumnCrossPlotLoader(PlotLoader):
             else:
                 plot_config = None
 
-            fig, axs = self.subplot_grid.init(df=df_plot, parent_id=plot_id)
+            if plot_config is not None and plot_config.subplot_grid is not None:
+                subplot_grid = plot_config.subplot_grid
+            else:
+                subplot_grid = SubplotGrid.empty()
+
+            fig, axs = subplot_grid.init(df=df_plot, parent_id=plot_id)
 
             gossip.trigger(
                 CcpHooks.FigPreGroup,
@@ -335,7 +349,7 @@ class BaseColumnCrossPlotLoader(PlotLoader):
                 loader=self,
             )
 
-            for subplot_idx, df_subplot, subplot_id in self.subplot_grid.for_each(
+            for subplot_idx, df_subplot, subplot_id in subplot_grid.for_each(
                 axs, df=df_plot, parent_id=plot_id
             ):
 

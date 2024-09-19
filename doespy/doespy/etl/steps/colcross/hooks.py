@@ -140,7 +140,7 @@ def ax_title(ax, df_subplot, subplot_id, plot_config, subplot_config, loader):
 
 @default_hooks.register(CcpHooks.SubplotPostChart)
 def ax_legend(ax, df_subplot, subplot_id, plot_config, subplot_config, loader):
-    if subplot_config.legend_ax is not None:
+    if subplot_config.legend_ax is not None and subplot_config.legend_ax.label is not None:
 
         handles, labels = ax.get_legend_handles_labels()
 

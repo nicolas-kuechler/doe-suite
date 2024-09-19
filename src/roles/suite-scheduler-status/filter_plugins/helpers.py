@@ -17,7 +17,7 @@ def tsp_jobs_finished(job_ids, tsp_tasks):
             if task_job_id in job_ids:
                 completed_jobs.append(task_job_id)
             else:
-                raise ValueError(f"no matching job found in tsp: {job_ids}   tsp_tasks={tsp_tasks}")
+                raise ValueError(f"no matching job found in tsp: {job_ids}   task_job_id={task_job_id}")
 
         elif task["state"] == "running" or task["state"] ==  "queued":
             pass

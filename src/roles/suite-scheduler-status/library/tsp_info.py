@@ -57,7 +57,7 @@ def get_tasks(return_pid):
         cmd = m.group(7)
         if cmd is None:
             cmd = m.group(8) # has no label => cmd is in group 7
-        
+
         d = {
             "id": m.group(1),
             "state": m.group(2),
