@@ -532,7 +532,7 @@ class SuperETL(MyETLBaseModel):
     ctx: SuperETLContext = Field(alias="_CTX", exclude=True)
     """:meta private:"""
 
-    suite_id: Dict[SuiteName, Union[str, Dict[str, str]]] = Field(alias="$SUITE_ID$")
+    suite_id: Dict[SuiteName, Union[str | int, Dict[str, str | int]]] = Field(alias="$SUITE_ID$")
 
     etl: Dict[str, SuperETLPipeline] = Field(alias="$ETL$")
 

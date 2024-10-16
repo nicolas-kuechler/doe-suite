@@ -51,6 +51,8 @@ def extend(suite_design, exp_specific_vars, use_cmd_shellcheck=False):
             exp["base_experiment"]
         )
 
+        assert "run" not in exp_vars, "run is a reserved variable name"
+
         for factor_level in exp["factor_levels"]:
             # these are the list of factor_levels when $FACTOR$ is used
             #  as the key in base_experiment -> builds the cross product
@@ -94,6 +96,8 @@ def extend(suite_design, exp_specific_vars, use_cmd_shellcheck=False):
                 # -> should probably not be a big issue if $CMD$ already follows the list structure at this point
                 # At the moment, host specific variables are available via the hostvars in `exp_host_lst`
 
+                exp_vars["run"] = len(exp_runs_ext)
+
                 template = json.dumps(run_config)
                 while "[%" in template and "%]" in template:
                     # temporary convert to a dict
@@ -107,6 +111,7 @@ def extend(suite_design, exp_specific_vars, use_cmd_shellcheck=False):
                     # (should not be available as var for templating)
 
                     template = env.from_string(template)
+#                    print(f"\n\n\n!!!!!!!!!!!!={run_config}\n\n\n")
 
                     try:
                         template = template.render(my_run=run_config, **exp_vars)
