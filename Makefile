@@ -1,3 +1,8 @@
+ifndef DOES_PROJECT_DIR
+$(error Environment variable 'DOES_PROJECT_DIR' is not set.)
+endif
+
+
 does_config_dir=$(DOES_PROJECT_DIR)/doe-suite-config
 does_results_dir=$(DOES_PROJECT_DIR)/doe-suite-results
 
@@ -257,8 +262,10 @@ clean-aws:
 	@echo "Terminating all doe-suite related aws ec2 instances (+vpc)..."
 	@if $(MAKE) confirm ; then  $(MAKE) clean-cloud cloud=aws; else echo "skipping clean-aws"; fi
 
-clean:  clean-local-py clean-docker clean-aws
-
+clean:
+	-$(MAKE) clean-local-py
+	-$(MAKE) clean-docker
+	$(MAKE) clean-aws
 
 #################################
 #  ___ _  _ ___ ___

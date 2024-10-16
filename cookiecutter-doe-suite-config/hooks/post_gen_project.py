@@ -4,10 +4,11 @@ import warnings
 from typing import Callable
 from ast import literal_eval
 
+DEFAULT_REGION = "eu-central-1"
 DEFAULT_UBUNTU_AMI = "ami-08481eff064f39a84"
 DEFAULT_AMI_SNAPSHOT_ID = "snap-0b8d7894c93b6df7a"
 
-def get_latest_ami(default_ubuntu_ami=DEFAULT_UBUNTU_AMI):
+def get_latest_ami(default_ubuntu_ami=DEFAULT_UBUNTU_AMI, region=DEFAULT_REGION):
     """use the aws cli to determine the latest ami of ec2 ubuntu machines
 
     Args:
@@ -18,6 +19,8 @@ def get_latest_ami(default_ubuntu_ami=DEFAULT_UBUNTU_AMI):
             "aws",
             "ec2",
             "describe-images",
+            "--region",
+            region,
             "--filters",
             "Name=name,Values=ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*",
             "--query",
@@ -54,7 +57,7 @@ def get_latest_ami(default_ubuntu_ami=DEFAULT_UBUNTU_AMI):
     return ubuntu_ami
 
 
-def get_volume_snapshot(ec2_image_id):
+def get_volume_snapshot(ec2_image_id, region=DEFAULT_REGION):
     """Use the aws cli to determine tha volume snapshot id for the ec2_image_id
     """
 
@@ -67,6 +70,8 @@ def get_volume_snapshot(ec2_image_id):
             "aws",
             "ec2",
             "describe-images",
+            "--region",
+            region,
             "--image-ids",
             ec2_image_id,
             "--query",
@@ -79,7 +84,7 @@ def get_volume_snapshot(ec2_image_id):
 
     return snapshot_id
 
-def post_hook_replace(filepath, pattern, replacement):
+def post_hook_replace(filepath, pattern, replacement, replacement_kwargs=None):
     is_updated = False
     value = None
     with open(filepath, 'r') as read_file:
@@ -90,7 +95,10 @@ def post_hook_replace(filepath, pattern, replacement):
                     if isinstance(replacement, str) and not is_updated:
                         value  = replacement
                     elif isinstance(replacement, Callable) and not is_updated:
-                        value = replacement()
+                        if replacement_kwargs is not None:
+                            value = replacement(**replacement_kwargs)
+                        else:
+                            value = replacement()
                     else:
                         raise ValueError("not supported replacement type")
                     write_file.write(line.replace(pattern, value))
@@ -100,12 +108,12 @@ def post_hook_replace(filepath, pattern, replacement):
     return is_updated, value
 
 # replace ami and volume snapshot with latest info
-is_updated, value = post_hook_replace(filepath="group_vars/{{ cookiecutter.host_name }}/main.yml", pattern="<LATEST-AMI>", replacement=get_latest_ami)
+is_updated, value = post_hook_replace(filepath="group_vars/{{ cookiecutter.host_name }}/main.yml", pattern="<LATEST-AMI>", replacement=get_latest_ami, replacement_kwargs={"region": "{{ cookiecutter.host_ec2_region }}"})
 
 if is_updated:
-    snapshot_id = get_volume_snapshot(ec2_image_id=value)
+    snapshot_id = get_volume_snapshot(ec2_image_id=value, region="{{ cookiecutter.host_ec2_region }}")
 else:
-    snapshot_id = get_volume_snapshot(ec2_image_id="{{ cookiecutter.host_ec2_ami }}")
+    snapshot_id = get_volume_snapshot(ec2_image_id="{{ cookiecutter.host_ec2_ami }}", region="{{ cookiecutter.host_ec2_region }}")
 post_hook_replace(filepath="group_vars/{{ cookiecutter.host_name }}/main.yml", pattern="<LATEST-VOLUME-SNAPSHOT>", replacement=snapshot_id)
 
 # set the connection between the doe-suite and the does_config in poetry

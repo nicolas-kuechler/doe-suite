@@ -40,10 +40,17 @@ class BasePlotConfig(MyETLBaseModel, abc.ABC):
         for cfg in configs:
             if is_match(cfg.jp_query, plot_id, info):
                 if config is None:
-                    config = cfg.copy()
+                    config = cfg.model_copy()
                 else:
                     config.fill_missing(cfg)
         return config
+
+    def fill_missing(self, other):
+        """:meta private:"""
+
+        for k, v in self.model_dump().items():
+            if v is None:
+                setattr(self, k, getattr(other, k))
 
 
 class BaseSubplotConfig(MyETLBaseModel, abc.ABC):

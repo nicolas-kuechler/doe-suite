@@ -1,31 +1,27 @@
-from abc import ABC, abstractmethod, abstractproperty
+from abc import ABC, abstractmethod
 from typing import List, Dict, Union
-from typing import ClassVar
 
 import warnings
 import ruamel.yaml
 import json
 import csv
-from dataclasses import dataclass, field
 
 import sys
 import inspect
 
-from pydantic import BaseModel, validator
+from pydantic import ConfigDict, BaseModel, field_validator
 
 
 class Extractor(BaseModel, ABC):
 
     file_regex: Union[str, List[str]] = None
-
-    class Config:
-        extra = "forbid"
+    model_config = ConfigDict(extra="forbid")
 
     @classmethod
     def default_file_regex(cls):
         pass
 
-    @validator("file_regex", pre=True, always=True)
+    @field_validator("file_regex", mode="before")
     def set_default_regex(cls, value):
 
         if value is None:
