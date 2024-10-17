@@ -51,6 +51,7 @@ endif
 
 # on `make` and `make help` list all targets with information
 help:
+	@$(MAKE) --ignore-errors --no-print-directory -C $(does_config_dir) help-custom  2> /dev/null || true
 	@echo 'Running Experiments'
 	@echo '  make run suite=<SUITE> id=new                       - run the experiments in the suite'
 	@echo '  make run suite=<SUITE> id=<ID>                      - continue with the experiments in the suite with <ID> (often id=last)'
@@ -386,3 +387,19 @@ docs-build: install
 
 docs: docs-build
 	@open docs/build/html/index.html
+
+
+
+#################################
+#   ___ _   _ ___ _____ ___  __  __
+#  / __| | | / __|_   _/ _ \|  \/  |
+# | (__| |_| \__ \ | || (_) | |\/| |
+#  \___|\___/|___/ |_| \___/|_|  |_|
+#
+#################################
+
+# include the targets of a project specific make file
+include_file=$(does_config_dir)/Makefile
+ifneq ("$(wildcard $(include_file))","")
+	include $(include_file)
+endif

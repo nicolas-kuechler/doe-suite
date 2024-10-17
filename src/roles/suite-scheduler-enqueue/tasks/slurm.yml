@@ -36,7 +36,8 @@
       if euler_gpu_model is none
       else
       '--gpus=' + euler_gpu_model + ':' +  euler_gpu_number | string }}
-    cpu_cmd: --time={{ euler_job_minutes }} -n {{ euler_cpu_cores }} --mem-per-cpu={{ euler_cpu_mem_per_core_mb }}
+    cpu_cmd: --time={{ job.exp_run_config.get('$euler_job_minutes$', euler_job_minutes) }} -n {{ euler_cpu_cores }} --mem-per-cpu={{ euler_cpu_mem_per_core_mb }}
+    # TODO [nku] could also support custom number of cpu cores and memory but this would be a bit against the idea of host types
   register: sbatch_output
   shell: |
     source /etc/profile
