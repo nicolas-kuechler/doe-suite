@@ -150,6 +150,8 @@ def ax_legend(ax, df_subplot, subplot_id, plot_config, subplot_config, loader):
             for i, (h, l) in enumerate(zip(handles, labels))
             if l not in labels[:i]
         ]
+        # invert order
+        unique = unique[::-1]
 
         ax.legend(*zip(*unique), **subplot_config.legend_ax.kwargs)
 
