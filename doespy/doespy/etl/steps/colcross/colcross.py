@@ -136,13 +136,13 @@ class SubplotConfig(BaseSubplotConfig):
 
         # inherit label info from legend_ax or legend_fig
         if plot_config is not None and plot_config.legend_fig is not None and plot_config.legend_fig.label is not None:
-                base_label = plot_config.legend_fig.get_label(data_id=artist_id, subplot_config=self)
-                configs.append(ArtistConfig(jp_query=None, label=base_label))
+            base_label = plot_config.legend_fig.get_label(data_id=artist_id, subplot_config=self)
+            configs.append(ArtistConfig(jp_query=None, label=base_label))
         elif self.legend_ax is not None and self.legend_ax.label is not None:
-                base_label = self.legend_ax.get_label(
-                    data_id=artist_id, subplot_config=self
-                )
-                configs.append(ArtistConfig(jp_query=None, label=base_label))
+            base_label = self.legend_ax.get_label(
+                data_id=artist_id, subplot_config=self
+            )
+            configs.append(ArtistConfig(jp_query=None, label=base_label))
 
         return ArtistConfig.merge_cumulative(
             configs=configs, data_id=artist_id, subplot_config=self
