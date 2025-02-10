@@ -8,9 +8,9 @@ filters:
 {% if not prj_clear %}
   - include: >-
       {% if is_ansible_controller %} # for the ansible controller, we only filter for controllers but not projects
-      docker_config['Labels']['tag:suite']=="{{ suite }}" and docker_config['Labels']['tag:name']=="ansible_controller"
+      'Labels' in docker_config and 'tag:suite' in docker_config['Labels'] and 'tag:name' in docker_config['Labels'] and docker_config['Labels']['tag:suite']=="{{ suite }}" and docker_config['Labels']['tag:name']=="ansible_controller"
       {% else %}
-      docker_config['Labels']['tag:suite']=="{{ suite }}" and docker_config['Labels']['tag:prj_id']=="{{ prj_id }}"
+      'Labels' in docker_config and 'tag:suite' in docker_config['Labels'] and 'tag:prj_id' in docker_config['Labels'] and docker_config['Labels']['tag:suite']=="{{ suite }}" and docker_config['Labels']['tag:prj_id']=="{{ prj_id }}"
       {% endif %}
 
   - exclude: true

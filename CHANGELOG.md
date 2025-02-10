@@ -14,6 +14,13 @@ We use annotated git tags for each release commit:
 
 
 -->
+
+## [1.2.1] - 2025-02-10
+
+### Fixed
+
+- In a `docker` cloud, ensure the inventory is robust against containers without doe-suite-specific tags.
+
 ## [1.2.0] - 2024-08-09
 
 ### Added
