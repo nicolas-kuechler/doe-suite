@@ -1,4 +1,4 @@
-from typing import Type, Union
+from typing import Type, Union, Optional, Dict
 from doespy import util
 import pandas as pd
 import ruamel.yaml
@@ -6,13 +6,19 @@ import os
 
 from doespy.etl.steps.transformers import Transformer
 from doespy.etl.steps.loaders import Loader
-from functools import lru_cache
+from functools import lru_cache, wraps
 
 from doespy.etl.etl_base import run_multi_suite
 from doespy.design import etl_design
 
+class HDict(dict):
+    """Allows us to pass a dictionary to this cached function"""
+    def __hash__(self):
+        return hash(frozenset(self.items()))
+
 @lru_cache(maxsize=1)
-def debug_compute_input_df(super_etl: str , pipeline: str, StepCls: Type[Union[Transformer, Loader]]):
+def debug_compute_input_df(super_etl: str , pipeline: str, StepCls: Type[Union[Transformer, Loader]],
+                           overwrite_suite_id_map: Optional[HDict[str, str]]=None):
     """
     Computes the input dataframe for a given step in the super_etl pipeline.
 
@@ -34,9 +40,12 @@ def debug_compute_input_df(super_etl: str , pipeline: str, StepCls: Type[Union[T
             pipeline_filter=[pipeline],
             return_df=True,
             return_df_until_transformer_step=return_df_until_transformer_step,
+            overwrite_suite_id_map=overwrite_suite_id_map
         )
-
-    return df_cached[pipeline]
+    if df_cached is not None:
+        return df_cached[pipeline]
+    else:
+        return pd.DataFrame()
 
 
 def debug_super_etl_step(super_etl: str, pipeline: str, StepCls, df: pd.DataFrame):

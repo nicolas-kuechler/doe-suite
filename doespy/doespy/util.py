@@ -94,7 +94,8 @@ def get_suite_roles_dir():
 
 def get_results_dir():
     prj_dir = get_project_dir()
-    results_dir = os.path.join(prj_dir, "doe-suite-results")
+    results_dir_name = "doe-suite-results"
+    results_dir = os.environ.get("DOES_RESULTS_DIR", os.path.join(prj_dir, results_dir_name))
     return results_dir
 
 
