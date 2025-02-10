@@ -269,6 +269,9 @@ class GroupedStackedBarChart(MyETLBaseModel):
                         }
 
                         part_value = df_bar_part[value_col].iloc[0]
+                        if pd.isna(part_value):
+                            # print(f"Skipping part_value because it is None")
+                            continue
                         part_error = (
                             df_bar_part[error_col].iloc[0]
                             if error_col is not None

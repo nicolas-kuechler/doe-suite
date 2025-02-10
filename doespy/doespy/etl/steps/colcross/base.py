@@ -2,6 +2,8 @@
 import abc
 import jmespath
 from typing import Dict, List
+
+import numpy
 from doespy.design.etl_design import MyETLBaseModel
 
 
@@ -17,6 +19,14 @@ def is_match(jp_query, data_id, info) -> bool:
 
     # print(f"    -> is match: {result}")
     # print(f"JmesPathFilter: {info}: query is {result}    {jp_query=}")
+    if isinstance(result, numpy.bool_): # For some queries the result is a numpy.bool_ type
+        result = bool(result)
+    if isinstance(result, str):
+        if result.lower() == "true":
+            result = True
+        elif result.lower() == "false":
+            result = False
+
     assert isinstance(
         result, bool
     ), f"JmesPathFilter: {info}: query={jp_query} returned non-boolean result: {result}"

@@ -150,6 +150,8 @@ def ax_legend(ax, df_subplot, subplot_id, plot_config, subplot_config, loader):
             for i, (h, l) in enumerate(zip(handles, labels))
             if l not in labels[:i]
         ]
+        # invert order
+        unique = unique[::-1]
 
         ax.legend(*zip(*unique), **subplot_config.legend_ax.kwargs)
 
@@ -187,7 +189,7 @@ def axis(ax, df_subplot, subplot_id, plot_config, subplot_config, loader):
 
     if ycfg.lim is not None:
         ymin, ymax = ycfg.lim.limits(ax.yaxis.get_data_interval())
-        ax.set_xlim(ymin, ymax)
+        ax.set_ylim(ymin, ymax)
 
     # ticks
     if xcfg.ticks is not None:
