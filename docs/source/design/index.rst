@@ -11,14 +11,6 @@ Suite Design
     design
 
 
-.. todo::
-
-    TODO: Talk about the available variables somewhere (exp_code_dir, exp_host_list)
-
-
-
-
-
 ..
 
     The `base_experiment` consists of all the configuration options.
