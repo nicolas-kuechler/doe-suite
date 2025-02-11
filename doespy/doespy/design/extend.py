@@ -111,7 +111,6 @@ def extend(suite_design, exp_specific_vars, use_cmd_shellcheck=False):
                     # (should not be available as var for templating)
 
                     template = env.from_string(template)
-#                    print(f"\n\n\n!!!!!!!!!!!!={run_config}\n\n\n")
 
                     try:
                         template = template.render(my_run=run_config, **exp_vars)

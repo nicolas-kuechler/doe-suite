@@ -6,7 +6,7 @@ from jinja2.runtime import Undefined
 
 
 def to_ipv4(hostlist, host_type, host_type_idx=0, default=None):
-    """Return the IPv4 address of a host derived frrom the public dns."""
+    """Return the IPv4 address of a host derived from the public dns."""
     if isinstance(hostlist, Undefined):
         if default is not None:
             return default

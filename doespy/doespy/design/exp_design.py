@@ -287,7 +287,6 @@ class BaseExperimentConfigDict(ExperimentConfigDict):
 
         # separate extra vars from non extra vars
         non_extra_fields = set()
-        # TODO [PYDANTIC] -> may need to fix this later
         for k, v in self.__fields__.items():
             non_extra_fields.add(k)
             if v.alias is not None:
