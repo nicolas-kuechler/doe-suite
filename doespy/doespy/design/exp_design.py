@@ -4,12 +4,8 @@ from typing import Optional, Any
 from typing import Literal
 from typing import Union
 
-from pydantic import Field
+from pydantic import RootModel, field_validator, model_validator, ConfigDict, Field
 from pydantic import BaseModel
-from pydantic import root_validator
-from pydantic import validator
-from pydantic import ValidationError
-from pydantic import PydanticValueError
 
 import warnings
 import os
@@ -26,10 +22,7 @@ from doespy.design import etl_design
 
 
 class MyBaseModel(BaseModel):
-    class Config:
-        extra = "forbid"
-        smart_union = True
-        use_enum_values = True
+    model_config = ConfigDict(extra="forbid", use_enum_values=True)
 
 
 HostTypeId = enum.Enum("HostTypeId", {ht.replace("-", "_"): ht for ht in util.get_host_types()})
@@ -39,29 +32,27 @@ SetupRoleId = enum.Enum("SetupRoleId", {x.replace("-", "_"):  x for x in util.ge
 """Name of an Ansible role to setup a host. The role is located in folder: `doe-suite-config/roles`."""
 
 
-class Cmd(MyBaseModel):
-    __root__: str
+class Cmd(RootModel):
+    root: str
 
 class HostType(MyBaseModel):
     n: int = 1
     check_status: bool = True
     init_roles: Union[SetupRoleId, List[SetupRoleId]] = []
     cmd: Union[Cmd, Dict[str, Cmd], List[Cmd], List[Dict[str, Cmd]]] = Field(alias="$CMD$")
-
-    class Config:
-        extra = "forbid"
-        smart_union = True
+    model_config = ConfigDict(extra="forbid")
 
 
-    @validator("init_roles")
+    @field_validator("init_roles")
+    @classmethod
     def convert_init_roles(cls, v):
         if not isinstance(v, list):
             return [v]
         else:
             return v
 
-    @root_validator(skip_on_failure=True)
-    def convert_cmd(cls, values):
+    @model_validator(mode="after")
+    def convert_cmd(self):
 
         """
         `cmd` is a list of length n,
@@ -88,16 +79,16 @@ class HostType(MyBaseModel):
         """
 
         # GOAL: $CMD$: [{"main": cmd1}, {"main": cmd2}] for n==2
-        cmd = values["cmd"]
+        cmd = self.cmd
 
         if not isinstance(cmd, list):
             # not a list => # repeat the same cmd for all `n` hosts of this type
-            values["cmd"] = [cmd] * values["n"]
+            self.cmd = [cmd] * self.n
 
         # host_type_raw["$CMD$"] is a list of length n
-        assert isinstance(values["cmd"], list) and len(values["cmd"]) == values["n"], "cmd list length does not match the number of instances `n` of host type"
+        assert isinstance(self.cmd, list) and len(self.cmd) == self.n, "cmd list length does not match the number of instances `n` of host type"
         cmds = []
-        for cmd in values["cmd"]:
+        for cmd in self.cmd:
             if isinstance(cmd, Cmd):
                 cmd = {"main": cmd}
             elif isinstance(cmd, dict):
@@ -106,17 +97,15 @@ class HostType(MyBaseModel):
                 raise ValueError("unknown type")
             cmds.append(cmd)
 
-        values["cmd"] = cmds
-        return values
+        self.cmd = cmds
+        return self
 
 class ExperimentConfigDict(MyBaseModel):
-
-    class Config:
-        extra = "allow"
+    model_config = ConfigDict(extra="allow")
 
 
-    @root_validator(skip_on_failure=True)
-    def include_vars(cls, values):
+    @model_validator(mode="after")
+    def include_vars(self):
         """At any depth of the config dict, we can include variables from another file.
 
         ``$INCLUDE_VARS$: Optional[Union[str, List[str]]]``
@@ -128,7 +117,7 @@ class ExperimentConfigDict(MyBaseModel):
         """
         # do nothing (only here for documentation)
         # -> the resolving for both suite vars and base exp config happens in BaseExperimentConfig.__init__
-        return values
+        return self
 
 
 
@@ -327,11 +316,11 @@ class BaseExperimentConfigDict(ExperimentConfigDict):
         super().__init__(*args, **kwargs)
 
         # restoring the extra values
-        old_allow_mutation = self.__config__.allow_mutation
-        self.__config__.allow_mutation = True
+        #old_allow_mutation = self.__config__.allow_mutation
+        #self.__config__.allow_mutation = True
         for k, v in extra_kwargs.items():
             setattr(self, k, v)
-        self.__config__.allow_mutation = old_allow_mutation
+        #self.__config__.allow_mutation = old_allow_mutation
 
 
 
@@ -364,12 +353,10 @@ class Experiment(MyBaseModel):
     except_filters: List[Dict] = []
     """A list of filters that can be used to exclude certain runs from the experiment.
     """
+    model_config = ConfigDict(extra="forbid")
 
-
-    class Config:
-        extra = "forbid"
-
-    @root_validator(pre=True, skip_on_failure=True)
+    @model_validator(mode="before")
+    @classmethod
     def context(cls, values):
 
         base_experiment = values.get("base_experiment")
@@ -382,7 +369,8 @@ class Experiment(MyBaseModel):
 
         return values
 
-    @validator("common_roles")
+    @field_validator("common_roles")
+    @classmethod
     def convert_common_roles(cls, v):
         if not isinstance(v, list):
             return [v]
@@ -390,20 +378,20 @@ class Experiment(MyBaseModel):
             return v
 
 
-    @root_validator(skip_on_failure=True)
-    def check_factor_levels(cls, values):
+    @model_validator(mode="after")
+    def check_factor_levels(self):
         """The ``base_experiment`` defines a set of $FACTOR$s that use the level list syntax.
         (i.e., $FACTOR$ is value).
         This validator checks that this set of $FACTOR$s matches each list entry of ``factor_levels``.
         """
 
         # after setting factor fields in base_experiment, the ctx is here up to date again
-        values['ctx'] = values["base_experiment"].ctx
-        values["base_experiment"].ctx = None
+        self.ctx = self.base_experiment.ctx
+        self.base_experiment.ctx = None
 
-        expected_factor_paths = values['ctx'].my_experiment_factor_paths_levellist
+        expected_factor_paths = self.ctx.my_experiment_factor_paths_levellist
 
-        for run in values.get("factor_levels"):
+        for run in self.factor_levels:
 
             actual_factors = []
             for path, _value in dutil.nested_dict_iter(run):
@@ -412,24 +400,24 @@ class Experiment(MyBaseModel):
             assert sorted(expected_factor_paths) == sorted(actual_factors), \
                 f"expected factors do not match actual factors: \
                     expected={expected_factor_paths} actual={actual_factors}"
-        return values
+        return self
 
-    @root_validator(skip_on_failure=True)
-    def check_except_filters(cls, values):
+    @model_validator(mode="after")
+    def check_except_filters(self):
         """Every entry in ``except_filters`` must be a subset of the actual factors.
         """
 
         all_factors = set()
 
         # add level factors
-        for x in values['ctx'].my_experiment_factor_paths_levellist:
+        for x in self.ctx.my_experiment_factor_paths_levellist:
             all_factors.add(tuple(x))
 
-        for x in values['ctx'].my_experiment_factor_paths_cross:
+        for x in self.ctx.my_experiment_factor_paths_cross:
             assert x[-1] == "$FACTOR$"
             all_factors.add(tuple(x[:-1]))  # remove the $FACTOR$
 
-        for filt in values.get("except_filters"):
+        for filt in self.except_filters:
             filtered_factors = set()
             for path, _value in dutil.nested_dict_iter(filt):
                 filtered_factors.add(tuple(path))
@@ -439,7 +427,7 @@ class Experiment(MyBaseModel):
                 f"except_filters entry is not a subset of the actual factors: \
                     except_filter={filtered_factors} all_factors={all_factors}"
 
-        return values
+        return self
 
 # TODO [nku] could also extract some of them automatically from pydantic models?
 RESERVED_KEYWORDS = ["state", "$FACTOR$", "is_controller_yes", "is_controller_no", "check_status_yes", "check_status_no", "localhost", "n_repetitions", "common_roles", "host_types", "base_experiment", "factor_levels", "n", "init_roles", "check_status", "$CMD$"]
@@ -460,11 +448,10 @@ class SuiteDesign(MyBaseModel):
     suite_vars: SuiteVarsConfigDict = Field(alias="$SUITE_VARS$", default={})
     experiment_designs: Dict[str, Experiment]
     etl: Dict[str, etl_design.ETLPipeline] = Field(alias="$ETL$", default={})
+    model_config = ConfigDict(extra="forbid")
 
-    class Config:
-        extra = "forbid"
-
-    @root_validator(pre=True, skip_on_failure=True)
+    @model_validator(mode="before")
+    @classmethod
     def context(cls, values):
 
         ctx = values["_CTX"]
@@ -480,7 +467,7 @@ class SuiteDesign(MyBaseModel):
             etl_pipeline["_CTX"] = etl_ctx
 
         # EXPContext
-        ctx["suite_vars"] = values.get("$SUITE_VARS$", None)
+        ctx["suite_vars"] = values.get("$SUITE_VARS$", {})
         for exp_name, exp in values.get("experiment_designs").items():
             exp_ctx = ctx.copy()
             exp_ctx["my_experiment_name"] = exp_name
@@ -492,7 +479,8 @@ class SuiteDesign(MyBaseModel):
 
 
 
-    @validator("experiment_designs")
+    @field_validator("experiment_designs")
+    @classmethod
     def check_exp_names(cls, v):
         # TODO [nku] check min length and forbidden keywords
         for exp_name in v.keys():
@@ -523,7 +511,7 @@ class Suite(MyBaseModel):
     """A suite needs to contain at least one :ref:`experiment<design/design:Experiment>`.
     Choose a descriptive experiment name for the placeholder `<EXP1>`."""
 
-    exp2: Optional[Experiment] = Field(alias="<EXP2>")
+    exp2: Optional[Experiment] = Field(None, alias="<EXP2>")
     """Further :ref:`experiments<design/design:Experiment>` are optional.
     Choose a descriptive experiment name for the placeholder `<EXP2>`, `<EXP3>`, etc."""
 

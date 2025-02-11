@@ -2,6 +2,8 @@
 import abc
 import jmespath
 from typing import Dict, List
+
+import numpy
 from doespy.design.etl_design import MyETLBaseModel
 
 
@@ -17,6 +19,14 @@ def is_match(jp_query, data_id, info) -> bool:
 
     # print(f"    -> is match: {result}")
     # print(f"JmesPathFilter: {info}: query is {result}    {jp_query=}")
+    if isinstance(result, numpy.bool_): # For some queries the result is a numpy.bool_ type
+        result = bool(result)
+    if isinstance(result, str):
+        if result.lower() == "true":
+            result = True
+        elif result.lower() == "false":
+            result = False
+
     assert isinstance(
         result, bool
     ), f"JmesPathFilter: {info}: query={jp_query} returned non-boolean result: {result}"
@@ -40,10 +50,17 @@ class BasePlotConfig(MyETLBaseModel, abc.ABC):
         for cfg in configs:
             if is_match(cfg.jp_query, plot_id, info):
                 if config is None:
-                    config = cfg.copy()
+                    config = cfg.model_copy()
                 else:
                     config.fill_missing(cfg)
         return config
+
+    def fill_missing(self, other):
+        """:meta private:"""
+
+        for k, v in self.model_dump().items():
+            if v is None:
+                setattr(self, k, getattr(other, k))
 
 
 class BaseSubplotConfig(MyETLBaseModel, abc.ABC):

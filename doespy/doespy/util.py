@@ -152,6 +152,7 @@ def from_folder(name):
     parts = name.split("_")
     suite_id = parts[-1]
     suite = "_".join(parts[:-1])
+    assert suite != "", f"folder name: {name} is not valid, as it parses to the empty suite name (check doe-suite-results folder) "
     return suite, suite_id
 
 

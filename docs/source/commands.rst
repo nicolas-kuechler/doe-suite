@@ -174,3 +174,20 @@ Developing Suite Designs
     # The same as: `make etl suite=example01-minimal id=last`
     #   but uses the etl pipeline defined in `doe-suite-config/designs`
     #   compared to the etl pipeline in `doe-suite-results/example01-single_<ID>/suite_design.yml`
+
+
+
+
+Custom Commands
+---------------
+
+Project-specific commands (targets) can be defined in ``doe-suite-config/Makefile``.
+These commands are integrated into the main ``doe-suite/Makefile`` and can be executed like any other target using ``make <command>``.
+
+
+For example, in `demo_project`, a custom command ``make peek`` is defined to peek at results when running in the Euler cloud:
+
+
+.. literalinclude:: ../../demo_project/doe-suite-config/Makefile
+   :language: Makefile
+   :caption: doe-suite-config/Makefile

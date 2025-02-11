@@ -3,6 +3,6 @@ collections:
 - community.general
 - community.aws
 - name: community.docker
-  version: ">=3.5.0"
+  version: ">=4.3.0"
 - ansible.netcommon
 - amazon.aws

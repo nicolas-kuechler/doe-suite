@@ -146,7 +146,16 @@ class GroupedStackedBarChart(MyETLBaseModel):
                 chart=self,
             )
 
+            # TODO [nku] inheriting a label from the figure legend could be improved
+            if plot_config is not None and plot_config.legend_fig is not None:
+                default_label = plot_config.legend_fig.get_label(full_id, subplot_config=subplot_config)
+            else:
+                default_label = None
+
             label = bar_part_config.pop("label", None)
+
+            if label is None:
+                label = default_label
 
             ax.bar(
                 position.bar_center_pos,
@@ -260,6 +269,9 @@ class GroupedStackedBarChart(MyETLBaseModel):
                         }
 
                         part_value = df_bar_part[value_col].iloc[0]
+                        if pd.isna(part_value):
+                            # print(f"Skipping part_value because it is None")
+                            continue
                         part_error = (
                             df_bar_part[error_col].iloc[0]
                             if error_col is not None

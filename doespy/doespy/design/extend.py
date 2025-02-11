@@ -13,9 +13,8 @@ from typing import Dict
 from typing import Literal
 from typing import Union
 
-from pydantic import Field
+from pydantic import RootModel, model_validator, ConfigDict, Field
 from pydantic import BaseModel
-from pydantic import root_validator
 
 
 
@@ -51,6 +50,8 @@ def extend(suite_design, exp_specific_vars, use_cmd_shellcheck=False):
         base_experiment, cross_factor_levels = extract_cross_product(
             exp["base_experiment"]
         )
+
+        assert "run" not in exp_vars, "run is a reserved variable name"
 
         for factor_level in exp["factor_levels"]:
             # these are the list of factor_levels when $FACTOR$ is used
@@ -95,6 +96,8 @@ def extend(suite_design, exp_specific_vars, use_cmd_shellcheck=False):
                 # -> should probably not be a big issue if $CMD$ already follows the list structure at this point
                 # At the moment, host specific variables are available via the hostvars in `exp_host_lst`
 
+                exp_vars["run"] = len(exp_runs_ext)
+
                 template = json.dumps(run_config)
                 while "[%" in template and "%]" in template:
                     # temporary convert to a dict
@@ -120,7 +123,7 @@ def extend(suite_design, exp_specific_vars, use_cmd_shellcheck=False):
 
         # validate the extended suite (check commands)
         if use_cmd_shellcheck:
-            SuiteExt(__root__=exp_runs_ext)
+            SuiteExt(root=exp_runs_ext)
         suite_ext[exp_name] = exp_runs_ext
 
     return suite_ext
@@ -213,18 +216,16 @@ def _insert_config(config, key, parent_path, value):
 
 
 class MyExtBaseModel(BaseModel):
-    class Config:
-        extra = "forbid"
-        smart_union = True
-        use_enum_values = True
+    model_config = ConfigDict(extra="forbid", use_enum_values=True)
 
-class CmdExt(MyExtBaseModel):
-    __root__: str
 
-    @root_validator(skip_on_failure=True)
-    def check_cmd_syntax(cls, values):
+class CmdExt(RootModel):
+    root: str
 
-        cmd = values.get("__root__")
+    @model_validator(mode="after")
+    def check_cmd_syntax(self):
+
+        cmd = self.root
 
         # echo "printf 'x: 1\\ny: 5' > results/coordinates.yaml" | poetry run  shellcheck --shell=bash  /dev/stdin
         # We disable error SC1091 because we run the validation locally (so shellcheck does not have access to all files)
@@ -238,15 +239,12 @@ class CmdExt(MyExtBaseModel):
             print("=====================")
             raise ValueError(f"$CMD$ is invalid bash syntax! (see shellcheck output above)")
 
-        return values
+        return self
 
 class RunConfig(MyExtBaseModel):
 
     cmd: Dict[str, Union[CmdExt, Dict[str, CmdExt], List[CmdExt], List[Dict[str, CmdExt]]]] = Field(alias="$CMD$")
+    model_config = ConfigDict(extra="allow", arbitrary_types_allowed=True)
 
-    class Config:
-        extra = "allow"
-        arbitrary_types_allowed = True
-
-class SuiteExt(MyExtBaseModel):
-    __root__: List[RunConfig]
+class SuiteExt(RootModel):
+    root: List[RunConfig]

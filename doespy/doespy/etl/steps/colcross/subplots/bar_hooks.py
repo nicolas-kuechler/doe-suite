@@ -105,6 +105,8 @@ def group_bar_ticks(
     group_ticks: List[Tuple[float, str]],
     bar_ticks: List[Tuple[float, str]],
 ):
+
+    group_xticks = None
     if group_ticks:
         group_xticks, group_labels = zip(*group_ticks)
         ax.set_xticks(
@@ -112,7 +114,21 @@ def group_bar_ticks(
         )
 
     if bar_ticks:
-        is_minor = group_ticks
+        is_minor = bool(group_ticks)
         inner_xticks, inner_labels = zip(*bar_ticks)
         kwargs = chart.bar_foreach.label.kwargs
+
+        if group_xticks:
+            # if the group ticks are in same position as the bar ticks, then move the bar ticks slightly
+            # -> otherwise matplotlib will not show the bar ticks
+            same_pos =  set(inner_xticks) & set(group_xticks)
+
+            ticks = []
+            for x in inner_xticks:
+                if x in same_pos:
+                    ticks.append(x + 0.0001)
+                else:
+                    ticks.append(x)
+            inner_xticks = tuple(ticks)
+
         ax.set_xticks(inner_xticks, labels=inner_labels, minor=is_minor, **kwargs)
