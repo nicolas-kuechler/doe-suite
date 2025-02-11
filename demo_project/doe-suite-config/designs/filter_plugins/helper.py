@@ -6,6 +6,7 @@ from jinja2.runtime import Undefined
 
 
 def to_ipv4(hostlist, host_type, host_type_idx=0, default=None):
+    """Return the IPv4 address of a host derived frrom the public dns."""
     if isinstance(hostlist, Undefined):
         if default is not None:
             return default
@@ -16,6 +17,8 @@ def to_ipv4(hostlist, host_type, host_type_idx=0, default=None):
         return socket.gethostbyname(hosts[host_type_idx]['public_dns_name'])
 
 def to_public_dns_name(hostlist, host_type, host_type_idx=0, default=None):
+    """Return the public DNS name of a host."""
+
     if isinstance(hostlist, Undefined):
         if default is not None:
             return default
@@ -27,6 +30,8 @@ def to_public_dns_name(hostlist, host_type, host_type_idx=0, default=None):
 
 
 def to_private_dns_name(hostlist, host_type, host_type_idx=0, default=None):
+    """Return the private DNS name of a host."""
+
     if isinstance(hostlist, Undefined):
         if default is not None:
             return default
@@ -39,6 +44,7 @@ def to_private_dns_name(hostlist, host_type, host_type_idx=0, default=None):
 
 
 def at_runtime(var, exp_host_lst, host_type=None, host_type_idx=0):
+    """Access runtime value of a variable."""
 
     if isinstance(exp_host_lst, Undefined):
         return f"<{var}@runtime>"

@@ -9,6 +9,7 @@ sys.path.append(os.path.abspath("./ext"))
 
 
 sys.path.append(os.path.join(os.environ["DOES_PROJECT_DIR"], "doe-suite-config"))
+sys.path.append(os.path.join(os.environ["DOES_PROJECT_DIR"], "doe-suite-config/designs/filter_plugins"))
 
 # needs manual import to prevent circular import
 from doespy.design.etl_design import MyETLBaseModel
