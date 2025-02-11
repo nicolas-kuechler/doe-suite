@@ -46,7 +46,18 @@ There are some special variables that can be used in the experiment configuratio
 
     .. code:: yaml
 
-        [{'host_type': x, 'exp_host_type_idx': x, 'exp_host_type_n': x, 'public_dns_name': x, 'private_dns_name': x, 'ansible_host_id': x, 'hostvars': {..}}, ...]
+      [
+        {
+          'host_type': x,
+          'exp_host_type_idx': x,
+          'exp_host_type_n': x,
+          'public_dns_name': x,
+          'private_dns_name': x,
+          'ansible_host_id': x,
+          'hostvars': {..}
+        },
+        ...
+      ]
 
 
     Each project includes a set of pre-defined Jinja filters to simplify using this variable, available in: ``doe-suite-config/designs/filter_plugins/helper.py``
