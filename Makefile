@@ -97,7 +97,7 @@ help:
 new:
 	@if [ ! -f $(does_config_dir)/pyproject.toml ]; then \
 		poetry -C doespy install && \
-		poetry -C doespy run cookiecutter cookiecutter-doe-suite-config -o $(DOES_PROJECT_DIR); \
+		poetry -C doespy run cookiecutter $(PWD)/cookiecutter-doe-suite-config -o $(DOES_PROJECT_DIR); \
 	fi
 
 # depending on`cloud` variable, check if connection can be established
