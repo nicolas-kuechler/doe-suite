@@ -15,6 +15,34 @@ We use annotated git tags for each release commit:
 
 -->
 
+## [2.0.0] - 2025-03-10
+
+### Added
+- Introduced a project-specific `Makefile`.
+- The `Makefile` now throws an error if `DOES_PROJECT_DIR` is not defined.
+- An error is now raised if the parsed suite is empty in the `doe-suite-results` folder for name parsing (extracting `suite` and `suite_id`).
+- [Experiment Design] Added support for a `run` variable in the experiment design, allowing the use of the run ID when constructing commands.
+- [Experiment Design] For experiments on the Euler cloud (SLURM), introduced a special `$euler_job_minutes$` variable to set the time limit, enabling submission queue selection.
+- [ETL] In the `ColumnCrossPlotLoader`, support additional JMESPath queries, including `numpy._bool` and string return types.
+
+### Changed
+
+- Upgraded to Pydantic V2 for suite design validation. **This is a breaking change for custom ETL steps.** Refer to the [Pydantic Migration Guide](https://docs.pydantic.dev/2.8/migration/) for required updates.
+- Updated Python dependencies.
+- [ETL] Inverted legend label order in the `ColumnCrossPlotLoader` to align with `bar_part` order.
+- [ETL] In the  `ColumnCrossPlotLoader`, `subplot_grid` is now part of `cum_plot_config` instead of being a top-level entity, allowing per-plot grid variation.
+- Switch to poetry v2.
+
+### Fixed
+
+- Resolved TSP scheduler status parsing issues.
+- Fixed a NumPy version conflict in `doespy` caused by Pandas' lack of version pinning.
+- Corrected AWS region handling; running DOE-Suite without a default AWS region no longer fails.
+- [ETL] Fixed a bug in the  `ColumnCrossPlotLoader` that caused incorrect y-axis limit settings.
+- [ETL] Prevented `NaN` values from being drawn in bar plots in the  `ColumnCrossPlotLoader`.
+- Fixed GitHub action deploy docs pipeline.
+
+
 ## [1.2.1] - 2025-02-10
 
 ### Fixed
