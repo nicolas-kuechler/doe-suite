@@ -1,9 +1,8 @@
 name: Docs
 on:
-  push:
+  pull_request:
     branches:
-      - "main"  # only deploy on main
-#  pull_request: {}
+      - "main"
   workflow_dispatch: {}
 
 permissions:
@@ -23,9 +22,6 @@ env:
 
 jobs:
   docs:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       #----------------------------------------------
@@ -58,27 +54,3 @@ jobs:
         run: |
           source ./doespy/.venv/bin/activate
           sphinx-build docs/source _build
-
-      #------------------------
-      # deploy to github pages
-      #------------------------
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          # Upload entire repository
-          path: './_build'
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-      #----------------------------------------------
-      # deploy to github pages -> only the main branch
-      #----------------------------------------------
-      #- name: Deploy
-      #  uses: peaceiris/actions-gh-pages@v3
-      #  if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-      #  with:
-      #    publish_branch: gh-pages
-      #    github_token: ${{ secrets.GITHUB_TOKEN }}
-      #    publish_dir: _build/
-      #    force_orphan: true

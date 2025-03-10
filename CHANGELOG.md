@@ -15,6 +15,15 @@ We use annotated git tags for each release commit:
 
 -->
 
+## [2.0.1] - 2025-03-10
+
+### Added
+- Run `make docs` gh action on PR to main.
+
+### Fixed
+- Update poetry v2 in docs deployment.
+
+
 ## [2.0.0] - 2025-03-10
 
 ### Added
