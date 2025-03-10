@@ -6,11 +6,11 @@ from doespy.design.etl_design import MyETLBaseModel
 
 import typing
 import pandas as pd
-from typing import Dict, List, Literal, NamedTuple, Union
+from typing import Dict, List, Literal, NamedTuple, Optional, Union
 
 from doespy.design.etl_design import MyETLBaseModel
 
-from pydantic import Field, PyObject, validator
+from pydantic import field_validator, ConfigDict, Field
 
 
 class SubplotGrid(MyETLBaseModel):
@@ -32,7 +32,7 @@ class SubplotGrid(MyETLBaseModel):
     (see ``jp_except`` for defining exceptions, i.e., not all combinations)
     """
 
-    jp_except: str = None
+    jp_except: Optional[str] = None
     """Skip certain combinations of (row, col) based on the data id.
     """
 
@@ -190,7 +190,8 @@ class Metric(MyETLBaseModel):
     """
 
 
-    @validator("value_cols", "error_cols", pre=True)
+    @field_validator("value_cols", "error_cols", mode="before")
+    @classmethod
     def ensure_list(cls, v):
         """:meta private:"""
         if isinstance(v, str):
@@ -274,7 +275,7 @@ class DataFilter(MyETLBaseModel):
     @classmethod
     def empty(cls):
         """:meta private:"""
-        return DataFilter(allowed=[])
+        return DataFilter(allowed=dict())
 
     def apply(self, cols: List[str], df: pd.DataFrame) -> pd.DataFrame:
         """:meta private:"""
@@ -394,7 +395,7 @@ class ColsForEach(MyETLBaseModel):
     cols: List[str]
     """Performs a group by with the cols as keys and yields the resulting dataframes."""
 
-    jp_except: str = None
+    jp_except: Optional[str] = None
     """Skip certain combinations based on the data id (and parent data_id)"""
 
     label: KwargsLabelFormatter = None
@@ -486,9 +487,7 @@ AxisFormatter = Enum("AxisFormatter", [(f, f) for f in axis_formatter.keys()])
 
 
 class AxisConfig(MyETLBaseModel):
-
-    class Config:
-        use_enum_values = True
+    model_config = ConfigDict(use_enum_values=True)
 
     scale: Literal["linear", "log", "symlog", "logit"] = None
     """The scale of the axis"""
@@ -565,16 +564,14 @@ class ArtistConfig(MyETLBaseModel):
     """
 
 
-    jp_query: str = None
+    jp_query: Optional[str] = None
     """The JMESPath query is applied to the artist_id (i.e., dict of col:data pairs) to determine whether this configuration entry applies or not.
     If the jp_query matches, then this configuration applies.
     If None, then this config applies to all artist_ids."""
 
     label: Union[LabelFormatter, str] = None
     """Special label formatter that allows to customize the label used for the artist."""
-
-    class Config:
-        extra = "allow"
+    model_config = ConfigDict(extra="allow")
 
     @classmethod
     def merge_cumulative(
@@ -590,7 +587,8 @@ class ArtistConfig(MyETLBaseModel):
         # loop in reverse order to give the first filter the highest priority
         for cfg in reversed(configs):
             if is_match(cfg.jp_query, data_id, info):
-                d = cfg.__dict__.copy()
+
+                d = cfg.model_dump().copy()
                 if hasattr(cfg, "label") and isinstance(cfg.label, LabelFormatter):
                     d["label"] = cfg.label.apply(data_id, subplot_config, info)
                 config.update(d)

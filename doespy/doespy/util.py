@@ -152,6 +152,7 @@ def from_folder(name):
     parts = name.split("_")
     suite_id = parts[-1]
     suite = "_".join(parts[:-1])
+    assert suite != "", f"folder name: {name} is not valid, as it parses to the empty suite name (check doe-suite-results folder) "
     return suite, suite_id
 
 
@@ -159,6 +160,10 @@ def get_does_results(ignore_expected=True):
     results_dir = get_results_dir()
 
     does_results = []
+    if not os.path.exists(results_dir):
+        return does_results
+
+
     for suite_run_id in os.listdir(results_dir):
         if os.path.isdir(os.path.join(results_dir, suite_run_id)):
             suite, suite_id = from_folder(name=suite_run_id)

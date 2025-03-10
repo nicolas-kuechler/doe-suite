@@ -8,11 +8,10 @@ import inspect
 import sys
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import ConfigDict, BaseModel
 
 class Loader(BaseModel, ABC):
-    class Config:
-        extra = "forbid"
+    model_config = ConfigDict(extra="forbid")
 
     def get_output_dir(self, etl_info):
         """:meta private:"""

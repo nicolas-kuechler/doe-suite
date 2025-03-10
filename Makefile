@@ -1,3 +1,8 @@
+ifndef DOES_PROJECT_DIR
+$(error Environment variable 'DOES_PROJECT_DIR' is not set.)
+endif
+
+
 does_config_dir=$(DOES_PROJECT_DIR)/doe-suite-config
 does_results_dir=$(DOES_PROJECT_DIR)/doe-suite-results
 
@@ -46,6 +51,7 @@ endif
 
 # on `make` and `make help` list all targets with information
 help:
+	@$(MAKE) --ignore-errors --no-print-directory -C $(does_config_dir) help-custom  2> /dev/null || true
 	@echo 'Running Experiments'
 	@echo '  make run suite=<SUITE> id=new                       - run the experiments in the suite'
 	@echo '  make run suite=<SUITE> id=<ID>                      - continue with the experiments in the suite with <ID> (often id=last)'
@@ -91,7 +97,7 @@ help:
 new:
 	@if [ ! -f $(does_config_dir)/pyproject.toml ]; then \
 		poetry -C doespy install && \
-		poetry -C doespy run cookiecutter cookiecutter-doe-suite-config -o $(DOES_PROJECT_DIR); \
+		poetry -C doespy run cookiecutter $(PWD)/cookiecutter-doe-suite-config -o $(DOES_PROJECT_DIR); \
 	fi
 
 # depending on`cloud` variable, check if connection can be established
@@ -257,8 +263,10 @@ clean-aws:
 	@echo "Terminating all doe-suite related aws ec2 instances (+vpc)..."
 	@if $(MAKE) confirm ; then  $(MAKE) clean-cloud cloud=aws; else echo "skipping clean-aws"; fi
 
-clean:  clean-local-py clean-docker clean-aws
-
+clean:
+	-$(MAKE) clean-local-py
+	-$(MAKE) clean-docker
+	$(MAKE) clean-aws
 
 #################################
 #  ___ _  _ ___ ___
@@ -379,3 +387,19 @@ docs-build: install
 
 docs: docs-build
 	@open docs/build/html/index.html
+
+
+
+#################################
+#   ___ _   _ ___ _____ ___  __  __
+#  / __| | | / __|_   _/ _ \|  \/  |
+# | (__| |_| \__ \ | || (_) | |\/| |
+#  \___|\___/|___/ |_| \___/|_|  |_|
+#
+#################################
+
+# include the targets of a project specific make file
+include_file=$(does_config_dir)/Makefile
+ifneq ("$(wildcard $(include_file))","")
+	include $(include_file)
+endif

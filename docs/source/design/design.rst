@@ -54,7 +54,7 @@ ETL Pipeline
 
 Extractor
 ---------
-.. autopydantic_model:: doespy.design.etl_design.Extractor
+.. autopydantic_model:: doespy.design.etl_design.ExtractorDesign
     :validator-list-fields: True
 
 
@@ -65,11 +65,11 @@ Extractor
 
 Transformer
 -----------
-.. autopydantic_model:: doespy.design.etl_design.Transformer
+.. autopydantic_model:: doespy.design.etl_design.TransformerDesign
     :validator-list-fields: True
 
 
 Loader
 ------
-.. autopydantic_model:: doespy.design.etl_design.Loader
+.. autopydantic_model:: doespy.design.etl_design.LoaderDesign
     :validator-list-fields: True

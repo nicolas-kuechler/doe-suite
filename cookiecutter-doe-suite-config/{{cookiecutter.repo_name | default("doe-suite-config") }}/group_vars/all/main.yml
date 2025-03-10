@@ -41,7 +41,9 @@ local:
   designs_dir: "{{ does_config_dir }}/designs"
 
 exp_base:
-  aws_region: eu-central-1
+{% endraw %}
+  aws_region: "{{ cookiecutter.host_ec2_region }}"
+{% raw %}
   name: frankfurt
   vpc_name: "{{ prj_id }}_vpc_base"
   vpc_cidr_block: 10.100.0.0/16
