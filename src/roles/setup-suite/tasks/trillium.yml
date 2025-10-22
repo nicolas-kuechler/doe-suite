@@ -1,0 +1,48 @@
+---
+
+- block:
+
+    - debug:
+        msg: "-> setup suite"
+      tags: [print_action]
+
+
+    # Use ssh-agent to get code from Git Remote Repository:
+    #
+    # 1. Configure ~/.ssh/config:  (add to file and replace the key for example with aws_ppl.pem)
+    #    ```
+    #    Host ec2*
+    #    IdentifyFile ~/.ssh/{{ ssh_key_name }}
+    #    ForwardAgent yes
+    #    ```
+    #
+    # 2. Add the GitHub private key to ssh-agent:
+    #
+    #   ssh-add ~/.ssh/private_key_rsa
+    #
+    # 3. (On a MAC, need add to keychain)
+
+    - name: Update Code from Git remote repository (or multiple)
+      git:
+        repo: "{{ git_repo.repo }}"
+        dest: "{{ remote.dir }}/{{ git_repo.dir }}"
+        accept_hostkey: yes
+        force: yes
+        version: "{{ git_repo.version }}"
+      loop: "{{ git_remote_repository | git_repo_list }}"
+      loop_control:
+        loop_var: git_repo
+
+    - name: Move python multi-command runner to remote
+      block: 
+      - name: Create dirs in path
+        ansible.builtin.file:
+          path: "{{ remote.dir }}"
+          state: directory
+          recurse: yes
+      - name: Move python runner
+        ansible.builtin.copy:
+          src: resources/runner.py
+          dest: "{{ remote.dir }}/runner.py"
+
+  when: play_hosts.index(inventory_hostname) | int == 0 # only execute for first host overall

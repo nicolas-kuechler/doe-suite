@@ -32,6 +32,10 @@ ifdef expfilter
 	myexpfilter=expfilter=$(expfilter)
 endif
 
+ifdef ssh_session
+	myssh_session="ansible_ssh_common_args=-S (ssh_session)"
+endif
+
 # TODO [nku] would it be possible if suite not defined and required to show available suites and take number input?
 ifdef suite
 	mysuite=--suite $(suite)
@@ -104,6 +108,7 @@ new:
 cloud-check:
 	@if [ $(cloud) = aws ]; then aws sts get-caller-identity > /dev/null || aws configure; fi
 	@if [ $(cloud) = euler ]; then ping -c 1 -W 1 login.euler.ethz.ch > /dev/null || (echo "\nCannot reach login.euler.ethz.ch, are you connected to the ETHZ network, e.g., via VPN?" && exit 1); fi
+	@if [ $(cloud) = trillium ]; then ping -c 1 -W 1 trillium.scinet.utoronto.ca > /dev/null || (echo "\nCannot reach trillium.scinet.utoronto.ca" && exit 1); fi
 
 # install dependenicies to ensure that suites can be run + etl
 install: new
@@ -133,7 +138,7 @@ run: install cloud-check
 	@cd $(does_config_dir) && \
 	ANSIBLE_CONFIG=$(PWD)/ansible.cfg \
 	ANSIBLE_INVENTORY=$(ansible_inventory) \
-	poetry run ansible-playbook $(PWD)/src/experiment-suite.yml -e "suite=$(suite) id=$(id) epoch=$(epoch) cloud=$(cloud) $(myexpfilter)"
+	poetry run ansible-playbook $(PWD)/src/experiment-suite.yml -e "suite=$(suite) id=$(id) epoch=$(epoch) cloud=$(cloud) $(myexpfilter) $(myssh_session)"
 
 .PHONY: run
 run-keep: install cloud-check

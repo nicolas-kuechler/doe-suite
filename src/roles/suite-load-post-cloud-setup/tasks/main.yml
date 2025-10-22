@@ -26,6 +26,17 @@
     - hostvars['localhost'].suite_hosts_lst is defined
     - exp_name is defined
 
+- debug:
+    msg: "-> finalize loading ansible_user={{ ansible_user }} on controller host={{ inventory_hostname }} for experiment={{ exp_name }}"
+- name: "dEbug inventory"
+  debug:
+    msg: "inventory_hostname={{ inventory_hostname }} groups['is_controller_yes']={{ groups['is_controller_yes'] }}"
+- name: "Inventory vars"
+  debug:
+    var: hostvars[inventory_hostname]
+- name: "Local inv vars"
+  debug:
+    var: hostvars['localhost']
 
 ##########################################
 # Extend the suite design

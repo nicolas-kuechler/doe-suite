@@ -8,7 +8,7 @@
 
     - name: Install poetry
       ansible.builtin.shell:
-        cmd: module load {{ euler_env }} && curl -sSL https://install.python-poetry.org | POETRY_VERSION=1.2.0 POETRY_HOME={{ remote.dir }}/.local/share/pypoetry python3 -
+        cmd: module load {{ slurm_env }} && curl -sSL https://install.python-poetry.org | POETRY_VERSION=1.2.0 POETRY_HOME={{ remote.dir }}/.local/share/pypoetry python3 -
         executable: /usr/bin/bash
 
     - name: make path to poetry available in variable
@@ -17,7 +17,7 @@
 
     - name: Set config to create .venv folder in project directory
       ansible.builtin.shell:
-        cmd: "module load {{ euler_env }} && {{ poetry }} config virtualenvs.in-project true --local && {{ poetry }} install"
+        cmd: "module load {{ slurm_env }} && {{ poetry }} config virtualenvs.in-project true --local && {{ poetry }} install"
         chdir: "{{ exp_code_dir }}/demo_project"
         executable: /usr/bin/bash
 

@@ -6,8 +6,13 @@
       - exp_jobs_to_enqueue is defined
       - exp_name is defined
 
+- name: Warn if slurm_cpu_cores or slurm_cpu_mem_per_core_mb is defined since trillium does not support these settings
+  ansible.builtin.debug:
+    msg: "Warning: slurm_cpu_cores or slurm_cpu_mem_per_core_mb is defined but will be ignored on Trillium."
+  when: slurm_cpu_cores is defined or slurm_cpu_mem_per_core_mb is defined
+
 - name: query current state
-  shell: squeue --json
+  shell: squeue --json -u {{ trillium_user }}
   register: my_queue
 
 - name: find jobs of same suite and same experiment that are not complete that we are going to cancel
@@ -26,7 +31,7 @@
   when: (jobs_to_cancel | list | length) > 0
 
 # TODO [nku] could replace with custom module that does the enqueue (group by host and then do the enqueue)
-- name: schedule the job using slurm (sbatch)
+- name: schedule the job on trillium using slurm
   vars:
     experiment_name: "{{ job.job_info | safe_job_info_string }}"
     output_file: "{{ job.exp_working_dir }}/results/stdout.log"
@@ -44,7 +49,7 @@
     source ~/.bash_profile
     . /cluster/apps/local/env2lmod.sh
     module load {{ slurm_env }}
-    sbatch -J {{ experiment_name }} -o {{ output_file }} -e {{ error_file }} --open-mode=truncate {{ cpu_cmd }} {{ gpu_cmd if slurm_gpu_number | default(0) | int > 0 }} --wrap "{{ job.exp_run_cmd | replace('"', "'") }}"
+    sbatch -J {{ experiment_name }} -o {{ output_file }} -e {{ error_file }} --open-mode=truncate {{ cpu_cmd }} {{ gpu_cmd if slurm_gpu_number | int > 0 }} --wrap "{{ job.exp_run_cmd | replace('"', "'") }}"
   args:
     chdir: "{{ job.exp_working_dir }}"
     executable: /bin/bash
