@@ -33,7 +33,7 @@ ifdef expfilter
 endif
 
 ifdef ssh_session
-	myssh_session="ansible_ssh_common_args=-S (ssh_session)"
+	myssh_session=\"ansible_ssh_common_args=-S $(ssh_session)\"
 endif
 
 # TODO [nku] would it be possible if suite not defined and required to show available suites and take number input?
@@ -136,9 +136,10 @@ install-silent: new
 .PHONY: run
 run: install cloud-check
 	@cd $(does_config_dir) && \
+	echo "Using ssh session socket: $(myssh_session)" && \
 	ANSIBLE_CONFIG=$(PWD)/ansible.cfg \
 	ANSIBLE_INVENTORY=$(ansible_inventory) \
-	poetry run ansible-playbook $(PWD)/src/experiment-suite.yml -e "suite=$(suite) id=$(id) epoch=$(epoch) cloud=$(cloud) $(myexpfilter) $(myssh_session)"
+	poetry run ansible-playbook $(PWD)/src/experiment-suite.yml -e "suite=$(suite) id=$(id) epoch=$(epoch) cloud=$(cloud) $(myexpfilter) $(myssh_session)" -vvv
 
 .PHONY: run
 run-keep: install cloud-check
