@@ -15,7 +15,7 @@ slurm_gpu_model: ~ # if set to a specific GPU, then the slurm_gpu_min_mem_per_gp
 slurm_env: {{ cookiecutter.slurm_env }}
 
 {% raw %}
-euler_scratch_dir: "/cluster/scratch/{{ euler_user }}"
+slurm_scratch_dir: "/cluster/scratch/{{ euler_user }}"
 {% endraw %}
 
 docker_image_id: "doe-ubuntu20"

@@ -183,6 +183,7 @@
     exp_host_lst: "{{ exp_host_lst }}"
     local_result_dir: "{{ local.results_dir}}"
     remote_result_dir: "{{ hostvars[my_host.ansible_host_id].remote.results_dir }}"
+    ctl_path: "{{ hostvars['localhost'].ansible_env['ssh_session'] | default(None) }}"
   loop: "{{ exp_host_lst }}"
   loop_control:
     loop_var: my_host

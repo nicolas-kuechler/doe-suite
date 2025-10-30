@@ -41,15 +41,16 @@
       if slurm_gpu_model is none
       else
       '--gpus=' + slurm_gpu_model + ':' +  slurm_gpu_number | default(0) | string }}
-    cpu_cmd: --time={{ job.exp_run_config.get('$slurm_job_minutes$', slurm_job_minutes) }} -n {{ slurm_cpu_cores }} --mem-per-cpu={{ slurm_cpu_mem_per_core_mb }}
+    cpu_cmd: --time={{ job.exp_run_config.get('$slurm_job_minutes$', slurm_job_minutes) }} -n {{ slurm_cpu_cores }}
+    env_cmd: module load {{ slurm_env }} && source {{ exp_code_dir }}/.venv/bin/activate && source ~/.cargo/env
     # TODO [nku] could also support custom number of cpu cores and memory but this would be a bit against the idea of host types
+    # TODO [hly] on trillium we have to source the venv from inside the job script ??
   register: sbatch_output
   shell: |
     source /etc/profile
     source ~/.bash_profile
-    . /cluster/apps/local/env2lmod.sh
-    module load {{ slurm_env }}
-    sbatch -J {{ experiment_name }} -o {{ output_file }} -e {{ error_file }} --open-mode=truncate {{ cpu_cmd }} {{ gpu_cmd if slurm_gpu_number | int > 0 }} --wrap "{{ job.exp_run_cmd | replace('"', "'") }}"
+    source ~/.bashrc
+    sbatch -J {{ experiment_name }} -o {{ output_file }} -e {{ error_file }} --open-mode=truncate {{ cpu_cmd }} {{ gpu_cmd if slurm_gpu_number | int > 0 }} --wrap "{{ env_cmd }} && {{ job.exp_run_cmd | replace('"', "'") }}"
   args:
     chdir: "{{ job.exp_working_dir }}"
     executable: /bin/bash

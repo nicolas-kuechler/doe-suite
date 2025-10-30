@@ -1,0 +1,30 @@
+---
+
+# Since slurm runs multiple jobs in parallel, we ignore `job_id_to_wait_for`.
+# This script waits for any of the active jobs to complete and then sets job_id_to_wait_for as one of the completed jobs.
+
+- assert:
+    that:
+      - exp_name is defined
+      - exp_job_ids_queued is defined
+      - exp_job_ids_queued | length > 0
+
+
+- name: Get slurm
+  slurm_info:
+    job_ids: "{{ exp_job_ids_queued }}"
+    job_id_names: "{{ exp_job_ids_queued | map('safe_job_info_string') | list }}"
+  register: slurm_result
+  until: slurm_result.complete | length > 0
+  retries: "{{ job_n_tries }}"
+  delay: "{{ job_check_wait_time }}"
+
+- name: debug slurm
+  debug:
+    msg: "{{ slurm_result }}"
+
+# TODO [nku] could raise a warning if slurm_result.error is non empty
+
+- name: Marking jobs ids as completing
+  set_fact:
+    exp_job_ids_completing: "{{ slurm_result.complete }}"

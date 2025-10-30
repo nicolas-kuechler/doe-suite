@@ -12,6 +12,8 @@ We use annotated git tags for each release commit:
 <!--
 ## [Unreleased] - yyyy-mm-dd
 
+- Rename Slurm-specific variables starting with `euler_` to `slurm_`. 
+    Applies to `euler_env`, `euler_job_minutes`, `euler_cpu_cores`, `slurm_cpu_mem_per_core_mb`, `euler_gpu_number`, `euler_gpu_min_mem_per_gpu_mb`, and `euler_gpu_model`.
 
 -->
 

@@ -1,0 +1,10 @@
+---
+
+- assert:
+    that:
+      - exp_job_ids_completing is defined
+      - exp_name is defined
+
+- name: Noop (slurm queue is cleanup automatically)
+  debug:
+    msg: "Noop operation"

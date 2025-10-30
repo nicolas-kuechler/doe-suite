@@ -37,6 +37,16 @@ def jobid2workingdir(job_id, base):
     return exp_working_dir
 
 
+def nonstandard_connection(server_port, custom_ctl_path):
+    if custom_ctl_path is not None:
+        # ignore the custom server_port
+        return ['-e', f'ssh -S {custom_ctl_path}']
+    elif server_port != 22:
+        return ['-e', f'ssh -p {server_port}']
+    else:
+        return []
+
+
 def run_module():
     # define available arguments/parameters a user can pass to the module
     module_args = dict(
@@ -44,6 +54,7 @@ def run_module():
         exp_host_lst=dict(type='list', required=True),
         local_result_dir=dict(type='str', required=True),
         remote_result_dir=dict(type='str', required=True),
+        ctl_path=dict(type='str', required=False, default=None),
     )
 
     result = dict(
@@ -80,11 +91,11 @@ def run_module():
 
             # fetch results
             server_port = my_host.get('public_port', 22)
-            nonstandard_port = ['-e', f'ssh -p {server_port}'] if server_port != 22 else []
+            nonstandard_ssh_params = nonstandard_connection(server_port, module.params["ctl_path"])
             src_path = f"{my_host['public_dns_name']}:{remote_results_dir}/*"
             try:
                 # -L is needed to follow symlinks
-                _completed_process = subprocess.run(["rsync", "-azL"] + nonstandard_port + [src_path, local_results_dir], check=True)
+                _completed_process = subprocess.run(["rsync", "-azL"] + nonstandard_ssh_params + [src_path, local_results_dir], check=True)
             except subprocess.CalledProcessError as e:
                 warnings.warn(f"Rsync command failed to fetch results with return code {e.returncode}   dir={local_results_dir}")
                 raise e
@@ -94,7 +105,7 @@ def run_module():
             if i == 0:
                 src_path = f"{my_host['public_dns_name']}:{remote_config_file}"
                 try:
-                    _completed_process = subprocess.run(["rsync", "-az"] + nonstandard_port + [src_path, local_results_dir_base], check=True)
+                    _completed_process = subprocess.run(["rsync", "-az"] + nonstandard_ssh_params + [src_path, local_results_dir_base], check=True)
                 except subprocess.CalledProcessError as e:
                     warnings.warn(f"Rsync command failed to fetch config.json with return code {e.returncode}")
                     raise e
