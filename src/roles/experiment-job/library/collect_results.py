@@ -38,7 +38,7 @@ def jobid2workingdir(job_id, base):
 
 
 def nonstandard_connection(server_port, custom_ctl_path):
-    if custom_ctl_path is not None:
+    if custom_ctl_path is not None and len(custom_ctl_path) > 0:
         # ignore the custom server_port
         return ['-e', f'ssh -S {custom_ctl_path}']
     elif server_port != 22:
