@@ -192,8 +192,6 @@
     public_dns_names: "{{ ec2_instance_info | json_query('instances[*].public_dns_name') }}"
     suite_hosts_lst: []
 
-
-
 - name: Wait for SSH of the created EC2 instances to come up
   ansible.builtin.wait_for:
     host: "{{ public_dns_name }}"

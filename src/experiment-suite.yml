@@ -167,6 +167,16 @@
     set_fact:
       failed_tasks: "{{ hostvars | dict2items | selectattr('value.failed_task', 'defined') | map(attribute='value.failed_task') }}"
 
+  - name: Show macOS notification on host failure
+    delegate_to: localhost
+    shell: |
+      osascript -e 'display notification "Setup failed on {{ failed_tasks | length }} host(s). Execution terminated." with title "DOE Suite - Host Failed" sound name "default"'
+    when:
+      - (failed_tasks | length>0)
+      - hostvars['localhost']['any_errors_fatal_setup']
+      - ansible_facts['os_family'] | default('') == 'Darwin'
+    ignore_errors: yes
+
   - name: End execution if any host failed
     fail:
       msg: "Setup failed on at least one host: {{ failed_tasks }}"
@@ -281,3 +291,10 @@
       msg: "{{ suite_progress_info[item] }}"
     loop: "{{ suite_progress_info.keys() | sort }}"
     tags: [print_action]
+
+  - name: Show macOS notification on experiment completion
+    shell: |
+      osascript -e 'display notification "Suite: {{ suite }} (ID: {{ suite_id }}) - Finished: {{ is_suite_finished }}" with title "DOE Suite - Experiment Complete" sound name "default"'
+    when:
+      - ansible_facts['os_family'] | default('') == 'Darwin'
+    ignore_errors: yes

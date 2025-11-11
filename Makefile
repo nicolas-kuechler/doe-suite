@@ -136,17 +136,16 @@ install-silent: new
 .PHONY: run
 run: install cloud-check
 	@cd $(does_config_dir) && \
-	echo "Using ssh session socket: $(myssh_session)" && \
 	ANSIBLE_CONFIG=$(PWD)/ansible.cfg \
 	ANSIBLE_INVENTORY=$(ansible_inventory) \
-	poetry run ansible-playbook $(PWD)/src/experiment-suite.yml -e "suite=$(suite) id=$(id) epoch=$(epoch) cloud=$(cloud) $(myexpfilter) $(myssh_session)" -vv
+	poetry run ansible-playbook $(PWD)/src/experiment-suite.yml -e "suite=$(suite) id=$(id) epoch=$(epoch) cloud=$(cloud) $(myexpfilter) $(myssh_session)"
 
 .PHONY: run
 run-keep: install cloud-check
 	@cd $(does_config_dir) && \
 	ANSIBLE_CONFIG=$(PWD)/ansible.cfg \
 	ANSIBLE_INVENTORY=$(ansible_inventory) \
-	poetry run ansible-playbook $(PWD)/src/experiment-suite.yml -e "suite=$(suite) id=$(id) epoch=$(epoch) cloud=$(cloud) $(myexpfilter) awsclean=False"
+	poetry run ansible-playbook $(PWD)/src/experiment-suite.yml -e "suite=$(suite) id=$(id) epoch=$(epoch) cloud=$(cloud) $(myexpfilter) $(myssh_session) awsclean=False" -vvv
 
 # TODO [nku] integrate them into run target when they are available
 #
